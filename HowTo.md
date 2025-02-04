@@ -7,7 +7,7 @@ Let´s assume you conduct research work in the field of attitude and aerodynamic
 The satellite is a prototype created in CAD and consists of a main body which has a rotatable wing on each side of your satellite back end. Note that the main body as well as each wing of the satellite should be a part of its own, as we want to be able to rotate each wing independent to each other. 
 
 The following satellite configuration can be used for reference:
-![alt text](satellite_configuration.jpg)
+![alt text](images/satellite_configuration.jpg)
 
 It consists of five parts. The main body and four wings or control surfaces which are divided in right, left, bottom and top. 
 
@@ -15,7 +15,7 @@ You can then export these parts as independent .obj-files.
 
 **Remember to check the box "Export unique parts as individual files"**
 
-![alt text](export_satellite_parts.jpg)
+![alt text](images/export_satellite_parts.jpg)
 
 Now to the environmental part.
 In order to work with the VLEO Aerodynamics Tool you need to clone the Sadycos GIT-Repository and initialize the submodules as shown in [README.md](README.md.md).
@@ -84,7 +84,7 @@ CoM_CAD = [0; 2; 0];
 ```
 ``rotation_hinge_points_CAD`` defines hinge points in the CAD coordinate frame. This can be designed as one would like. In this example, no hinge points are defined. 
 
-``rotation_directions_CAD`` defines the axis for rotation of each part. As stated earlier we want the main body of the satellite to pitch 20 degree with respect to the x-axis and then roll 10 degree with respect to the z-axis. That is why the rotatoion direction of the main body reads like seen above. Remember that this is in the CAD frame, so the main body, wing 1 and 3, which later will be named correctly, rotate with respect to the x-axis and wing 2 and 4 with respect to the z-axis.
+``rotation_directions_CAD`` defines the axis for rotation of each part. Remember that this is in the CAD frame, so the main body, wing 1 and 3, which are name ``right_conrol_surface`` and ``left_control_surface``, rotate with respect to the x-axis and wing 2 and 4 with respect to the z-axis.
 
 ``surface_temperatures__K`` defines the surface temperatures at each part of the satellite. This plays a big part in the gas-surface interaction we are experiencing in the VLEO.
 In this case we set it to 300 Kelvin (~27 degree celsius)
@@ -146,7 +146,7 @@ We only want the main body to rotate 20 degrees with respect to the negative y-a
 - The Direction Cosine Matrice transformes the x-axis from CAD in the -y-axis of the body-fixed frame.
 - In the argument of the showBodies function, we defined a angle of 20 degree
 
-Result: ![alt text](image-1.png)
+Result: ![alt text](images/image-1.png)
 
 ## Calculate the aerodynamic forces and torques for different control surface rotations
 In order to calculate the aerodynamic forces and torques several environmental parameters have to be definded. You can configurate them as you wish. 
@@ -169,14 +169,35 @@ temperature_ratio_method = 1;
 ```
 The temperature and density are computed via the ``atomsnrlsise00`` function defined in the Aerospace Toolbox in Matlab. For further information check the Toolbox Doc.
 
+Before calculating the torques and forces acting on the control surfaces of the satellite you need to preallocate the arrays/matrices, where the aerodynamic force results and the torque matrix will be stored. In this ecample the dimensions are as follows:
+- 3, representing the force components in the body frame
+- num_angles, representing the different control angles, which will be explained below
+- 4 different control surfaces, the wings
+- 2 different attitude cases, which will be explained in the next code snippet
 
+With ``num_angles`` and ``control_surface_angles_rad`` you are able to provide a high resolution range of the control surface deflections. In this example, we want to make sure that the possible aerodynamic configurations from neutral (0) to macimum deflection($\pi$) are covered.
 
 ```Matlab
-% Loops
 num_angles = 101;
 control_surface_angles__rad = linspace(0, pi, num_angles);
 aerodynamic_force_B__N = nan(3, num_angles, 4, 2);
 aerodynamic_torque_B_B__Nm = aerodynamic_force_B__N;
+```
+Now we have this big loop where we distinguish between two attitude cases.
+Weiss nicht eichtig warum....
+For $k=1$ we have no rotation, which can be used as the base case.
+
+$k=2$ presents a rotation of -45 degrees around the y-axis, as defines in `dir = [0; 1; 0]`, which changes the aerodynamic forces due to different angles of attacks.
+
+The satellites attitude is express using the quaternion representation of the rotation to avoid numerical instabilities and singularities. With `cos(attitude_anlge/2)`being the scalar and `sin(attitude_angle/2)* dir`the vector part.
+
+After that you are able to loop over each of the satellites control surfaces, to determine the aerodynamic impact acting on them.
+
+We are evaluating all possible deflection angles from neutral to maximum deflection. ``bodies_rotations_angles__raf(1+i) = current_angle;`` ??? main body isnt aable to rotate?
+
+All these preparotory work leads to the ``vleoAerodynamics`` function defined in a submodule which allows you to finally compute the forces and torques acting on your satellite configuration. 
+
+```Matlab
 for k = 1:2
     dir = [0; 1; 0];
     attitude_angle = (k-1) * (-pi/4);
@@ -206,4 +227,77 @@ for k = 1:2
 end
 ```
 
-Here we loop.....
+## vleoAerodynamics-function
+
+This function is defines in the vleo-areodynamics-core and calculates the aerodynamic force and torque actiong on your satellite in VLEO.
+
+Inputs:
+- attitude_quaternion_BI: 4x1 array of the attitude quaternion from the body frame to the inertial frame
+- rotational_velocity_BI_B__rad_per_s: 3x1 array of the rotational velocity of the satellite with respect to the inertial frame expressed in the body frame
+- velocity_I_I__m_per_s: 3x1 array of the velocity of the satellite with respect to the inertial frame expressed in the inertial frame
+- wind_velocity_I_I__m_per_s: 3x1 array of the velocity of the wind with respect to the inertial frame expressed in the inertial frame
+- density__kg_per_m3: Scalar value of the density of the gas
+- temperature__K: Scalar value of the temperature of the gas
+- particles_mass__kg: Scalar value of the mass of the particles
+- bodies: 1xN cell array of structures containing the vertices, surface centroids,surface normals,rotation direction, rotation hinge point, surface temperatures, surface energy accommodation coefficients, and surface areas of the bodies
+- bodies_rotation_angles__rad: 1xN array of the rotation angles of the bodies
+- temperature_ratio_method: Scalar value of the method to calculate the temperature ratio
+- - 1: Exact term
+- - 2: Hyperthermal approximation 1
+- - 3: Hyperthermal approximation 2
+
+
+## Results
+
+Ging back to our example of simply rotationg the main body around the negative y-axis. Which forces and torques are action on our four control surfaces? 
+
+For visualization of the results we are using the following code: 
+```Matlab
+for k = 1:2
+    figure;
+    tl = tiledlayout('flow');
+    if k == 1
+        figure_title = 'Nominal Attitude';
+    else
+        figure_title = 'Pitched up by 45°';
+    end
+    title(tl, figure_title);
+    ax1 = nexttile;
+    grid on;
+    hold on;
+    xlabel('x');
+    ylabel('y');
+    zlabel('z');
+    title('Individual Force Envelopes');
+    ax1.DataAspectRatio = [1 1 1];
+    legend;
+    ax2 = nexttile;
+    grid on;
+    hold on;
+    xlabel('x');
+    ylabel('y');
+    zlabel('z');
+    title('Individual Torque Envelopes');
+    ax2.DataAspectRatio = [1 1 1];
+    legend;
+    
+    for i = 1:4
+        plot3(ax1, aerodynamic_force_B__N(1,:,i,k), ...
+                    aerodynamic_force_B__N(2,:,i,k), ...
+                    aerodynamic_force_B__N(3,:,i), ...
+                    'DisplayName',['Surface ', num2str(i)]);
+        plot3(ax2, aerodynamic_torque_B_B__Nm(1,:,i,k), ...
+                    aerodynamic_torque_B_B__Nm(2,:,i,k), ...
+                    aerodynamic_torque_B_B__Nm(3,:,i,k), ...
+                    'DisplayName',['Surface ', num2str(i)]);
+    end
+end
+```
+
+And we are getting these results for the two attitude cases we constructed:
+
+Nominal attitude case 
+![alt text](images/results_nominal_attitude.png)
+
+pitched up by 45 degree
+![alt text](images/results_pitchedup_by_45deg.png)
