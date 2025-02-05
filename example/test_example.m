@@ -48,7 +48,7 @@ bodies = importMultipleBodies(object_files, ...
     CoM_CAD);
 
 %% Show imported bodies
-showBodies(bodies, [deg2rad(20), 0, 0, 0 ,0], 0.75, 0.25, ...
+showBodies(bodies, [0, deg2rad(20), 0, deg2rad(20) ,0], 0.75, 0.25, ...
     {(1:12), 12 + (1:12), 24 + (1:12), 36 + (1:12), 48 + (1:12)});
 
 %% Calculate the aerodynamic forces and torques for different control surface rotations
@@ -102,42 +102,99 @@ for k = 1:2
 end
 
 %% Plot forces and torques
+% for k = 1:2
+%     figure;
+%     tl = tiledlayout('flow');
+%     if k == 1
+%         figure_title = 'Nominal Attitude';
+%     else
+%         figure_title = 'Pitched up by 45°';
+%     end
+%     title(tl, figure_title);
+%     ax1 = nexttile;
+%     grid on;
+%     hold on;
+%     xlabel('x');
+%     ylabel('y');
+%     zlabel('z');
+%     title('Individual Force Envelopes');
+%     ax1.DataAspectRatio = [1 1 1];
+%     legend;
+%     ax2 = nexttile;
+%     grid on;
+%     hold on;
+%     xlabel('x');
+%     ylabel('y');
+%     zlabel('z');
+%     title('Individual Torque Envelopes');
+%     ax2.DataAspectRatio = [1 1 1];
+%     legend;
+% 
+%     for i = 1:4
+%         plot3(ax1, aerodynamic_force_B__N(1,:,i,k), ...
+%                     aerodynamic_force_B__N(2,:,i,k), ...
+%                     aerodynamic_force_B__N(3,:,i), ...
+%                     'DisplayName',['Surface ', num2str(i)]);
+%         plot3(ax2, aerodynamic_torque_B_B__Nm(1,:,i,k), ...
+%                     aerodynamic_torque_B_B__Nm(2,:,i,k), ...
+%                     aerodynamic_torque_B_B__Nm(3,:,i,k), ...
+%                     'DisplayName',['Surface ', num2str(i)]);
+%     end
+% end
+
 for k = 1:2
     figure;
-    tl = tiledlayout('flow');
+    tl = tiledlayout('vertical'); % Ensures clear separation of plots
+    
+    % Define the figure title based on attitude
     if k == 1
         figure_title = 'Nominal Attitude';
     else
-        figure_title = 'Pitched up by 45°';
+        figure_title = 'Pitched Up by 45°';
     end
-    title(tl, figure_title);
+    title(tl, figure_title, 'FontSize', 14, 'FontWeight', 'bold');
+    
+    % First subplot: Force Envelopes
     ax1 = nexttile;
     grid on;
     hold on;
-    xlabel('x');
-    ylabel('y');
-    zlabel('z');
-    title('Individual Force Envelopes');
+    xlabel('x', 'FontSize', 12);
+    ylabel('y', 'FontSize', 12);
+    title('Individual Force Envelopes', 'FontSize', 12);
     ax1.DataAspectRatio = [1 1 1];
-    legend;
+    
+    % Second subplot: Torque Envelopes
     ax2 = nexttile;
     grid on;
     hold on;
-    xlabel('x');
-    ylabel('y');
-    zlabel('z');
-    title('Individual Torque Envelopes');
-    ax2.DataAspectRatio = [1 1 1];
-    legend;
+    xlabel('x', 'FontSize', 12);
+    ylabel('y', 'FontSize', 12);
+    title('Individual Torque Envelopes', 'FontSize', 12);
     
+    % Colors and line styles for better visualization
+    colors = lines(4); % MATLAB default color map
+    line_styles = {'-', '--', ':', '-.'}; % Different styles for clarity
+    
+    % Loop through control surfaces
     for i = 1:4
-        plot3(ax1, aerodynamic_force_B__N(1,:,i,k), ...
-                    aerodynamic_force_B__N(2,:,i,k), ...
-                    aerodynamic_force_B__N(3,:,i), ...
-                    'DisplayName',['Surface ', num2str(i)]);
-        plot3(ax2, aerodynamic_torque_B_B__Nm(1,:,i,k), ...
-                    aerodynamic_torque_B_B__Nm(2,:,i,k), ...
-                    aerodynamic_torque_B_B__Nm(3,:,i,k), ...
-                    'DisplayName',['Surface ', num2str(i)]);
+        plot(ax1, aerodynamic_force_B__N(1,:,i,k), ...
+                   aerodynamic_force_B__N(2,:,i,k), ...
+                   'Color', colors(i,:), 'LineStyle', line_styles{i}, ...
+                   'LineWidth', 1.5, 'DisplayName', ['Surface ', num2str(i)]);
+               
+        plot(ax2, aerodynamic_torque_B_B__Nm(1,:,i,k), ...
+                   aerodynamic_torque_B_B__Nm(2,:,i,k), ...
+                   'Color', colors(i,:), 'LineStyle', line_styles{i}, ...
+                   'LineWidth', 1.5, 'DisplayName', ['Surface ', num2str(i)]);
     end
+    
+    % Add legends with location adjustment
+    legend(ax1, 'Location', 'best', 'FontSize', 10);
+    legend(ax2, 'Location', 'best', 'FontSize', 10);
+    
+    % Adjust axis limits for better readability (optional)
+    %xlim(ax1, [min(aerodynamic_force_B__N(1,:,:,:)) max(aerodynamic_force_B__N(1,:,:,:))]);
+    %ylim(ax1, [min(aerodynamic_force_B__N(2,:,:,:)) max(aerodynamic_force_B__N(2,:,:,:))]);
+    xlim(ax2, [min(aerodynamic_torque_B_B__Nm(1,:,:,:)) max(aerodynamic_torque_B_B__Nm(1,:,:,:))]);
+    ylim(ax2, [min(aerodynamic_torque_B_B__Nm(2,:,:,:)) max(aerodynamic_torque_B_B__Nm(2,:,:,:))]);
 end

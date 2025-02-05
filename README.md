@@ -1,15 +1,34 @@
 # How to: VLEO Aerodynamic Tool
 
-## This README is a guidance for the use of the VELO Areodynamic Tool. It explains the varoius commands and resolves questions that could come up while working with the tool
  
+## Clone repository and necessary settings 
+Start VSCode, navigate to the directory you want the work in and open a new terminal. I recommend using git bash.
 
-### Import CAD-Files with importMultipleBodies.m
+ Go to Github and navigate to the vleo-aerodynamics-tool via  https://github.com/ifrunistuttgart/vleo-aerodynamics-tool  and copy the HTTPS-URL of the repository.
 
-After crating your satellite configuration in your preferred CAD-Tool, you can export each part (individually!!!) as an .obj. These objects will be used in the vleo-aerodynamic-tool submodule to accordingly import and handle the satellite components in your simulation.
-Question: Is the order, in which the parts are fed into the function important? Regarding the main object, and the fins, that are attached at different sides of the satellite.
+Go back to your terminal and type:
+```bash
+git clone https://github.com/ifrunistuttgart/vleo-aerodynamics-tool.git
+```
+You are now cloning in the repository.
 
-Yes its very important!
+Your should now be in the main branch and can open the folder and its files with
+```bash
+code .
+```
 
+Before you can start with coding and exploiting the given example you need to initialize the two integrated submodules that are implementing the main functions of the VLEO Aerodynamic Tool. Use: 
+```bash
+git submodule init 
+git submodule update --recursive
+```
+After that you should be able to run the example code and exploit the main functions from the submodules.
+
+
+## Import CAD-Files with importMultipleBodies.m
+
+After crating your satellite configuration in your preferred CAD-Tool, you can export each part **individually** as an .obj-file. These objects will be used in the vleo-aerodynamic-tool submodule to accordingly import and handle the satellite components in your simulation.
+**Caution with the order of your imports**. 
 
 The function ``importMultipleBodies`` has the following output: 
 
@@ -32,53 +51,27 @@ There are several parameters to define as the functions input:
 - CoM_CAD: 3x1 array of the center of mass of the bodies in the CAD frame
 
 
+For a more detailed description of these arguments refer to the [HowTo.md](HowTo.md).
 
 
-#### rotation_hinge_points_CAD
+## Visualize your satellite configuration with showBodies.m
+This function plots the bodies and their surface normals rotated by the given angles. The bodies are plotted in a 3D figure with the surface centroids and normals. In addition,scalar and vectorial values can be given to be plotted on the surfaces. Scalar values are plotted as surface colors and vectorial values are plotted as vectors.
 
+Input arguments:
 
-Definition  
-A point in the CAD model (in local coordinates) around which a specific component (e.g., a control surface) rotates.
+- bodies: 1xN cell array of structures containing the vertices, surface centroids, surface normals, rotation direction, rotation hinge point
+- bodies_rotation_angles__rad: 1xN array of the rotation angles of the bodies
+- face_alpha: scalar, the transparency of the faces
+- scale_normals: scalar, the scale factor for the normals
+- scalar_values: 1xN cell array of scalar values to be plotted on the surfaces
+- vectorial_values: 1xN cell array of vectorial values to be plotted on the surfaces
+- scale_vectorial_values: scalar, the scale factor for the vectorial values
 
-Format  
-A **3×N matrix**, where each column **[x; y; z]** represents the hinge point of a component.  
-The dimensions are in the units of the CAD model (often millimeters or meters).
+If you have problems with the ``showBodies.m``-function, check the dimensions of your imported control surfaces and compare them to the ones in the example. **This simulation can handle a variety of satellite configurations, but if your CAD satellite isn´t imported part by part, errors will occur**
 
-Example  
-```matlab
-rotation_hinge_points_CAD = [0, 0, 0, 0, 0; ...
-                             0, 3.75, 3.75, 3.75, 3.75; ...
-                             0, 0, 0, 0, 0];
-```
+Also remember to scale your ``rotation_directions_CAD`` and ``rotation_hinge_points_CAD`` matrices if the dimensions of your satellite don't fit.
 
-Interpretation  
-- The **first column** `[0; 0; 0]` represents the hinge point of the **main body** (e.g., `body.obj`), which is often fixed.  
-- The **other columns** represent the hinge points of the **control surfaces** (e.g., `right_control_surface.obj`), all rotating around a point on the **y-axis at 3.75**.
-
-
-
-#### rotation_directions_CAD
-
-Definition  
-A vector that indicates the direction of the rotation axis. This describes around which axis the component rotates relative to its hinge point.
-
-Format  
-A **3×N matrix**, where each column **[x; y; z]** represents the direction of the rotation axis in local coordinates.
-
-Example  
-```matlab
-rotation_directions_CAD = [1, 1, 0, -1, 0; ...
-                            0, 0, 0, 0, 0; ...
-                            0, 0, 1, 0, -1];
-```
-
-Interpretation  
-- The **first column** `[1; 0; 0]` describes a rotation around the x-axis for the **main body**.
-- The **second column** `[1; 0; 0]` describes a rotation of the **right control surface** also around the x-axis.
-- The **third column** `[0; 0; 1]` describes a rotation around the **z-axis** (e.g., for the lower control surface).
-- The **negative values** (e.g., `-1` in the fourth column) indicate an opposite rotation direction.
-
-
+Having a 30x30x100 milimeter satellite in CAD and rotation hinge points set at 3.75 as above, the visualization seems empty. Thats not because the showBodies.m-function doesn't work, its a dimensions problem.
 
 
 
@@ -117,19 +110,11 @@ Fehler liegt als wirklich in der Funktion showBodies. Die bodies werden nämlich
 
 Fehler gefunden. Er liegt in der Dimension des main bodies. Dieser sollte so aussehen:
 
- ![alt text](optimal_dimensions.png)
+ ![alt text](images\optimal_dimensions.png)
 
 , wobei hierin die Geometrie des main bodies des Satelliten beschrieben wird. 
 
 Momentan sind die Dimensionen allerdings so: 
 
-![alt text](subobtimal_dimensions.png)
+![alt text](images\subobtimal_dimensions.png)
 
-Ich begebe mich auf die Suche nach dem Ursprung dessen.
-
-Änderung des main-bodies im CAD-Modell. Fehler ist weg und es wird ein plot erstellt. Der Satellit ist darin allerdings noch nicht sichtbar.
-
-
-![alt text](first_try_no_satellite.png)
-
-Trotz erster Änderung der hinge-points und der rotation-direction ändert sich an den body structs nichts.

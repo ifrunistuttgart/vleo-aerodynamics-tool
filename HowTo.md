@@ -1,4 +1,5 @@
-# How to: VLEO Aerodynamic Tool , Example from start to finish
+# How to: VLEO Aerodynamic Tool , simple example
+This HowTo.md serves as a step-by-step guide to the vleo-aerodynamics-tool in the Sadycos project. It provides a structured introduction using a simple example: rotating the main body of a satellite around the negative y-axis. This example illustrates the key steps and commands required to work with the simulation. The primary objective is to compute the aerodynamic forces and torques acting on the satellite's control surfaces.
 
 ## Preparatory work
 
@@ -245,6 +246,10 @@ Inputs:
 - - 1: Exact term
 - - 2: Hyperthermal approximation 1
 - - 3: Hyperthermal approximation 2
+
+Output:
+- aerodynamic_force_B__N: 3x1 array of the aerodynamic force acting on the satellite expressed in the body frame
+- aerodynamic_torque_B_B__Nm: 3x1 array of the aerodynamic torque acting on the satellite with respect to the center of mass (origin of body frame) expressed in the body frame
 
 
 ## Results
