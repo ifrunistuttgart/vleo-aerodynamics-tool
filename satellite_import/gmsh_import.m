@@ -1,0 +1,83 @@
+function body_data = gmsh_import(relative_path)
+        
+        %   Output-Struktur
+        %   - vertices_B: 3×3×n Matrix aller Dreieckspunkte
+        %   - centroids_B: 3×n Matrix der Schwerpunkte
+        %   - normals_B: 3×n Matrix der Normalenvektoren
+        %   - areas_B: 1×n Vektor der Dreiecksflächen
+    
+        old_dir = pwd;
+    
+        [filepath, filename, ext] = fileparts(relative_path);
+ 
+        if ~isempty(filepath)
+            cd(filepath);
+        end
+        
+        clear msh;
+        
+        % Die .m-Datei ausführen
+        run([filename, ext]);
+        
+        if ~exist('msh', 'var')
+            error('Die Gmsh-exportierte Datei enthält keine "msh"-Struktur.');
+        end
+        
+        
+        body_ids = unique(msh.TRIANGLES(:,4));
+
+
+        %% n x 3 - Matrix für jeden body -> 3n x 1 -Spaltenvektor -> 
+        % 3n x 3 - Matrix, der jeder Zeile des Spaltenvektors eine Position (x,y,z) zuordnet ->3 x 3 x n - Matrix mit n Dreiecken mit jeweils 3 nodes mit 3 Positionskoordinaten
+
+        % triangles_per_body = arrayfun(@(b) ...
+        %     msh.TRIANGLES(msh.TRIANGLES(:,4) == b, 1:3), ...
+        %     body_ids, 'UniformOutput', false);
+        
+        % triangle_vectors = cellfun(@(tri) reshape(tri', [], 1), ...
+        %                            triangles_per_body, ...
+        %                            'UniformOutput', false);
+         
+        % node_position = cellfun(@(v) msh.POS(v, :), ...
+        %                         triangle_vectors, ...
+        %                         'UniformOutput', false);
+         
+        % vertices_B = cellfun(@(ver) reshape(ver', [3, 3, size(ver,1)/3]), ...
+        %                      node_position, ...
+        %                      'UniformOutput',false);
+
+        %% alles in einen Befehl
+        vertices_B = arrayfun(@(b) ...
+            reshape(msh.POS(reshape(msh.TRIANGLES(msh.TRIANGLES(:,4) == b, 1:3)', [], 1), :)', ...
+                    [3, 3, nnz(msh.TRIANGLES(:,4) == b)]), ...
+            body_ids, 'UniformOutput', false);
+
+
+        %% Berechnung centroids, normals und areas
+        centroids_B = cellfun(@(V) ...
+            reshape(mean(V, 2), 3, []), ...
+            vertices_B, ...
+            'UniformOutput', false);
+
+        normals_B = cellfun(@(V) ...
+            reshape(cross(V(:,2,:) - V(:,1,:), V(:,3,:) - V(:,1,:)), 3, []), ...
+            vertices_B, ...
+            'UniformOutput', false);
+
+        areas_B = cellfun(@(N) ...
+            0.5 * sqrt(sum(N.^2, 1)), ...
+            normals_B, ...
+            'UniformOutput', false);
+
+        %% Ausgabe
+        % Zurück zum ursprünglichen Verzeichnis
+        cd(old_dir);
+        
+        % Ausgabestruktur erstellen
+        body_data = struct('vertices_B', vertices_B, ...
+                          'centroids_B', centroids_B, ...
+                          'normals_B', normals_B, ...
+                          'areas_B', areas_B);
+        
+end
+   
