@@ -1,3 +1,8 @@
+% Usage:
+%   satellite = import_gmsh('C:/path/to/mesh/full_satellite.m');
+%
+% Make sure the provided .m file contains a 'msh' struct from GMSH export.
+
 function body_data = gmsh_import(relative_path)
         
         %   Output-Struktur
@@ -17,8 +22,12 @@ function body_data = gmsh_import(relative_path)
         clear msh;
         
         % Die .m-Datei ausführen
-        run([filename, ext]);
+        run(fullfile(filepath, [filename, ext]));
         
+        if ~exist(fullfile(filepath, [filename, ext]), 'file')
+            error('File not found: %s', fullfile(filepath, [filename, ext]));
+        end
+
         if ~exist('msh', 'var')
             error('Die Gmsh-exportierte Datei enthält keine "msh"-Struktur.');
         end
@@ -80,4 +89,3 @@ function body_data = gmsh_import(relative_path)
                           'areas_B', areas_B);
         
 end
-   

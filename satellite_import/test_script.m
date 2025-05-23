@@ -3,7 +3,7 @@ close all;
 clc
 
 % Importieren der einzelnen Körperteile
-satellite = gmsh_import('full_satellite.m');
+satellite = import_gmsh('full_satellite.m');
 
 % % Mesh-Visualisierung vorbereiten
 % figure;
