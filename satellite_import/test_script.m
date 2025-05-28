@@ -1,10 +1,11 @@
+import vleo_aerodynamics_core.*
 clear all;
 close all;
 clc
 
 % Importieren der einzelnen Körperteile
 satellite = import_gmsh('full_satellite.m');
-
+showBodies(satellite, [0,0*(0:3)], 0.75, 0.25);
 % % Mesh-Visualisierung vorbereiten
 % figure;
 % hold on;
