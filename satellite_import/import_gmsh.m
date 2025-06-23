@@ -13,10 +13,10 @@
 %
 % Output:
 %   body_data struct with:
-%     - vertices_B:  cell array of size {n_bodies×1}, each cell is 3×3×n_triangles
-%     - centroids_B: cell array {n_bodies×1}, each 3×n matrix of triangle centroids
-%     - normals_B:   cell array {n_bodies×1}, each 3×n matrix of normal vectors
-%     - areas_B:     cell array {n_bodies×1}, each 1×n vector of triangle areas
+%     - vertices_CAD:  cell array of size {n_bodies×1}, each cell is 3×3×n_triangles
+%     - centroids_CAD: cell array {n_bodies×1}, each 3×n matrix of triangle centroids
+%     - normals_CAD:   cell array {n_bodies×1}, each 3×n matrix of normal vectors
+%     - areas_CAD:     cell array {n_bodies×1}, each 1×n vector of triangle areas
 % ========================================================================
 
 function body_data = import_gmsh(relative_path)
@@ -82,10 +82,10 @@ function body_data = import_gmsh(relative_path)
     cd(old_dir);
 
     % Create output structure
-    body_data = struct('vertices_B', vertices_B, ...
-                       'centroids_B', centroids_B, ...
-                       'normals_B', normals_B, ...
-                       'areas_B', areas_B);
+    body_data = struct('vertices_CAD', vertices_B, ...
+                       'centroids_CAD', centroids_B, ...
+                       'normals_CAD', normals_B, ...
+                       'areas_CAD', areas_B);
 
 end
 
