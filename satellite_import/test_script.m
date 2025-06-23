@@ -3,7 +3,7 @@ clear all;
 close all;
 clc
 
-% Importieren der einzelnen Körperteile
+% Import the satellite data using your GMSH importer
 satellite = import_gmsh('full_satellite.m');
 showBodies(satellite, [0,0*(0:3)], 0.75, 0.25);
 % % Mesh-Visualisierung vorbereiten

@@ -30,7 +30,7 @@ Field[1].NumPointsPerCurve = 100;
 
 Field[2] = Threshold;
 Field[2].InField = 1;
-Field[2].SizeMin = 0.001;
+Field[2].SizeMin = 0.01;
 Field[2].SizeMax = 0.05;
 Field[2].DistMin = 0.001;
 Field[2].DistMax = 0.05;
