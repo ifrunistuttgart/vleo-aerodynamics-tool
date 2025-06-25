@@ -19,7 +19,12 @@
 %     - areas_B:     cell array {n_bodies×1}, each 1×n vector of triangle areas
 % ========================================================================
 
-function body_data = import_gmsh(relative_path)
+function bodies = import_gmsh(relative_path)
+
+    % Convert to char if it's a string to ensure compatibility
+    if isstring(relative_path)
+        relative_path = char(relative_path);
+    end
 
     % Save current working directory to restore it later
     old_dir = pwd;
@@ -34,13 +39,17 @@ function body_data = import_gmsh(relative_path)
 
     clear msh;  % Ensure no leftover msh variable from workspace
 
-    % Run the GMSH-exported .m file (should define 'msh')
-    run(fullfile(filepath, [filename, ext]));
-
+    % Create the full file path and ensure it's a char
+    full_file_path = char(fullfile(filepath, [filename, ext]));
+    
     % Check if the file exists
-    if ~exist(fullfile(filepath, [filename, ext]), 'file')
-        error('File not found: %s', fullfile(filepath, [filename, ext]));
+    if ~exist(full_file_path, 'file')
+        error('File not found: %s', full_file_path);
     end
+
+    % Run the GMSH-exported .m file (should define 'msh')
+    % Use the char version to ensure compatibility with run function
+    run(full_file_path);
 
     % Validate msh struct existence
     if ~exist('msh', 'var')
@@ -82,7 +91,7 @@ function body_data = import_gmsh(relative_path)
     cd(old_dir);
 
     % Create output structure
-    body_data = struct('vertices_B', vertices_B, ...
+    bodies = struct('vertices_B', vertices_B, ...
                        'centroids_B', centroids_B, ...
                        'normals_B', normals_B, ...
                        'areas_B', areas_B);
