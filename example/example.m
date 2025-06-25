@@ -54,14 +54,11 @@ bodies = importMultipleBodies(filepaths, ...
     CoM_CAD);
 
 %% Show imported bodies
-% showBodies(bodies, [0, pi/4 * (0:3)], 0.75, 0.25, ...
-%    {(1:12), 12 + (1:12), 24 + (1:12), 36 + (1:12), 48 + (1:12)});
-
 % Calculate based on actual face counts:
 scalar_vals = cell(1, length(bodies));
 for i = 1:length(bodies)
     num_faces = size(bodies{i}.vertices_B, 3);
-    scalar_vals{i} = 1:num_faces;  % or any other values you want
+    scalar_vals{i} = 1:num_faces;
 end
 
 showBodies(bodies, [0, pi/4 * (0:3)], 0.75, 0.25, scalar_vals);
