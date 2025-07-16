@@ -54,9 +54,4 @@ Mesh.Format = 39; // MATLAB-Format
 Background Field = 3;
 
 Mesh 2;
-//+
-Hide "*";
-//+
-Show {
-  Point{1}; Point{2}; Point{3}; Point{4}; Point{5}; Point{6}; Point{7}; Point{8}; Point{13}; Point{14}; Point{15}; Point{16}; Point{19}; Point{20}; Point{23}; Point{24}; Point{25}; Point{26}; Point{27}; Point{28}; Point{33}; Point{34}; Point{37}; Point{38}; Curve{1}; Curve{2}; Curve{3}; Curve{4}; Curve{5}; Curve{6}; Curve{7}; Curve{8}; Curve{9}; Curve{10}; Curve{11}; Curve{12}; Curve{17}; Curve{18}; Curve{19}; Curve{20}; Curve{27}; Curve{31}; Curve{35}; Curve{36}; Curve{37}; Curve{38}; Curve{39}; Curve{40}; Curve{49}; Curve{53}; Curve{57}; Curve{58}; Surface{1}; Surface{2}; Surface{3}; Surface{4}; Surface{5}; Surface{6}; Surface{8}; Surface{16}; Surface{19}; Surface{27}; 
-}
+
