@@ -39,3 +39,15 @@
 
 # debug information files
 *.dwo
+
+# Visual Studio temporary files
+.vs/
+*.user
+*.suo
+
+# Build results
+bin/
+obj/
+/AeroSat/x64/
+/AeroSat/Debug/
+/AeroSat/Release/
