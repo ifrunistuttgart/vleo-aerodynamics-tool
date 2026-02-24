@@ -1,14 +1,16 @@
-#include "Sentman.h"
 #include <cmath>
 #include <numbers>
 #include <stdexcept>
-#include <iostream>
+#define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
+#include <spdlog/spdlog.h>
+#include "Sentman.h"
 
 
 const float BOLTZMANN_CONSTANT__J_PER_K = 1.380649e-23f; // Boltzmann constant in J/K
 
 Sentman::Sentman(int temperature_ratio_method)
     : temperature_ratio_method(temperature_ratio_method) {
+    spdlog::error("Invalid temperature_ratio_method: must be 1, 2, or 3 (value={})", temperature_ratio_method);
     if (temperature_ratio_method < 1 || temperature_ratio_method > 3) {
         throw std::invalid_argument(
             "Invalid temperature_ratio_method: must be 1, 2, or 3"
@@ -33,6 +35,7 @@ int Sentman::calc_aero_force_and_torque(float area__m2, const Eigen::Vector3f& n
     // Velocity magnitude
     const float v_rel_magnitude__m_per_s = v_rel__m_per_s.norm();
     if (v_rel_magnitude__m_per_s < 1e-10f) {
+        spdlog::warn("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.", v_rel_magnitude__m_per_s);
         return 0; // No relative velocity, no force
     }
 
