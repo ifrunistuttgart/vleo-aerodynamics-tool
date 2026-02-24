@@ -3,5 +3,15 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="AeroSat/AeroSat.vcxproj" />
+  <Project Path="AeroSat/Aero_Force_Torque/Aero_Force_Torque.vcxproj" Id="699f3c57-2756-4438-9439-65c40ac06dc2" />
+  <Project Path="AeroSat/Core/Core.vcxproj" Id="9df4eba4-09c4-4001-ba71-caefd1be7bf1" />
+  <Project Path="AeroSat/GSI/GSI.vcxproj" Id="bf65ec8c-8430-4bfc-9ce3-90064cdda70a" />
+  <Project Path="AeroSat/Main/Main.vcxproj" Id="799e6c34-98dc-4e39-95fc-0fcd0f92c98e" />
+  <Project Path="AeroSat/Satellite/Satellite.vcxproj" Id="812e31a6-8e44-4234-95ab-2a83335b60ef">
+    <Build Solution="Debug|x64" Project="false" />
+  </Project>
+  <Project Path="AeroSat/Shader/Shader.vcxproj" Id="1446f28f-8725-49d2-97f0-2a6a295f034c">
+    <Build Solution="Debug|x64" Project="false" />
+  </Project>
+  <Project Path="tests/GSI.Test/GSI.Test.vcxproj" Id="59745d6b-927b-49b2-bd2f-157d149dd416" />
 </Solution>

@@ -1,0 +1,25 @@
+#pragma once
+#include "Aero_Force_Torque/IGSI_Model.h"
+
+// References:
+// [1] L.H.Sentman, “Free Molecule Flow Theory and Its Application to the Determination of Aerodynamic Forces,” Defense Technical Information Center, Fort Belvoir, VA, LMSC-448514, Oct. 1961.
+// [2] F.Tuttas, C.Traub, M.Pfeiffer, and W.Fichter, “Generalized Treatment of Energy Accommodation in Gas-Surface Interactions for Satellite Aerodynamics Applications,” 2024, arXiv.doi:10.48550/ARXIV.2411.11597.
+// [3] G.Koppenwallner, “Energy Accomodation Coefficient and Momentum Transfer Modeling,” HTG-TN-08-11, Dec. 2009.
+
+class Sentman: public IGSIModel {
+public:
+    /**
+     * @param temperature_ratio_method: Scalar value of the method to calculate the temperature ratio
+     *                             1: Exact term according to [1]
+     *                             2: Hyperthermal approximation according to [1]
+     *                             3: Hyperthermal approximation according to [2]
+     */
+    Sentman(int temperature_ratio_method);
+    ~Sentman() override = default;
+
+    int calc_aero_force_and_torque(float area__m2, const Eigen::Vector3f& normal, const Eigen::Vector3f& centroid__m, const Eigen::Vector3f& v_rel__m_per_s, float surf_temp__K, AeroConditions aero, Eigen::Vector3f& aero_force__N, Eigen::Vector3f& aero_torque__Nm) override;
+
+
+private:
+    int temperature_ratio_method;
+};
