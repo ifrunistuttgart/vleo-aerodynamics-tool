@@ -8,7 +8,7 @@ public:
     
     virtual int get_vertices() = 0;
 
-    virtual int get_transformation_vertices() = 0;
+    virtual int get_transformation_matrices() = 0;
 
     virtual int get_areas() = 0;
 

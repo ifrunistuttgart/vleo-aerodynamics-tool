@@ -15,16 +15,24 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Core.h">
+    <ClCompile Include="Satellite.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="AssimpGeometry.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="IGeometry.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="IAero_calculator.h">
+    <ClInclude Include="IKinematics.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="ISatellite.h">
+    <ClInclude Include="Satellite.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="ISatellite_Manipulator.h">
+    <ClInclude Include="AssimpGeometry.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
