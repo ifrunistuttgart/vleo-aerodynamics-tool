@@ -104,6 +104,9 @@
     <ClInclude Include="src\ShadingAlgorithmFactory.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="res\Geometries\tetraeder_vector.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="vcpkg.json" />

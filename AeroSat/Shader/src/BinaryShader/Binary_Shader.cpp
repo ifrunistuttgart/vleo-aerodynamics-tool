@@ -1,6 +1,7 @@
 #pragma once
 #include "src/BinaryShader/Binary_Shader.h"
 #include <iostream>
+#include <algorithm>
 
 //math includes
 #include "glm/glm.hpp"
@@ -36,7 +37,7 @@ BinaryShader::~BinaryShader() {
 
 }
 
-int BinaryShader::set_vertices(float vertices[], size_t lenVertices, unsigned int triangleIDs[], size_t lenTriangleIDs) {
+int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) {
     // framebuffer um ids zu zählen
     GLCall(glGenTextures(1, &m_ID_texture));
     GLCall(glBindTexture(GL_TEXTURE_2D, m_ID_texture));
@@ -67,22 +68,22 @@ int BinaryShader::set_vertices(float vertices[], size_t lenVertices, unsigned in
     GLCall(glCullFace(GL_BACK));
     GLCall(glFrontFace(GL_CCW)); // Counter-clockwise is front-facing
 
-    m_lenVertices = lenVertices;
-	m_numTriangles = lenTriangleIDs;
+    m_lenVertices = vertices.size();
+	m_numTriangles = static_cast<unsigned int>(triangleIDs.size());
 	m_vao.reset(new VertexArray());
     VertexBufferLayout layoutVertices;
     layoutVertices.Push<float>(3);           // vec3 position
-    VertexBuffer vb(vertices, static_cast<unsigned int>(sizeof(float) * lenVertices));
+    VertexBuffer vb(vertices.data(), static_cast<unsigned int>(sizeof(float) * vertices.size()));
     m_vao->AddBuffer(vb, layoutVertices);
 
     VertexBufferLayout layoutIDs;
     layoutIDs.Push<unsigned int>(1);         // triangle ID
-    VertexBuffer vbID(triangleIDs, static_cast<unsigned int>(sizeof(unsigned int) * lenTriangleIDs));
+    VertexBuffer vbID(triangleIDs.data(), static_cast<unsigned int>(sizeof(std::uint32_t) * triangleIDs.size()));
     m_vao->AddBuffer(vbID, layoutIDs);
     return 0;
 }
 
-int BinaryShader::shade_satellite(float triangle_visibility[], glm::vec3 v_rel_hat, float bounding_sphere_radius) {
+int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec3 v_rel_hat, float bounding_sphere_radius) {
     //projection matrices
     glm::vec3 camera_position = -v_rel_hat * bounding_sphere_radius;
 
@@ -98,11 +99,8 @@ int BinaryShader::shade_satellite(float triangle_visibility[], glm::vec3 v_rel_h
         glm::vec3(0.0f, 0.0f, 0.0f), // Look at point
         glm::vec3(0.0f, 1.0f, 0.0f)  //TOdO problem with upvector || to winddirection?
     );
-    //glm::mat4 view = glm::mat4(1.0f); // Identity matrix for view
     glm::mat4 model = glm::mat4(1.0f); // Identity matrix for model
     glm::mat4 u_MVP = orthoProj * view * model;
-
-
 
     // PHASE 1: Zu ID-Framebuffer rendern
     m_frame_buffer->Bind();
@@ -141,10 +139,10 @@ int BinaryShader::shade_satellite(float triangle_visibility[], glm::vec3 v_rel_h
     histogramData = (GLuint*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
 
     if (histogramData) {
-        //std::cout << "Triangle Histogram:" << std::endl;
-        for (size_t i = 0; i < m_numTriangles; i++) {
+        const size_t count = std::min(triangle_visibility.size(), static_cast<size_t>(m_numTriangles));
+        for (size_t i = 0; i < count; i++) {
             if (histogramData[i + 1] > 0) {
-                triangle_visibility[i] = true;
+                triangle_visibility[i] = 1.0f;
                 std::cout << "Triangle ID " << i + 1 << ": " << histogramData[i + 1] << " pixels" << std::endl;
             }
         }

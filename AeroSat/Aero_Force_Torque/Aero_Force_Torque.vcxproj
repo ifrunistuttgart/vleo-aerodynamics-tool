@@ -155,6 +155,10 @@
     <ClInclude Include="IGSI_Model.h" />
     <ClInclude Include="IShadingPipeline.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="vcpkg-configuration.json" />
+    <None Include="vcpkg.json" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

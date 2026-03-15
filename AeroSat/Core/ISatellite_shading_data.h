@@ -1,13 +1,26 @@
 #pragma once
-#include <cstddef>
+#include <cstdint>
+#include <span>
 
 class ISatelliteShadingData {
 public:
     virtual ~ISatelliteShadingData() = default;
 
-    virtual float* get_vertices() = 0;
-    virtual size_t get_num_vertices() = 0;
-    virtual unsigned int* get_triangle_ids() = 0;
-    virtual size_t get_num_triangle_ids() = 0;
+	// each vertex has three values (x, y, z)
+    virtual std::span<const float> get_vertices() = 0;
+
+    // one per vertex
+    virtual  std::span<const std::uint32_t> get_triangle_ids() = 0;
+
+	// three values per triangle 
+    virtual std::span<const float> get_normals() = 0;
+
+    // one value per triangle
+	virtual std::span<const float> get_areas() = 0;
+
+	// three values per triangle
+	virtual std::span<const float> get_centroids() = 0;
+
+    virtual const unsigned int get_num_triangles() = 0;
     virtual float get_bounding_sphere_radius() = 0;
 };

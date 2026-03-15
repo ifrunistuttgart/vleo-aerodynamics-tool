@@ -1,5 +1,7 @@
 #pragma once
 #include <memory>
+#include <span>
+#include <cstdint>
 #include <glm/glm.hpp>
 #include "src/BinaryShader/FrameBuffer.h"
 #include "src/opengl/Shader.h"
@@ -22,6 +24,6 @@ private:
 public:
 	BinaryShader(unsigned int num_pixel);
 	~BinaryShader();
-	int set_vertices(float vertices[], size_t lenVertices, unsigned int triangleIDs[], size_t lenTriangleIDs) override;
-	int shade_satellite(float triangle_visibility[], glm::vec3 v_rel_hat, float bounding_sphere_radius) override;
+	int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) override;
+	int shade_satellite(std::span<float> triangle_visibility, glm::vec3 v_rel_hat, float bounding_sphere_radius) override;
 };

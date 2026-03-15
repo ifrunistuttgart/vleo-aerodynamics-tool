@@ -162,6 +162,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="res\Geometries\tetraeder.h" />
+    <ClInclude Include="res\Geometries\tetraeder_vector.h" />
     <ClInclude Include="res\shaders\Color_shader.h" />
     <ClInclude Include="res\shaders\Compute_shader.h" />
     <ClInclude Include="res\shaders\ID_shader.h" />

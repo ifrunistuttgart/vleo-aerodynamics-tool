@@ -10,11 +10,9 @@ ShadingPipeline::ShadingPipeline(
       m_satellite(satellite) {
     m_context->make_current();
 
-    float* vertices = m_satellite.get_vertices();
-    size_t lenVertices = m_satellite.get_num_vertices();
-    unsigned int* triangleIDs = m_satellite.get_triangle_ids();
-    size_t lenTriangleIDs = m_satellite.get_num_triangle_ids();
-    m_algorithm->set_vertices(vertices, lenVertices, triangleIDs, lenTriangleIDs);
+    std::span<const float> vertices = m_satellite.get_vertices();
+    std::span<const std::uint32_t> triangleIDs = m_satellite.get_triangle_ids();
+    m_algorithm->set_vertices(vertices, triangleIDs);
 }
 
 ShadingPipeline::~ShadingPipeline() {
@@ -24,7 +22,7 @@ ShadingPipeline::~ShadingPipeline() {
     m_algorithm.reset();
 }
 
-int ShadingPipeline::shade(float* triangle_visibility, const Eigen::Vector3f& v_rel_hat) {
+int ShadingPipeline::shade(std::span<float> triangle_visibility, const Eigen::Vector3f& v_rel_hat) {
     m_context->make_current();
 
     float bsr = m_satellite.get_bounding_sphere_radius();
