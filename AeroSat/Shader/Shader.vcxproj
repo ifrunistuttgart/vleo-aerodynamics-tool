@@ -147,7 +147,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\BinaryShader\Binary_Shader2.cpp" />
+    <ClCompile Include="src\opengl\GlfwOpenGLContext.cpp" />
+    <ClCompile Include="src\ShadingAlgorithmFactory.cpp" />
     <ClCompile Include="src\ShadingPipeline.cpp" />
     <ClCompile Include="src\BinaryShader\Binary_Shader.cpp" />
     <ClCompile Include="src\opengl\ComputeShader.cpp" />
@@ -164,7 +165,8 @@
     <ClInclude Include="res\shaders\Color_shader.h" />
     <ClInclude Include="res\shaders\Compute_shader.h" />
     <ClInclude Include="res\shaders\ID_shader.h" />
-    <ClInclude Include="src\BinaryShader\Binary_Shader2.h" />
+    <ClInclude Include="src\opengl\GlfwOpenGLContext.h" />
+    <ClInclude Include="src\ShadingAlgorithmFactory.h" />
     <ClInclude Include="src\ShadingPipeline.h" />
     <ClInclude Include="src\BinaryShader\Binary_Shader.h" />
     <ClInclude Include="src\IShading_Algorithm.h" />

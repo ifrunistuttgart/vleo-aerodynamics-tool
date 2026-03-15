@@ -18,6 +18,25 @@
 BinaryShader::BinaryShader(unsigned int num_pixel)
     : NUM_PIXEL(num_pixel)
 {
+
+}
+
+BinaryShader::~BinaryShader() {
+    m_compute_shader.reset();
+    m_shader.reset();
+    m_frame_buffer.reset();
+    m_vao.reset();
+
+    if (m_ID_texture != 0) {
+        GLCall(glDeleteTextures(1, &m_ID_texture));
+    }
+    if (m_histogramBuffer != 0) {
+        GLCall(glDeleteBuffers(1, &m_histogramBuffer));
+    }
+
+}
+
+int BinaryShader::set_vertices(float vertices[], size_t lenVertices, unsigned int triangleIDs[], size_t lenTriangleIDs) {
     // framebuffer um ids zu zählen
     GLCall(glGenTextures(1, &m_ID_texture));
     GLCall(glBindTexture(GL_TEXTURE_2D, m_ID_texture));
@@ -47,24 +66,7 @@ BinaryShader::BinaryShader(unsigned int num_pixel)
     GLCall(glEnable(GL_CULL_FACE));
     GLCall(glCullFace(GL_BACK));
     GLCall(glFrontFace(GL_CCW)); // Counter-clockwise is front-facing
-}
 
-BinaryShader::~BinaryShader() {
-    m_compute_shader.reset();
-    m_shader.reset();
-    m_frame_buffer.reset();
-    m_vao.reset();
-
-    if (m_ID_texture != 0) {
-        GLCall(glDeleteTextures(1, &m_ID_texture));
-    }
-    if (m_histogramBuffer != 0) {
-        GLCall(glDeleteBuffers(1, &m_histogramBuffer));
-    }
-
-}
-
-int BinaryShader::set_vertices(float vertices[], size_t lenVertices, unsigned int triangleIDs[], size_t lenTriangleIDs) {
     m_lenVertices = lenVertices;
 	m_numTriangles = lenTriangleIDs;
 	m_vao.reset(new VertexArray());

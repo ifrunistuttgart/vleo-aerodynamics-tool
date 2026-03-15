@@ -45,7 +45,10 @@
     <ClCompile Include="src\ShadingPipeline.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="src\BinaryShader\Binary_Shader2.cpp">
+    <ClCompile Include="src\opengl\GlfwOpenGLContext.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ShadingAlgorithmFactory.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
@@ -95,7 +98,10 @@
     <ClInclude Include="res\Geometries\tetraeder.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="src\BinaryShader\Binary_Shader2.h">
+    <ClInclude Include="src\opengl\GlfwOpenGLContext.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ShadingAlgorithmFactory.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
