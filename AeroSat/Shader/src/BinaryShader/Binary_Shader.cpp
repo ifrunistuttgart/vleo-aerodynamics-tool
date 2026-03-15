@@ -15,9 +15,9 @@
 #include "res/shaders/Compute_shader.h"
 #include "src/opengl/VertexBufferLayout.h"
 
-BinaryShader::BinaryShader(float vertices[], size_t lenVertices, unsigned int triangleIDs[], size_t lenTriangleIDs)
-    : m_lenVertices(lenVertices) {
-
+BinaryShader::BinaryShader(unsigned int num_pixel)
+    : NUM_PIXEL(num_pixel)
+{
     // framebuffer um ids zu zählen
     GLCall(glGenTextures(1, &m_ID_texture));
     GLCall(glBindTexture(GL_TEXTURE_2D, m_ID_texture));
@@ -31,17 +31,6 @@ BinaryShader::BinaryShader(float vertices[], size_t lenVertices, unsigned int tr
     GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_histogramBuffer));
     GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER, MAX_TRIANGLES * sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW));
     GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
-    
-	m_vao.reset(new VertexArray());
-    VertexBufferLayout layoutVertices;
-    layoutVertices.Push<float>(3);           // vec3 position
-    VertexBuffer vb(vertices, static_cast<unsigned int>(sizeof(float) * lenVertices));
-    m_vao->AddBuffer(vb, layoutVertices);
-
-    VertexBufferLayout layoutIDs;
-    layoutIDs.Push<unsigned int>(1);         // triangle ID
-    VertexBuffer vbID(triangleIDs, static_cast<unsigned int>(sizeof(unsigned int) * lenTriangleIDs));
-    m_vao->AddBuffer(vbID, layoutIDs);
 
     // Create shader program from embedded sources
     m_shader.reset(new Shader(ID_vertex_shader, ID_fragment_shader, true));
@@ -64,7 +53,7 @@ BinaryShader::~BinaryShader() {
     m_compute_shader.reset();
     m_shader.reset();
     m_frame_buffer.reset();
-	m_vao.reset();
+    m_vao.reset();
 
     if (m_ID_texture != 0) {
         GLCall(glDeleteTextures(1, &m_ID_texture));
@@ -72,15 +61,28 @@ BinaryShader::~BinaryShader() {
     if (m_histogramBuffer != 0) {
         GLCall(glDeleteBuffers(1, &m_histogramBuffer));
     }
-    //if (m_VAO != 0) {
-    //    GLCall(glDeleteVertexArrays(1, &m_VAO));
-    //}
 
 }
 
-int BinaryShader::shade_satellite(float isTriangleVisible[], size_t lenIsTriangleVisible, glm::vec3 windDir, float bounding_sphere_radius) {
+int BinaryShader::set_vertices(float vertices[], size_t lenVertices, unsigned int triangleIDs[], size_t lenTriangleIDs) {
+    m_lenVertices = lenVertices;
+	m_numTriangles = lenTriangleIDs;
+	m_vao.reset(new VertexArray());
+    VertexBufferLayout layoutVertices;
+    layoutVertices.Push<float>(3);           // vec3 position
+    VertexBuffer vb(vertices, static_cast<unsigned int>(sizeof(float) * lenVertices));
+    m_vao->AddBuffer(vb, layoutVertices);
+
+    VertexBufferLayout layoutIDs;
+    layoutIDs.Push<unsigned int>(1);         // triangle ID
+    VertexBuffer vbID(triangleIDs, static_cast<unsigned int>(sizeof(unsigned int) * lenTriangleIDs));
+    m_vao->AddBuffer(vbID, layoutIDs);
+    return 0;
+}
+
+int BinaryShader::shade_satellite(float triangle_visibility[], glm::vec3 v_rel_hat, float bounding_sphere_radius) {
     //projection matrices
-    glm::vec3 camera_position = -windDir * bounding_sphere_radius;
+    glm::vec3 camera_position = -v_rel_hat * bounding_sphere_radius;
 
     glm::mat4 orthoProj = glm::ortho(-bounding_sphere_radius,
         bounding_sphere_radius,
@@ -108,7 +110,6 @@ int BinaryShader::shade_satellite(float isTriangleVisible[], size_t lenIsTriangl
     m_shader->Bind();
 	m_vao->Bind();
     m_shader->setUniformMat4f("u_MVP", u_MVP);
-    std::cout << "Drawing " << m_lenVertices / 3 << " vertices (" << (m_lenVertices / 9) << " triangles)" << std::endl;
     glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(m_lenVertices / 3));
 
     // Histogram-Buffer leeren
@@ -139,9 +140,9 @@ int BinaryShader::shade_satellite(float isTriangleVisible[], size_t lenIsTriangl
 
     if (histogramData) {
         //std::cout << "Triangle Histogram:" << std::endl;
-        for (size_t i = 0; i < lenIsTriangleVisible; i++) {
+        for (size_t i = 0; i < m_numTriangles; i++) {
             if (histogramData[i + 1] > 0) {
-                isTriangleVisible[i] = true;
+                triangle_visibility[i] = true;
                 std::cout << "Triangle ID " << i + 1 << ": " << histogramData[i + 1] << " pixels" << std::endl;
             }
         }
