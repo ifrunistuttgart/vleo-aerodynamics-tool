@@ -1,12 +1,8 @@
 {
-  "name": "aerosat",
-  "version": "1.0.0",
   "dependencies": [
     "eigen3",
     "glew",
     "glm",
-    "gtest",
-    "spdlog",
     "glfw3"
   ]
 }

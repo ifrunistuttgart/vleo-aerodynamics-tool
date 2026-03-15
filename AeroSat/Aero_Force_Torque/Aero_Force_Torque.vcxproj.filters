@@ -26,7 +26,7 @@
     <ClInclude Include="IGSI_Model.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="IShader.h">
+    <ClInclude Include="IShadingPipeline.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

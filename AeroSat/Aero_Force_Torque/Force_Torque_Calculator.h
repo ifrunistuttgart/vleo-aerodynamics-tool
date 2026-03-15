@@ -1,10 +1,8 @@
 #pragma once
 #include "Core/IAero_calculator.h"
 #include "Core/ISatellite.h"
-#include "IShader.h"
+#include "IShadingPipeline.h"
 #include "Core/Core.h"
-#include <eigen3/Eigen/Dense>
-
 
 class ForceTorqueCalculator : public IAeroCalculator {
 public:
@@ -16,6 +14,6 @@ public:
     int change_satellite(ISatellite* satellite) override;
 
 private:
-    IShader* shader;
+    IShadingPipeline* shading_pipeline;
     ISatellite* satellite; // Zeiger statt Instanz
 };

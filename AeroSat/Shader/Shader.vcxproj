@@ -21,19 +21,20 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{9df4eba4-09c4-4001-ba71-caefd1be7bf1}</ProjectGuid>
-    <RootNamespace>Core</RootNamespace>
+    <ProjectGuid>{1446f28f-8725-49d2-97f0-2a6a295f034c}</ProjectGuid>
+    <RootNamespace>Shader</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>ShadingPipeline</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -92,6 +93,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -107,6 +109,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -120,6 +123,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -135,6 +139,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -142,11 +147,44 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Core.h" />
-    <ClInclude Include="IAero_calculator.h" />
-    <ClInclude Include="ISatellite.h" />
-    <ClInclude Include="ISatellite_Manipulator.h" />
-    <ClInclude Include="ISatellite_shading_data.h" />
+    <ClCompile Include="src\BinaryShader\Binary_Shader2.cpp" />
+    <ClCompile Include="src\ShadingPipeline.cpp" />
+    <ClCompile Include="src\BinaryShader\Binary_Shader.cpp" />
+    <ClCompile Include="src\opengl\ComputeShader.cpp" />
+    <ClCompile Include="src\BinaryShader\FrameBuffer.cpp" />
+    <ClCompile Include="src\opengl\GLHelpers.cpp" />
+    <ClCompile Include="src\opengl\IndesBuffer.cpp" />
+    <ClCompile Include="src\opengl\Shader.cpp" />
+    <ClCompile Include="src\opengl\VertexArray.cpp" />
+    <ClCompile Include="src\opengl\VertexBuffer.cpp" />
+    <ClCompile Include="src\opengl\VertexBufferLayout.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="res\Geometries\tetraeder.h" />
+    <ClInclude Include="res\shaders\Color_shader.h" />
+    <ClInclude Include="res\shaders\Compute_shader.h" />
+    <ClInclude Include="res\shaders\ID_shader.h" />
+    <ClInclude Include="src\BinaryShader\Binary_Shader2.h" />
+    <ClInclude Include="src\ShadingPipeline.h" />
+    <ClInclude Include="src\BinaryShader\Binary_Shader.h" />
+    <ClInclude Include="src\IShading_Algorithm.h" />
+    <ClInclude Include="src\opengl\ComputeShader.h" />
+    <ClInclude Include="src\BinaryShader\FrameBuffer.h" />
+    <ClInclude Include="src\opengl\GLHelpers.h" />
+    <ClInclude Include="src\opengl\IndexBuffer.h" />
+    <ClInclude Include="src\opengl\Shader.h" />
+    <ClInclude Include="src\opengl\VertexArray.h" />
+    <ClInclude Include="src\opengl\VertexBuffer.h" />
+    <ClInclude Include="src\opengl\VertexBufferLayout.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Aero_Force_Torque\Aero_Force_Torque.vcxproj">
+      <Project>{699f3c57-2756-4438-9439-65c40ac06dc2}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="vcpkg-configuration.json" />
+    <None Include="vcpkg.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
