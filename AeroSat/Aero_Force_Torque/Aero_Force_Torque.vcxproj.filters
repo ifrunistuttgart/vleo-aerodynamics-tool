@@ -15,12 +15,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Force_Torque_Calculator.cpp">
+    <ClCompile Include="Hybrid_force_torque_calculator.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Force_Torque_Calculator.h">
+    <ClInclude Include="Hybrid_force_torque_calculator.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="IGSI_Model.h">

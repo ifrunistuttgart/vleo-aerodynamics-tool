@@ -4,9 +4,9 @@
   "dependencies": [
     "eigen3",
     "glew",
+    "glfw3",
     "glm",
     "gtest",
-    "spdlog",
-    "glfw3"
+    "spdlog"
   ]
 }

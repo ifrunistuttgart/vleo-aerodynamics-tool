@@ -148,10 +148,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Force_Torque_Calculator.cpp" />
+    <ClCompile Include="Hybrid_force_torque_calculator.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Force_Torque_Calculator.h" />
+    <ClInclude Include="Hybrid_force_torque_calculator.h" />
     <ClInclude Include="IGSI_Model.h" />
     <ClInclude Include="IShadingPipeline.h" />
   </ItemGroup>
