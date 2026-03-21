@@ -10,8 +10,8 @@ const float BOLTZMANN_CONSTANT__J_PER_K = 1.380649e-23f; // Boltzmann constant i
 
 Sentman::Sentman(int temperature_ratio_method)
     : temperature_ratio_method(temperature_ratio_method) {
-    spdlog::error("Invalid temperature_ratio_method: must be 1, 2, or 3 (value={})", temperature_ratio_method);
     if (temperature_ratio_method < 1 || temperature_ratio_method > 3) {
+        spdlog::error("Invalid temperature_ratio_method: must be 1, 2, or 3 (value={})", temperature_ratio_method);
         throw std::invalid_argument(
             "Invalid temperature_ratio_method: must be 1, 2, or 3"
         );
@@ -30,10 +30,10 @@ int Sentman::calc_aero_force_and_torque(float area__m2, const Eigen::Vector3f& n
     const float temperature_w__K = surf_temp__K;
     const float alpha = aero.alpha_e;
     const float particle_mass__kg = aero.particle_mass__kg;
-
+	Eigen::Vector3f v_rel_inv__m_per_s = -v_rel__m_per_s; // Invert velocity to match Sentman's convention (velocity of gas relative to surface)
 
     // Velocity magnitude
-    const float v_rel_magnitude__m_per_s = v_rel__m_per_s.norm();
+    const float v_rel_magnitude__m_per_s = v_rel_inv__m_per_s.norm();
     if (v_rel_magnitude__m_per_s < 1e-10f) {
         spdlog::warn("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.", v_rel_magnitude__m_per_s);
         return 0; // No relative velocity, no force
@@ -94,7 +94,7 @@ int Sentman::calc_aero_force_and_torque(float area__m2, const Eigen::Vector3f& n
     const float term_2 = molecular_speed_ratio * g2;
 
     // Normalized velocity
-    const Eigen::Vector3f v_rel_normalized = v_rel__m_per_s / v_rel_magnitude__m_per_s;
+    const Eigen::Vector3f v_rel_normalized = v_rel_inv__m_per_s / v_rel_magnitude__m_per_s;
 
     // Pressure vector
     const Eigen::Vector3f pressure__n_per_m2 = pressure_coeff * (term_1 * normal + term_2 * (v_rel_normalized + cos_delta * normal));

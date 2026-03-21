@@ -49,6 +49,53 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod1) {
 	EXPECT_TRUE(torque.isApprox(expected_torque, 1e-3f)) << "  Actual torque: [" << torque.x() << ", " << torque.y() << ", " << torque.z() << "]\n";
 }
 
+TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
+    // Arrange
+    Sentman sentman{ 1 };
+    Eigen::Vector3f normal(0.0f, 0.0f, -1.0f);
+    normal = normal.normalized();
+    Eigen::Vector3f centroid(-0.166667f, 0.0f, 0.0f);
+    Eigen::Vector3f velocity(7800.0f, 0.0f, 0.0f);
+    auto conditions = create_leo_conditions();
+
+    Eigen::Vector3f force;
+    Eigen::Vector3f torque;
+    Eigen::Vector3f expected_force = Eigen::Vector3f(-0.0068f, 0.0f, 0.0022f) * 1e-3f;
+    Eigen::Vector3f expected_torque = Eigen::Vector3f(0.0f, 0.0036f, 0.0f) * 1e-4f;
+
+    // Act
+    sentman.calc_aero_force_and_torque(
+        0.25f, normal, centroid, velocity, 300.0f, conditions, force, torque
+    );
+
+    // Assert
+    EXPECT_TRUE(force.isApprox(expected_force, 1e-2f)) << "force [" << force.x() << ", " << force.y() << ", " << force.z() << "expected" << expected_force.x() <<", " << expected_force.y() << ", " << expected_force.z() << "]\n";
+    EXPECT_TRUE(torque.isApprox(expected_torque, 1e-2f)) << "  Actual torque: [" << torque.x() << ", " << torque.y() << ", " << torque.z() << "]\n";
+}
+
+TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
+    // Arrange
+    Sentman sentman{ 1 };
+    Eigen::Vector3f normal(1.0f, 0.0f, 0.0f);
+    normal = normal.normalized();
+    Eigen::Vector3f centroid(0.0f, 0.0f, 0.1666667f);
+    Eigen::Vector3f velocity(7800.0f, 0.0f, 0.0f);
+    auto conditions = create_leo_conditions();
+
+    Eigen::Vector3f force;
+    Eigen::Vector3f torque;
+    Eigen::Vector3f expected_torque = Eigen::Vector3f(0.0f, -0.3857f, 0.0f) * 1e-4f;
+    Eigen::Vector3f expected_force = Eigen::Vector3f(-0.2314f, 0.0f, 0.0f) * 1e-3f;
+
+    // Act
+    sentman.calc_aero_force_and_torque(
+        0.25f, normal, centroid, velocity, 300.0f, conditions, force, torque
+    );
+
+    // Assert
+    EXPECT_TRUE(force.isApprox(expected_force, 1e-2f)) << "  Actual force: [" << force.x() << ", " << force.y() << ", " << force.z() << "]\n";
+    EXPECT_TRUE(torque.isApprox(expected_torque, 1e-2f)) << "  Actual torque: [" << torque.x() << ", " << torque.y() << ", " << torque.z() << "]\n";
+}
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
     // Arrange
     Sentman sentman{ 2 };
