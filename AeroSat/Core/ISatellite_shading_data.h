@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <span>
+#include <glm/glm.hpp>
+
 
 class ISatelliteShadingData {
 public:
@@ -21,6 +23,8 @@ public:
 	// three values per triangle
 	virtual std::span<const float> get_centroids() = 0;
 
+	virtual std::span<const glm::mat4> get_model_matrices() = 0;
+	virtual std::span<const unsigned int> get_num_triangles_per_mesh() = 0;
     virtual const unsigned int get_num_triangles() = 0;
     virtual float get_bounding_sphere_radius() = 0;
 };

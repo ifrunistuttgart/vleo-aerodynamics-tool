@@ -146,14 +146,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AssimpGeometry.cpp" />
-    <ClCompile Include="Satellite.cpp" />
+    <ClCompile Include="StaticMeshSatellite.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AssimpGeometry.h" />
-    <ClInclude Include="IGeometry.h" />
-    <ClInclude Include="IKinematics.h" />
-    <ClInclude Include="Satellite.h" />
+    <ClInclude Include="StaticMeshSatellite.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
