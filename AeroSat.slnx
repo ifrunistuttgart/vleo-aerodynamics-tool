@@ -9,6 +9,8 @@
   <Project Path="AeroSat/Main/Main.vcxproj" Id="799e6c34-98dc-4e39-95fc-0fcd0f92c98e" />
   <Project Path="AeroSat/Satellite/Satellite.vcxproj" Id="812e31a6-8e44-4234-95ab-2a83335b60ef" />
   <Project Path="AeroSat/Shader/Shader.vcxproj" Id="1446f28f-8725-49d2-97f0-2a6a295f034c" />
+  <Project Path="tests/Aero_Force_Torque.test/Aero_Force_Torque.test.vcxproj" Id="55cea0ca-202f-4558-b571-2d09680ebbbc" />
   <Project Path="tests/GSI.Test/GSI.Test.vcxproj" Id="59745d6b-927b-49b2-bd2f-157d149dd416" />
+  <Project Path="tests/Satellite.test/Satellite.test.vcxproj" Id="5cc57cb1-45e1-45b7-9f0b-331981a00bc3" />
   <Project Path="tests/ShaderPipeline.Test/ShaderPipeline.Test.vcxproj" Id="4c160f03-fa45-4d91-8a78-35e70102b011" />
 </Solution>

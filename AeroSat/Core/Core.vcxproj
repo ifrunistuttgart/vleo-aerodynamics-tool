@@ -144,7 +144,6 @@
   <ItemGroup>
     <ClInclude Include="Core.h" />
     <ClInclude Include="IAero_calculator.h" />
-    <ClInclude Include="ISatellite.h" />
     <ClInclude Include="ISatellite_Manipulator.h" />
     <ClInclude Include="ISatellite_shading_data.h" />
   </ItemGroup>

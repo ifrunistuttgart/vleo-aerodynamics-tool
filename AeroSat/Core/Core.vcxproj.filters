@@ -21,9 +21,6 @@
     <ClInclude Include="IAero_calculator.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="ISatellite.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="ISatellite_Manipulator.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
