@@ -127,6 +127,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="integration_test_pipeline.cpp" />
     <ClCompile Include="test_binary_shader.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -134,9 +135,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="test_pipeline.cpp" />
+    <ClCompile Include="unit_test_pipeline.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\AeroSat\Satellite\Satellite.vcxproj">
+      <Project>{812e31a6-8e44-4234-95ab-2a83335b60ef}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\AeroSat\Shader\Shader.vcxproj">
       <Project>{1446f28f-8725-49d2-97f0-2a6a295f034c}</Project>
     </ProjectReference>

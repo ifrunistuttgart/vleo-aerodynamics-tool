@@ -85,7 +85,7 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
 
 int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec3 v_rel_hat, float bounding_sphere_radius) {
     //projection matrices
-    glm::vec3 camera_position = -v_rel_hat * bounding_sphere_radius;
+    glm::vec3 camera_position = v_rel_hat * bounding_sphere_radius;
 
     glm::mat4 orthoProj = glm::ortho(-bounding_sphere_radius,
         bounding_sphere_radius,

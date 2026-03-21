@@ -11,25 +11,25 @@ static const std::array<float, 3> v3 = { -0.5f, 0.0f, 0.0f };  // Back
 
 // Tetrahedron vertices without index buffer - 4 triangular faces
 static const std::vector<float> vertices = {
-    // Face 1: bottom (v0, v1, v3)
+    // Face 1: bottom (v0, v3, v1)
     v0[0], v0[1], v0[2],
+    v3[0], v3[1], v3[2],
+    v1[0], v1[1], v1[2],
+
+    // Face 2: right back (v1, v3, v2)
     v1[0], v1[1], v1[2],
     v3[0], v3[1], v3[2],
+    v2[0], v2[1], v2[2],
 
-    // Face 2: right back (v1, v2, v3)
+    // Face 3: left back (v2, v3, v0)
+    v2[0], v2[1], v2[2],
+    v3[0], v3[1], v3[2],
+    v0[0], v0[1], v0[2],
+
+    // Face 4: front (v0, v1, v2)
+    v0[0], v0[1], v0[2],
     v1[0], v1[1], v1[2],
-    v2[0], v2[1], v2[2],
-    v3[0], v3[1], v3[2],
-
-    // Face 3: left back (v2, v0, v3)
-    v2[0], v2[1], v2[2],
-    v0[0], v0[1], v0[2],
-    v3[0], v3[1], v3[2],
-
-    // Face 4: front (v0, v2, v1)
-    v0[0], v0[1], v0[2],
-    v2[0], v2[1], v2[2],
-    v1[0], v1[1], v1[2]
+    v2[0], v2[1], v2[2]
 };
 
 static const std::vector<std::uint32_t> triangleIDs = {

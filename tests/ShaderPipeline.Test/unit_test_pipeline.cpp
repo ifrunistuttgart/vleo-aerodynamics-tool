@@ -32,6 +32,16 @@ public:
         return std::span<const float>();
     }
 
+    std::span<const glm::mat4> get_model_matrices() override {
+        std::vector<glm::mat4> model_matrices{ glm::mat4(1.0f) }; // Identity matrix for the single mesh
+        return std::span<const glm::mat4>(model_matrices.data(), model_matrices.size());
+	}
+
+    std::span<const unsigned int> get_num_triangles_per_mesh() override {
+        std::vector<unsigned int> num_triangles_per_mesh{ static_cast<unsigned int>(triangleIDs.size()) };
+        return std::span<const unsigned int>(num_triangles_per_mesh.data(), num_triangles_per_mesh.size());
+	}
+
     const unsigned int get_num_triangles() override {
         return static_cast<unsigned int>(triangleIDs.size());
     }

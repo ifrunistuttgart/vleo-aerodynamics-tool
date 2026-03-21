@@ -112,4 +112,7 @@
     <None Include="vcpkg.json" />
     <None Include="vcpkg-configuration.json" />
   </ItemGroup>
+  <ItemGroup>
+    <Object Include="res\Geometries\tetraeder.obj" />
+  </ItemGroup>
 </Project>
