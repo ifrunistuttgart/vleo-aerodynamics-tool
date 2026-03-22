@@ -38,6 +38,7 @@ BinaryShader::~BinaryShader() {
 }
 
 int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) {
+	m_numTriangles = static_cast<unsigned int>(triangleIDs.size() / 3); //assume 3 vertices per triangle
     // framebuffer um ids zu zählen
     GLCall(glGenTextures(1, &m_ID_texture));
     GLCall(glBindTexture(GL_TEXTURE_2D, m_ID_texture));
@@ -49,7 +50,7 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
     // histogrambuffer für computeshader um pixel zu zählen
     GLCall(glGenBuffers(1, &m_histogramBuffer));
     GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_histogramBuffer));
-    GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER, MAX_TRIANGLES * sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW));
+	GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER, (m_numTriangles + 1) * sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW)); // +1 für Hintergrund (ID 0)
     GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
 
     // Create shader program from embedded sources
@@ -116,7 +117,7 @@ int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec
     GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_histogramBuffer));
     GLuint* histogramData = (GLuint*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
     if (histogramData) {
-        memset(histogramData, 0, MAX_TRIANGLES * sizeof(GLuint));
+        memset(histogramData, 0, (m_numTriangles + 1) * sizeof(GLuint)); // +1 für Hintergrund (ID 0)
         GLCall(glUnmapBuffer(GL_SHADER_STORAGE_BUFFER));
     }
 
@@ -139,7 +140,7 @@ int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec
     histogramData = (GLuint*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
 
     if (histogramData) {
-        const size_t count = std::min(triangle_visibility.size(), static_cast<size_t>(m_numTriangles));
+		const size_t count = std::min(triangle_visibility.size(), static_cast<size_t>(m_numTriangles)); // TODO: waring when triangle_visibility.size() < m_numTriangles
         for (size_t i = 0; i < count; i++) {
             if (histogramData[i + 1] > 0) {
                 triangle_visibility[i] = 1.0f;
