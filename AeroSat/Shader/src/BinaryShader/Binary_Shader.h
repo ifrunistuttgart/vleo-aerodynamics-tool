@@ -15,7 +15,7 @@ private:
 	std::unique_ptr<Shader> m_shader;
 	std::unique_ptr<ComputeShader> m_compute_shader;
 	std::unique_ptr<VertexArray> m_vao;
-	const int MAX_TRIANGLES = 65536 - 1;
+	const unsigned int MAX_TRIANGLES = 2u << 28 -1; //limit histogrambuffer size to about 1GB
 	size_t m_lenVertices = 0;
 	unsigned int m_numTriangles = 0;
 	unsigned int m_ID_texture = 0;

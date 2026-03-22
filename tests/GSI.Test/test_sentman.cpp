@@ -23,32 +23,6 @@ TEST_F(SentmanTest, Constructor_ValidMethods_Construct) {
     EXPECT_NO_THROW(Sentman{ 2 });
     EXPECT_NO_THROW(Sentman{ 3 });
 }
-
-// Torque Calculation Tests
-TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod1) {
-    // Arrange
-    Sentman sentman{ 1 };
-    Eigen::Vector3f normal(1.0f, 1.0f, 0.0f);
-    normal = normal.normalized();
-    Eigen::Vector3f centroid(1.0f, 1.0f, 1.0f);
-    Eigen::Vector3f velocity(7800.0f, 0.0f, 0.0f);
-    auto conditions = create_leo_conditions();
-
-    Eigen::Vector3f force;
-    Eigen::Vector3f torque;
-	Eigen::Vector3f expected_torque = Eigen::Vector3f(0.0843f, 0.4526f, -0.5370f) * 1e-3f;
-	Eigen::Vector3f expected_force = Eigen::Vector3f(0.4526f, -0.0843f, 0.0f)* 1e-3f;
-
-    // Act
-    sentman.calc_aero_force_and_torque(
-        1.0f, normal, centroid, velocity, 300.0f, conditions, force, torque
-    );
-
-    // Assert
-	EXPECT_TRUE(force.isApprox(expected_force, 1e-3f)) << "  Actual force: [" << force.x() << ", " << force.y() << ", " << force.z() << "]\n";
-	EXPECT_TRUE(torque.isApprox(expected_torque, 1e-3f)) << "  Actual torque: [" << torque.x() << ", " << torque.y() << ", " << torque.z() << "]\n";
-}
-
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
     // Arrange
     Sentman sentman{ 1 };

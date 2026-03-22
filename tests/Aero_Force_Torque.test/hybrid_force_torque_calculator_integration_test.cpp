@@ -37,6 +37,7 @@ protected:
 
     void SetUp() override {
         std::string obj_path = GetTestDataPath("tetraeder.obj");
+        //std::string obj_path = GetTestDataPath("International Space Station.obj");
         std::cout << "[TEST] Loading OBJ from: " << obj_path << std::endl;
         satellite = std::make_unique<StaticMeshSatellite>(obj_path);
         std::cout << "[TEST] Loaded " << satellite->get_num_triangles() << " triangles" << std::endl;
@@ -53,20 +54,6 @@ TEST_F(HybridForceTorqueIntegrationTest, TestShading) {
 	std::cout << "[TEST] Calculating aero torque and force..." << std::endl;
 	AeroConditions conditions = create_leo_conditions();
 	force_torque_calculator->calc_aero_torque_force(v_rel__m_per_s,300.0f, conditions, torque, force);
-    //refernce values
-    //aeroforce
-    //    1.0e-03 *
-
-    //    0.2212
-    //    0
-    //    - 0.0224
-
-    //    aerotorque
-    //    1.0e-04 *
-
-    //    0
-    //    0.3200
-    //    0
 
 	EXPECT_NEAR(force.x(), -0.2382e-3f, 1e-5f);
 	EXPECT_NEAR(force.y(), 0.0f, 1e-5f);

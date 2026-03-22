@@ -48,17 +48,9 @@ int HybridForceTorqueCalculator::calc_aero_torque_force(const Eigen::Vector3f& v
 		{
 			visibility = triangle_visibility[i];
 		}
-		std::cout << "Triangle " << i << ": visibility = " << visibility << std::endl;
-		//normal
-		std::cout << "  Normal = [" << normal.x() << ", " << normal.y() << ", " << normal.z() << "]" << std::endl;	
-		//centroid
-		std::cout << "  Centroid = [" << centroid.x() << ", " << centroid.y() << ", " << centroid.z() << "]" << std::endl;
-		//area
-		std::cout << "  Area = " << area << " m^2" << std::endl;
 		m_gsi_model.calc_aero_force_and_torque(area, normal, centroid, v_rel__m_per_s, surface_temp__K, aero, aero_force__N, aero_torque__Nm);
 
 		for (int j = 0; j < 3; j++) {
-			std::cout << "  Aero Force [" << j << "] = " << aero_force__N[j] << " N" << std::endl;
 			force__N[j] += visibility * aero_force__N[j];
 			torque__Nm[j] += visibility * aero_torque__Nm[j];
 		}

@@ -39,10 +39,14 @@ BinaryShader::~BinaryShader() {
 
 int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) {
 	m_numTriangles = static_cast<unsigned int>(triangleIDs.size() / 3); //assume 3 vertices per triangle
+    if (m_numTriangles > MAX_TRIANGLES) {
+        std::cerr << "Error: Too many triangles. Max supported is " << MAX_TRIANGLES << "." << std::endl;
+        return -1;
+	}
     // framebuffer um ids zu zählen
     GLCall(glGenTextures(1, &m_ID_texture));
     GLCall(glBindTexture(GL_TEXTURE_2D, m_ID_texture));
-    GLCall(glTexImage2D(GL_TEXTURE_2D, 0, GL_R16UI, NUM_PIXEL, NUM_PIXEL, 0, GL_RED_INTEGER, GL_UNSIGNED_SHORT, nullptr));
+    GLCall(glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, NUM_PIXEL, NUM_PIXEL, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr));
 
     m_frame_buffer.reset(new FrameBuffer(m_ID_texture, NUM_PIXEL, NUM_PIXEL));
     m_frame_buffer->UnBind();
@@ -122,7 +126,7 @@ int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec
     }
 
     // ID-Texture für Compute-Shader binden (binding = 0)
-    GLCall(glBindImageTexture(0, m_ID_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R16UI));
+    GLCall(glBindImageTexture(0, m_ID_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI));
 
     // Histogram-Buffer für Compute-Shader binden (binding = 1)
     GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_histogramBuffer));
@@ -144,7 +148,6 @@ int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec
         for (size_t i = 0; i < count; i++) {
             if (histogramData[i + 1] > 0) {
                 triangle_visibility[i] = 1.0f;
-                std::cout << "Triangle ID " << i + 1 << ": " << histogramData[i + 1] << " pixels" << std::endl;
             }
         }
         GLCall(glUnmapBuffer(GL_SHADER_STORAGE_BUFFER));

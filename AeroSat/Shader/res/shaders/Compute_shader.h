@@ -5,7 +5,7 @@ inline constexpr const char* Compute_shader = R"GLSL(
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
-layout(r16ui, binding = 0) uniform uimage2D framebuffer_texture;
+layout(r32ui, binding = 0) uniform uimage2D framebuffer_texture;
 
 layout(std430, binding = 1) buffer HistogramBuffer 
 {
