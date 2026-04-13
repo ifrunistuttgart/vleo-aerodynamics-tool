@@ -210,15 +210,15 @@ int main() {
         // ============================================================================
         // STEP 6: Define Satellite State
         // ============================================================================
-        Eigen::Vector3f velocity__m_per_s(0.0f, 7800.0f, 0.0f);  // ~7.8 km/s orbital velocity
+        Eigen::Vector3f velocity__m_per_s(0.0f, -7800.0f, 0.0f);  // ~7.8 km/s orbital velocity
         float surface_temperature__K = 300.0f;                     // 300 K (~27°C)
 
         // ============================================================================
         // STEP 7: rotate mesh
         // ============================================================================
 		//rotate one solar panel by 180 degrees around its hinge axis (x-axis)
-        satellite->turn_surface_around_axis(1, 3.14159265358979323846f / 1.0f, { 0.0f, 0.1789f, 1.5f }, { 1.0f, 0.0f, 0.0f });
-
+        satellite->turn_surface_around_axis(1, -3.14159265358979323846f / 3.0f, { 0.0f, -0.1789f, 1.5f }, { 1.0f, 0.0f, 0.0f });
+        satellite->turn_surface_around_axis(2, -3.14159265358979323846f / 3.0f, { 0.0f, -0.1789f, 1.5f }, { 1.0f, 0.0f, 0.0f });
         // ============================================================================
         // STEP 8: Calculate Aerodynamic Forces & Torques
         // ============================================================================

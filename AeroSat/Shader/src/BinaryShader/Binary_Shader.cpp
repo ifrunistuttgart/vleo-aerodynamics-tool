@@ -89,7 +89,7 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
     return 0;
 }
 
-int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec3 v_rel_hat, float bounding_sphere_radius) {
+int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) {
     std::fill(triangle_visibility.begin(), triangle_visibility.end(), 0.0f);
 
     //projection matrices
@@ -102,13 +102,23 @@ int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec
         0.0f,
         2 * bounding_sphere_radius
     );
+
+    glm::vec3 target = glm::vec3(0.0f);
+    glm::vec3 forward = glm::normalize(target - camera_position);
+
+    glm::vec3 ref = (std::abs(forward.y) < 0.99f)
+        ? glm::vec3(0.0f, 1.0f, 0.0f)
+        : glm::vec3(1.0f, 0.0f, 0.0f);
+
+    glm::vec3 right = glm::normalize(glm::cross(forward, ref));
+    glm::vec3 up    = glm::normalize(glm::cross(right, forward));
+
     glm::mat4 view = glm::lookAt(
-        camera_position, // Camera position
-        glm::vec3(0.0f, 0.0f, 0.0f), // Look at point
-        glm::vec3(0.0f, 1.0f, 0.0f)  //TOdO problem with upvector || to winddirection?
+        camera_position,
+        target,
+        up
     );
-    glm::mat4 model = glm::mat4(1.0f); // Identity matrix for model
-    glm::mat4 u_MVP = orthoProj * view * model;
+
 
     // PHASE 1: Zu ID-Framebuffer rendern
     m_frame_buffer->Bind();
@@ -117,8 +127,16 @@ int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec
     // Triangle-IDs rendern
     m_shader->Bind();
 	m_vao->Bind();
-    m_shader->setUniformMat4f("u_MVP", u_MVP);
-    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(m_lenVertices / 3));
+	unsigned int offset = 0;
+    for (int i = 0; i < num_triangles_per_mesh.size(); i++) {
+		glm::mat4 model = model_matrices[i];
+        glm::mat4 u_MVP = orthoProj * view * model;
+
+        m_shader->setUniformMat4f("u_MVP", u_MVP);
+        glDrawArrays(GL_TRIANGLES, offset, static_cast<GLsizei>(num_triangles_per_mesh[i] * 3));
+        offset += num_triangles_per_mesh[i] * 3;
+    }
+
     GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT));
 
     // Histogram-Buffer leeren
