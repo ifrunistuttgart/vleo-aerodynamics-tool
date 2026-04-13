@@ -53,3 +53,8 @@ The naming style is inspired by Python PEP 8 while following C++ interface conve
 - Use `__` to separate variable name and unit suffix
 - Use `_per_` for fractional units, for example `__m_per_s`
 - Put exponents directly after unit symbols, for example `__m2`
+
+### Velocity defintion
+The velocity of the incoming stream of molecules is defined in the body coordinate system of the satellite an will be referenced as `v_rel_B__m_per_s`. The following sketch illustrates that definition.
+
+![velocity_definition.png](velocity_definition.png)
