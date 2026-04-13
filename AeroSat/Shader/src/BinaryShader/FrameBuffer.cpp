@@ -8,10 +8,6 @@ FrameBuffer::FrameBuffer(unsigned int texture2D, unsigned int width, unsigned in
 	GLCall(glGenFramebuffers(1, &m_FrameBufferID));
 	GLCall(glBindFramebuffer(GL_FRAMEBUFFER, m_FrameBufferID));
 
-	//GLCall(glGenTextures(1, &m_TextureID));
-	//GLCall(glBindTexture(GL_TEXTURE_2D, m_TextureID));
-	//GLCall(glTexImage2D(GL_TEXTURE_2D, 0, GL_R16UI, width, heigth, 0, GL_RED_INTEGER, GL_UNSIGNED_SHORT, nullptr));
-
 	//attach Texture
 	GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture2D, 0));
 

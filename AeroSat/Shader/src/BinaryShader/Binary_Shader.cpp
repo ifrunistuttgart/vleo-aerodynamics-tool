@@ -44,7 +44,7 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
         std::cerr << "Error: Too many triangles. Max supported is " << MAX_TRIANGLES << "." << std::endl;
         return -1;
 	}
-    // framebuffer um ids zu zählen
+    // framebuffer for counting ids
 	std::cout << "create framebuffer with ID texture of size " << NUM_PIXEL << "x" << NUM_PIXEL << std::endl;
     GLCall(glGenTextures(1, &m_ID_texture));
     GLCall(glBindTexture(GL_TEXTURE_2D, m_ID_texture));
@@ -53,7 +53,7 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
     m_frame_buffer.reset(new FrameBuffer(m_ID_texture, NUM_PIXEL, NUM_PIXEL));
     m_frame_buffer->UnBind();
 
-    // histogrambuffer für computeshader um pixel zu zählen
+	// histogrambuffer for compute shader to count pixels per triangle ID
     GLCall(glGenBuffers(1, &m_histogramBuffer));
     GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_histogramBuffer));
 	GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER, (m_numTriangles + 1) * sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW)); // +1 für Hintergrund (ID 0)
@@ -119,12 +119,10 @@ int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec
         up
     );
 
-
-    // PHASE 1: Zu ID-Framebuffer rendern
     m_frame_buffer->Bind();
     m_frame_buffer->Clear();
 
-    // Triangle-IDs rendern
+	//render to framebuffer with ID shader
     m_shader->Bind();
 	m_vao->Bind();
 	unsigned int offset = 0;
@@ -137,35 +135,26 @@ int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec
         offset += num_triangles_per_mesh[i] * 3;
     }
 
+	// clear histogram buffer before compute shader dispatch
     GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT));
-
-    // Histogram-Buffer leeren
     GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_histogramBuffer));
     GLuint* histogramData = (GLuint*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
     if (histogramData) {
-        memset(histogramData, 0, (m_numTriangles + 1) * sizeof(GLuint)); // +1 für Hintergrund (ID 0)
+        memset(histogramData, 0, (m_numTriangles + 1) * sizeof(GLuint)); // +1 for background with ID 0
         GLCall(glUnmapBuffer(GL_SHADER_STORAGE_BUFFER));
     }
-
-    // ID-Texture für Compute-Shader binden (binding = 0)
     GLCall(glBindImageTexture(0, m_ID_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI));
-
-    // Histogram-Buffer für Compute-Shader binden (binding = 1)
     GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_histogramBuffer));
 
+	// Dispatch compute shader to count pixels per triangle ID
     m_compute_shader->Bind();
-
-    // Compute-Shader dispatchen (16x16 Work Groups)
     std::cout << "Dispatch compute shader with " << NUM_PIXEL << " pixels" << std::endl;
     GLCall(glDispatchCompute((NUM_PIXEL + 15) / 16, (NUM_PIXEL + 15) / 16, 1));
-
-    // Warten bis Compute-Shader fertig ist
     GLCall(glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT));
 
-    // Histogram-Ergebnisse auslesen
+    // read histogram results
     GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_histogramBuffer));
     histogramData = (GLuint*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-
     if (histogramData) {
 		const size_t count = std::min(triangle_visibility.size(), static_cast<size_t>(m_numTriangles)); // TODO: waring when triangle_visibility.size() < m_numTriangles
         for (size_t i = 0; i < count; i++) {
@@ -175,6 +164,7 @@ int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec
         }
         GLCall(glUnmapBuffer(GL_SHADER_STORAGE_BUFFER));
     }
+
 	m_vao->Unbind();
     return 0;
 };
