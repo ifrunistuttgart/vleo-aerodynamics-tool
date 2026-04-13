@@ -3,6 +3,7 @@
 #include "src/ShadingAlgorithmFactory.h"
 #include <span>
 #include <vector>
+#include <glm/glm.hpp>
 #include "tetraeder_vector.h"
 #include "StaticMeshSatellite.h"
 #include <filesystem>
@@ -35,7 +36,7 @@ TEST_F(ShadingPipelineIntegrationTest, TestShading) {
     ShadingPipeline pipeline(*satellite, ShadingAlgorithmType::Binary, 800);
 
     std::vector<float> isTriangleVisible(triangleIDs.size(), 0.0f);
-    pipeline.shade(std::span<float>(isTriangleVisible), Eigen::Vector3f(1.0f, 0.0f, 0.0f));
+    pipeline.shade(std::span<float>(isTriangleVisible), glm::vec3(1.0f, 0.0f, 0.0f));
 
     EXPECT_NEAR(isTriangleVisible[0], 0.0f, 1e-5);
     EXPECT_NEAR(isTriangleVisible[1], 0.0f, 1e-5);

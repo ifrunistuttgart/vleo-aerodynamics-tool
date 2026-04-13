@@ -62,9 +62,16 @@ TEST_F(BinaryShaderTest, ShadeTetrahedron) {
         std::span<const std::uint32_t>(triangleIDs, sizeof(triangleIDs) / sizeof(unsigned int)));
 
     std::vector<float> isTriangleVisible(sizeof(triangleIDs) / sizeof(unsigned int), 0.0f);
+    std::vector<unsigned int> numTrianglesPerMesh{ numFaces };
+    std::vector<glm::mat4> modelMatrices{ glm::mat4(1.0f) };
     glm::vec3 windDir(1.0f, 0.0f, 0.0f);
     float bounding_sphere_radius = 1.0f;
-    shader.shade_satellite(std::span<float>(isTriangleVisible), windDir, bounding_sphere_radius);
+    shader.shade_satellite(
+        std::span<float>(isTriangleVisible),
+        windDir,
+        bounding_sphere_radius,
+        std::span<const unsigned int>(numTrianglesPerMesh),
+        std::span<const glm::mat4>(modelMatrices));
 
     EXPECT_NEAR(isTriangleVisible[0], 0.0f, 1e-5);
     EXPECT_NEAR(isTriangleVisible[1], 0.0f, 1e-5);
@@ -74,7 +81,12 @@ TEST_F(BinaryShaderTest, ShadeTetrahedron) {
     windDir = glm::vec3(0.0f, 0.0f, 1.0f);
     std::fill(isTriangleVisible.begin(), isTriangleVisible.end(), 0.0f);
     bounding_sphere_radius = 1.0f;
-    shader.shade_satellite(std::span<float>(isTriangleVisible), windDir, bounding_sphere_radius);
+    shader.shade_satellite(
+        std::span<float>(isTriangleVisible),
+        windDir,
+        bounding_sphere_radius,
+        std::span<const unsigned int>(numTrianglesPerMesh),
+        std::span<const glm::mat4>(modelMatrices));
 
     EXPECT_NEAR(isTriangleVisible[0], 0.0f, 1e-5);
     EXPECT_NEAR(isTriangleVisible[1], 1.0f, 1e-5);

@@ -23,12 +23,11 @@ ShadingPipeline::~ShadingPipeline() {
     m_algorithm.reset();
 }
 
-int ShadingPipeline::shade(std::span<float> triangle_visibility, const Eigen::Vector3f& v_rel_hat) {
+int ShadingPipeline::shade(std::span<float> triangle_visibility, const glm::vec3& v_rel_hat) {
     m_context->make_current();
 
     float bsr = m_satellite.get_bounding_sphere_radius();
 	std::span<const glm::mat4> model_matrices = m_satellite.get_model_matrices();
 	std::span<const unsigned int> num_triangles_per_mesh = m_satellite.get_num_triangles_per_mesh();
-    glm::vec3 v_rel_hat_glm(v_rel_hat.x(), v_rel_hat.y(), v_rel_hat.z());
-    return m_algorithm->shade_satellite(triangle_visibility, v_rel_hat_glm, bsr, num_triangles_per_mesh, model_matrices);
+    return m_algorithm->shade_satellite(triangle_visibility, v_rel_hat, bsr, num_triangles_per_mesh, model_matrices);
 }

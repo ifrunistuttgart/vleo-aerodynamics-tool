@@ -3,6 +3,7 @@
 #include <stdexcept>
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
+#include <glm/glm.hpp>
 #include "Sentman.h"
 
 
@@ -19,10 +20,10 @@ Sentman::Sentman(int temperature_ratio_method)
 }
 
 
-int Sentman::calc_aero_force_and_torque(float area__m2, const Eigen::Vector3f& normal, const Eigen::Vector3f& centroid__m, const Eigen::Vector3f& v_rel__m_per_s, float surf_temp__K, AeroConditions aero, Eigen::Vector3f& aero_force__N, Eigen::Vector3f& aero_torque__Nm){
+int Sentman::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal, const glm::vec3& centroid__m, const glm::vec3& v_rel__m_per_s, float surf_temp__K, AeroConditions aero, glm::vec3& aero_force__N, glm::vec3& aero_torque__Nm){
     // Initialize outputs
-    aero_force__N.setZero();
-    aero_torque__Nm.setZero();
+    aero_force__N = glm::vec3(0.0f);
+    aero_torque__Nm = glm::vec3(0.0f);
 
     // Extract aerodynamic conditions
     const float density__kg_per_m3 = aero.density__kg_per_m3;
@@ -30,10 +31,10 @@ int Sentman::calc_aero_force_and_torque(float area__m2, const Eigen::Vector3f& n
     const float temperature_w__K = surf_temp__K;
     const float alpha = aero.alpha_e;
     const float particle_mass__kg = aero.particle_mass__kg;
-	Eigen::Vector3f v_rel_inv__m_per_s = -v_rel__m_per_s; // Invert velocity to match Sentman's convention (velocity of gas relative to surface)
+	glm::vec3 v_rel_inv__m_per_s = -v_rel__m_per_s; // Invert velocity to match Sentman's convention (velocity of gas relative to surface)
 
     // Velocity magnitude
-    const float v_rel_magnitude__m_per_s = v_rel_inv__m_per_s.norm();
+    const float v_rel_magnitude__m_per_s = glm::length(v_rel_inv__m_per_s);
     if (v_rel_magnitude__m_per_s < 1e-10f) {
         spdlog::warn("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.", v_rel_magnitude__m_per_s);
         return 0; // No relative velocity, no force
@@ -45,7 +46,7 @@ int Sentman::calc_aero_force_and_torque(float area__m2, const Eigen::Vector3f& n
     // Molecular speed ratio
     const float molecular_speed_ratio = v_rel_magnitude__m_per_s / thermal_velocity__m_per_s;
 
-    const float cos_delta = v_rel__m_per_s.dot(normal) / v_rel_magnitude__m_per_s;
+    const float cos_delta = glm::dot(v_rel__m_per_s, normal) / v_rel_magnitude__m_per_s;
     const float s_cos_delta = molecular_speed_ratio * cos_delta;
 
     // Intermediate values
@@ -94,16 +95,16 @@ int Sentman::calc_aero_force_and_torque(float area__m2, const Eigen::Vector3f& n
     const float term_2 = molecular_speed_ratio * g2;
 
     // Normalized velocity
-    const Eigen::Vector3f v_rel_normalized = v_rel_inv__m_per_s / v_rel_magnitude__m_per_s;
+    const glm::vec3 v_rel_normalized = v_rel_inv__m_per_s / v_rel_magnitude__m_per_s;
 
     // Pressure vector
-    const Eigen::Vector3f pressure__n_per_m2 = pressure_coeff * (term_1 * normal + term_2 * (v_rel_normalized + cos_delta * normal));
+    const glm::vec3 pressure__n_per_m2 = pressure_coeff * (term_1 * normal + term_2 * (v_rel_normalized + cos_delta * normal));
 
     // Force = pressure * area
     aero_force__N = pressure__n_per_m2 * area__m2;
 
     // Torque = centroid x force
-    aero_torque__Nm = centroid__m.cross(aero_force__N);
+    aero_torque__Nm = glm::cross(centroid__m, aero_force__N);
 
     return 0; // Success
 }

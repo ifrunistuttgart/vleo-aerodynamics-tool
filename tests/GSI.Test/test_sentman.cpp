@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Sentman.h"
 #include "Core/Core.h"
+#include <glm/glm.hpp>
 
 
 // Test Fixture
@@ -26,16 +27,16 @@ TEST_F(SentmanTest, Constructor_ValidMethods_Construct) {
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
     // Arrange
     Sentman sentman{ 1 };
-    Eigen::Vector3f normal(0.0f, 0.0f, -1.0f);
-    normal = normal.normalized();
-    Eigen::Vector3f centroid(-0.166667f, 0.0f, 0.0f);
-    Eigen::Vector3f velocity(7800.0f, 0.0f, 0.0f);
+    glm::vec3 normal(0.0f, 0.0f, -1.0f);
+    normal = glm::normalize(normal);
+    glm::vec3 centroid(-0.166667f, 0.0f, 0.0f);
+    glm::vec3 velocity(7800.0f, 0.0f, 0.0f);
     auto conditions = create_leo_conditions();
 
-    Eigen::Vector3f force;
-    Eigen::Vector3f torque;
-    Eigen::Vector3f expected_force = Eigen::Vector3f(-0.0068f, 0.0f, 0.0022f) * 1e-3f;
-    Eigen::Vector3f expected_torque = Eigen::Vector3f(0.0f, 0.0036f, 0.0f) * 1e-4f;
+    glm::vec3 force;
+    glm::vec3 torque;
+    glm::vec3 expected_force = glm::vec3(-0.0068f, 0.0f, 0.0022f) * 1e-3f;
+    glm::vec3 expected_torque = glm::vec3(0.0f, 0.0036f, 0.0f) * 1e-4f;
 
     // Act
     sentman.calc_aero_force_and_torque(
@@ -43,23 +44,27 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
     );
 
     // Assert
-    EXPECT_TRUE(force.isApprox(expected_force, 1e-2f)) << "force [" << force.x() << ", " << force.y() << ", " << force.z() << "expected" << expected_force.x() <<", " << expected_force.y() << ", " << expected_force.z() << "]\n";
-    EXPECT_TRUE(torque.isApprox(expected_torque, 1e-2f)) << "  Actual torque: [" << torque.x() << ", " << torque.y() << ", " << torque.z() << "]\n";
+    EXPECT_NEAR(force.x, expected_force.x, 1e-2f);
+    EXPECT_NEAR(force.y, expected_force.y, 1e-2f);
+    EXPECT_NEAR(force.z, expected_force.z, 1e-2f);
+    EXPECT_NEAR(torque.x, expected_torque.x, 1e-2f);
+    EXPECT_NEAR(torque.y, expected_torque.y, 1e-2f);
+    EXPECT_NEAR(torque.z, expected_torque.z, 1e-2f);
 }
 
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
     // Arrange
     Sentman sentman{ 1 };
-    Eigen::Vector3f normal(1.0f, 0.0f, 0.0f);
-    normal = normal.normalized();
-    Eigen::Vector3f centroid(0.0f, 0.0f, 0.1666667f);
-    Eigen::Vector3f velocity(7800.0f, 0.0f, 0.0f);
+    glm::vec3 normal(1.0f, 0.0f, 0.0f);
+    normal = glm::normalize(normal);
+    glm::vec3 centroid(0.0f, 0.0f, 0.1666667f);
+    glm::vec3 velocity(7800.0f, 0.0f, 0.0f);
     auto conditions = create_leo_conditions();
 
-    Eigen::Vector3f force;
-    Eigen::Vector3f torque;
-    Eigen::Vector3f expected_torque = Eigen::Vector3f(0.0f, -0.3857f, 0.0f) * 1e-4f;
-    Eigen::Vector3f expected_force = Eigen::Vector3f(-0.2314f, 0.0f, 0.0f) * 1e-3f;
+    glm::vec3 force;
+    glm::vec3 torque;
+    glm::vec3 expected_torque = glm::vec3(0.0f, -0.3857f, 0.0f) * 1e-4f;
+    glm::vec3 expected_force = glm::vec3(-0.2314f, 0.0f, 0.0f) * 1e-3f;
 
     // Act
     sentman.calc_aero_force_and_torque(
@@ -67,22 +72,26 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
     );
 
     // Assert
-    EXPECT_TRUE(force.isApprox(expected_force, 1e-2f)) << "  Actual force: [" << force.x() << ", " << force.y() << ", " << force.z() << "]\n";
-    EXPECT_TRUE(torque.isApprox(expected_torque, 1e-2f)) << "  Actual torque: [" << torque.x() << ", " << torque.y() << ", " << torque.z() << "]\n";
+    EXPECT_NEAR(force.x, expected_force.x, 1e-2f);
+    EXPECT_NEAR(force.y, expected_force.y, 1e-2f);
+    EXPECT_NEAR(force.z, expected_force.z, 1e-2f);
+    EXPECT_NEAR(torque.x, expected_torque.x, 1e-2f);
+    EXPECT_NEAR(torque.y, expected_torque.y, 1e-2f);
+    EXPECT_NEAR(torque.z, expected_torque.z, 1e-2f);
 }
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
     // Arrange
     Sentman sentman{ 2 };
-    Eigen::Vector3f normal(1.0f, 1.0f, 0.0f);
-    normal = normal.normalized();
-    Eigen::Vector3f centroid(1.0f, 1.0f, 1.0f);
-    Eigen::Vector3f velocity(7800.0f, 0.0f, 0.0f);
+    glm::vec3 normal(1.0f, 1.0f, 0.0f);
+    normal = glm::normalize(normal);
+    glm::vec3 centroid(1.0f, 1.0f, 1.0f);
+    glm::vec3 velocity(7800.0f, 0.0f, 0.0f);
     auto conditions = create_leo_conditions();
 
-    Eigen::Vector3f force;
-    Eigen::Vector3f torque;
-    Eigen::Vector3f expected_torque = Eigen::Vector3f(0.0843f, 0.4526f, -0.5370f) * 1e-3f;
-    Eigen::Vector3f expected_force = Eigen::Vector3f(0.4526f, -0.0843f, 0.0f) * 1e-3f;
+    glm::vec3 force;
+    glm::vec3 torque;
+    glm::vec3 expected_torque = glm::vec3(0.0843f, 0.4526f, -0.5370f) * 1e-3f;
+    glm::vec3 expected_force = glm::vec3(0.4526f, -0.0843f, 0.0f) * 1e-3f;
 
     // Act
     sentman.calc_aero_force_and_torque(
@@ -90,23 +99,27 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
     );
 
     // Assert
-    EXPECT_TRUE(force.isApprox(expected_force, 1e-3f)) << "  Actual force: [" << force.x() << ", " << force.y() << ", " << force.z() << "]\n";
-    EXPECT_TRUE(torque.isApprox(expected_torque, 1e-3f)) << "  Actual torque: [" << torque.x() << ", " << torque.y() << ", " << torque.z() << "]\n";
+    EXPECT_NEAR(force.x, expected_force.x, 1e-3f);
+    EXPECT_NEAR(force.y, expected_force.y, 1e-3f);
+    EXPECT_NEAR(force.z, expected_force.z, 1e-3f);
+    EXPECT_NEAR(torque.x, expected_torque.x, 1e-3f);
+    EXPECT_NEAR(torque.y, expected_torque.y, 1e-3f);
+    EXPECT_NEAR(torque.z, expected_torque.z, 1e-3f);
 }
 
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod3) {
     // Arrange
     Sentman sentman{ 3 };
-    Eigen::Vector3f normal(1.0f, 1.0f, 0.0f);
-    normal = normal.normalized();
-    Eigen::Vector3f centroid(1.0f, 1.0f, 1.0f);
-    Eigen::Vector3f velocity(7800.0f, 0.0f, 0.0f);
+    glm::vec3 normal(1.0f, 1.0f, 0.0f);
+    normal = glm::normalize(normal);
+    glm::vec3 centroid(1.0f, 1.0f, 1.0f);
+    glm::vec3 velocity(7800.0f, 0.0f, 0.0f);
     auto conditions = create_leo_conditions();
 
-    Eigen::Vector3f force;
-    Eigen::Vector3f torque;
-    Eigen::Vector3f expected_torque = Eigen::Vector3f(0.0829f, 0.4541f, -0.5370f) * 1e-3f;
-    Eigen::Vector3f expected_force = Eigen::Vector3f(0.4541f, -0.0829f, 0.0f) * 1e-3f;
+    glm::vec3 force;
+    glm::vec3 torque;
+    glm::vec3 expected_torque = glm::vec3(0.0829f, 0.4541f, -0.5370f) * 1e-3f;
+    glm::vec3 expected_force = glm::vec3(0.4541f, -0.0829f, 0.0f) * 1e-3f;
 
     // Act
     sentman.calc_aero_force_and_torque(
@@ -114,6 +127,10 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod3) {
     );
 
     // Assert
-    EXPECT_TRUE(force.isApprox(expected_force, 1e-3f)) << "  Actual force: [" << force.x() << ", " << force.y() << ", " << force.z() << "]\n";
-    EXPECT_TRUE(torque.isApprox(expected_torque, 1e-3f)) << "  Actual torque: [" << torque.x() << ", " << torque.y() << ", " << torque.z() << "]\n";
+    EXPECT_NEAR(force.x, expected_force.x, 1e-3f);
+    EXPECT_NEAR(force.y, expected_force.y, 1e-3f);
+    EXPECT_NEAR(force.z, expected_force.z, 1e-3f);
+    EXPECT_NEAR(torque.x, expected_torque.x, 1e-3f);
+    EXPECT_NEAR(torque.y, expected_torque.y, 1e-3f);
+    EXPECT_NEAR(torque.z, expected_torque.z, 1e-3f);
 }

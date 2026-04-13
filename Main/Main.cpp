@@ -27,7 +27,7 @@ VTK_MODULE_INIT(vtkRenderingFreeType);
 #include <algorithm>
 #include <stdexcept>
 #include <span>
-#include <eigen3/Eigen/Dense>
+#include <glm/glm.hpp>
 #include "RotatableMeshSatellite.h"
 #include "ShadingPipeline.h"
 #include "ShadingAlgorithmFactory.h"
@@ -48,9 +48,9 @@ std::string GetPath(const std::string& filename) {
 void ShowMeshWithShadingAndWind(
     RotatableMeshSatellite& satellite,
     const std::vector<float>& triangle_visibility,
-    const Eigen::Vector3f& v_rel__m_per_s) {
-    const Eigen::Vector3f kVisibleSurfaceColor(0.0f, 1.0f, 0.0f);
-    const Eigen::Vector3f kNonVisibleSurfaceColor(0.15f, 0.2f, 0.8f);
+    const glm::vec3& v_rel__m_per_s) {
+    const glm::vec3 kVisibleSurfaceColor(0.0f, 1.0f, 0.0f);
+    const glm::vec3 kNonVisibleSurfaceColor(0.15f, 0.2f, 0.8f);
 
     const unsigned int num_triangles = satellite.get_num_triangles();
     if (triangle_visibility.size() != num_triangles) {
@@ -83,13 +83,13 @@ void ShowMeshWithShadingAndWind(
         triangles->InsertNextCell(triangle);
 
         const float vis = std::clamp(triangle_visibility[static_cast<size_t>(tri)], 0.0f, 1.0f);
-        const Eigen::Vector3f color =
+        const glm::vec3 color =
             kNonVisibleSurfaceColor + vis * (kVisibleSurfaceColor - kNonVisibleSurfaceColor);
 
         unsigned char rgb[3] = {
-            static_cast<unsigned char>(std::clamp(color.x() * 255.0f, 0.0f, 255.0f)),
-            static_cast<unsigned char>(std::clamp(color.y() * 255.0f, 0.0f, 255.0f)),
-            static_cast<unsigned char>(std::clamp(color.z() * 255.0f, 0.0f, 255.0f))
+            static_cast<unsigned char>(std::clamp(color.x * 255.0f, 0.0f, 255.0f)),
+            static_cast<unsigned char>(std::clamp(color.y * 255.0f, 0.0f, 255.0f)),
+            static_cast<unsigned char>(std::clamp(color.z * 255.0f, 0.0f, 255.0f))
         };
         cell_colors->SetTypedTuple(tri, rgb);
     }
@@ -109,16 +109,16 @@ void ShowMeshWithShadingAndWind(
 
     const float bsr = satellite.get_bounding_sphere_radius();
     const float wind_length = bsr > 0.0f ? bsr * 1.3f : 1.0f;
-    const Eigen::Vector3f wind_hat = v_rel__m_per_s.norm() > 0.0f
-        ? v_rel__m_per_s.normalized()
-        : Eigen::Vector3f::UnitX();
+    const glm::vec3 wind_hat = glm::length(v_rel__m_per_s) > 0.0f
+        ? glm::normalize(v_rel__m_per_s)
+        : glm::vec3(1.0f, 0.0f, 0.0f);
 
     auto wind_line = vtkSmartPointer<vtkLineSource>::New();
     wind_line->SetPoint1(0.0, 0.0, 0.0);
     wind_line->SetPoint2(
-        wind_hat.x() * wind_length,
-        wind_hat.y() * wind_length,
-        wind_hat.z() * wind_length);
+        wind_hat.x * wind_length,
+        wind_hat.y * wind_length,
+        wind_hat.z * wind_length);
 
     auto wind_tube = vtkSmartPointer<vtkTubeFilter>::New();
     wind_tube->SetInputConnection(wind_line->GetOutputPort());
@@ -210,7 +210,7 @@ int main() {
         // ============================================================================
         // STEP 6: Define Satellite State
         // ============================================================================
-        Eigen::Vector3f velocity__m_per_s(0.0f, -7800.0f, 0.0f);  // ~7.8 km/s orbital velocity
+        glm::vec3 velocity__m_per_s(0.0f, -7800.0f, 0.0f);  // ~7.8 km/s orbital velocity
         float surface_temperature__K = 300.0f;                     // 300 K (~27°C)
 
         // ============================================================================
@@ -225,8 +225,8 @@ int main() {
         std::cout << "[7] CALCULATING AERODYNAMIC FORCES & TORQUES..." << std::endl;
         std::cout << std::string(50, '-') << std::endl;
 
-        Eigen::Vector3f force__N = Eigen::Vector3f::Zero();
-        Eigen::Vector3f torque__Nm = Eigen::Vector3f::Zero();
+        glm::vec3 force__N(0.0f);
+        glm::vec3 torque__Nm(0.0f);
 
         auto calc_start = std::chrono::high_resolution_clock::now();
 
@@ -248,7 +248,7 @@ int main() {
         auto shade_start = std::chrono::high_resolution_clock::now();
 
         for (int i = 0; i < cycles; ++i) {
-            result = shading_pipeline->shade(std::span<float>(triangle_visibility), velocity__m_per_s.normalized());
+            result = shading_pipeline->shade(std::span<float>(triangle_visibility), glm::normalize(velocity__m_per_s));
         }
         auto shade_end = std::chrono::high_resolution_clock::now();
         auto shade_duration = std::chrono::duration_cast<std::chrono::microseconds>(shade_end - shade_start);
@@ -264,17 +264,17 @@ int main() {
             std::cout << std::endl;
 
             std::cout << "AERODYNAMIC FORCE (N):" << std::endl;
-            std::cout << "    Fx: " << std::scientific << std::setprecision(6) << force__N.x() << std::endl;
-            std::cout << "    Fy: " << std::scientific << std::setprecision(6) << force__N.y() << std::endl;
-            std::cout << "    Fz: " << std::scientific << std::setprecision(6) << force__N.z() << std::endl;
-            std::cout << "    |F|: " << std::scientific << std::setprecision(6) << force__N.norm() << std::endl;
+            std::cout << "    Fx: " << std::scientific << std::setprecision(6) << force__N.x << std::endl;
+            std::cout << "    Fy: " << std::scientific << std::setprecision(6) << force__N.y << std::endl;
+            std::cout << "    Fz: " << std::scientific << std::setprecision(6) << force__N.z << std::endl;
+            std::cout << "    |F|: " << std::scientific << std::setprecision(6) << glm::length(force__N) << std::endl;
             std::cout << std::endl;
 
             std::cout << "AERODYNAMIC TORQUE (N·m):" << std::endl;
-            std::cout << "    Tx: " << std::scientific << std::setprecision(6) << torque__Nm.x() << std::endl;
-            std::cout << "    Ty: " << std::scientific << std::setprecision(6) << torque__Nm.y() << std::endl;
-            std::cout << "    Tz: " << std::scientific << std::setprecision(6) << torque__Nm.z() << std::endl;
-            std::cout << "    |T|: " << std::scientific << std::setprecision(6) << torque__Nm.norm() << std::endl;
+            std::cout << "    Tx: " << std::scientific << std::setprecision(6) << torque__Nm.x << std::endl;
+            std::cout << "    Ty: " << std::scientific << std::setprecision(6) << torque__Nm.y << std::endl;
+            std::cout << "    Tz: " << std::scientific << std::setprecision(6) << torque__Nm.z << std::endl;
+            std::cout << "    |T|: " << std::scientific << std::setprecision(6) << glm::length(torque__Nm) << std::endl;
             std::cout << std::endl;
 
             std::cout << std::string(50, '=') << std::endl;
@@ -287,7 +287,7 @@ int main() {
                 << shade_duration.count() / cycles / 1000.0f << " ms average per shading calculation" << std::endl;
             std::cout << std::string(50, '=') << std::endl;
 
-            int shade_result = shading_pipeline->shade(std::span<float>(triangle_visibility), velocity__m_per_s.normalized());
+            int shade_result = shading_pipeline->shade(std::span<float>(triangle_visibility), glm::normalize(velocity__m_per_s));
 			std::cout <<"shade result: " << shade_result << std::endl;
            
             if (shade_result == 0) {

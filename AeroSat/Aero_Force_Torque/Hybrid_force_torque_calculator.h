@@ -10,7 +10,7 @@ public:
     // Konstruktor nimmt jetzt einen Zeiger auf ISatellite
     HybridForceTorqueCalculator(ISatelliteShadingData& satellite, IShadingPipeline& shading_pipeline, IGSIModel& gsi_model);
     ~HybridForceTorqueCalculator() override;
-    int calc_aero_torque_force(const Eigen::Vector3f& v_rel__m_per_s, float surface_temp__K, AeroConditions aero, Eigen::Vector3f& torque__Nm, Eigen::Vector3f& force__N) override;
+    int calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions aero, glm::vec3& torque__Nm, glm::vec3& force__N) override;
     //int change_satellite(ISatellite* satellite) override;
 
 private:

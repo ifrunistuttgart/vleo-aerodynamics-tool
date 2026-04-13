@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <span>
-#include <eigen3/Eigen/Dense>
+#include <glm/glm.hpp>
 #include "Aero_Force_Torque/IShadingPipeline.h"
 #include "Core/ISatellite_shading_data.h"
 #include "src/IShading_Algorithm.h"
@@ -21,5 +21,5 @@ public:
         unsigned int num_pixel);
 
     ~ShadingPipeline() override;
-    int shade(std::span<float> triangle_visibility, const Eigen::Vector3f& v_rel_hat) override;
+    int shade(std::span<float> triangle_visibility, const glm::vec3& v_rel_hat) override;
 };

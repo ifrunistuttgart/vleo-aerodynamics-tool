@@ -1,6 +1,5 @@
 {
   "dependencies": [
-    "eigen3",
     "glew",
     "glm",
     "glfw3"

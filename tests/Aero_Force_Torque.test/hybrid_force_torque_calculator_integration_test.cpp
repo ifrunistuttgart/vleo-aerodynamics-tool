@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <iostream>
 #include <memory>
+#include <glm/glm.hpp>
 #include <Sentman.h>
 #include <Hybrid_force_torque_calculator.h>
 #include "Core/Core.h"
@@ -24,7 +25,7 @@ protected:
 	std::unique_ptr<Sentman> sentman;
 	std::unique_ptr<HybridForceTorqueCalculator> force_torque_calculator;
 	std::unique_ptr<ShadingPipeline> shading_pipeline;
-	Eigen::Vector3f v_rel__m_per_s = Eigen::Vector3f(7800.0f, 0.0f, 0.0f);
+	glm::vec3 v_rel__m_per_s = glm::vec3(7800.0f, 0.0f, 0.0f);
 
     AeroConditions create_leo_conditions() {
         AeroConditions cond;
@@ -49,16 +50,16 @@ protected:
 
 
 TEST_F(HybridForceTorqueIntegrationTest, TestShading) {
-	Eigen::Vector3f torque(0.0f, 0.0f, 0.0f);
-	Eigen::Vector3f force(0.0f, 0.0f, 0.0f);
+	glm::vec3 torque(0.0f, 0.0f, 0.0f);
+	glm::vec3 force(0.0f, 0.0f, 0.0f);
 	std::cout << "[TEST] Calculating aero torque and force..." << std::endl;
 	AeroConditions conditions = create_leo_conditions();
 	force_torque_calculator->calc_aero_torque_force(v_rel__m_per_s,300.0f, conditions, torque, force);
 
-	EXPECT_NEAR(force.x(), -0.2382e-3f, 1e-5f);
-	EXPECT_NEAR(force.y(), 0.0f, 1e-5f);
-	EXPECT_NEAR(force.z(), 0.0022e-3f, 1e-5f);
-	EXPECT_NEAR(torque.x(), 0.0f, 1e-5f);
-	EXPECT_NEAR(torque.y(), -0.3820e-4f, 1e-5f);
-	EXPECT_NEAR(torque.z(), 0.0f, 1e-5f);
+	EXPECT_NEAR(force.x, -0.2382e-3f, 1e-5f);
+	EXPECT_NEAR(force.y, 0.0f, 1e-5f);
+	EXPECT_NEAR(force.z, 0.0022e-3f, 1e-5f);
+	EXPECT_NEAR(torque.x, 0.0f, 1e-5f);
+	EXPECT_NEAR(torque.y, -0.3820e-4f, 1e-5f);
+	EXPECT_NEAR(torque.z, 0.0f, 1e-5f);
 }
