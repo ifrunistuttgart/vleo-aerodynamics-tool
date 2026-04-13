@@ -18,9 +18,15 @@
     <ClCompile Include="StaticMeshSatellite.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="RotatableMeshSatellite.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StaticMeshSatellite.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="RotatableMeshSatellite.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

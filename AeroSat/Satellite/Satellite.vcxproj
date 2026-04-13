@@ -146,9 +146,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="RotatableMeshSatellite.cpp" />
     <ClCompile Include="StaticMeshSatellite.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="RotatableMeshSatellite.h" />
     <ClInclude Include="StaticMeshSatellite.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

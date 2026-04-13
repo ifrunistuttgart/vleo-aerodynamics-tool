@@ -82,10 +82,9 @@ StaticMeshSatellite::StaticMeshSatellite(std::string file)
         }
 
         m_num_triangles_per_mesh.push_back(mesh_triangle_count);
+        // Add identity model matrix for each mesh
+        m_model_matrices.push_back(glm::mat4(1.0f));
     }
-
-    // Add identity model matrix for the single mesh
-    m_model_matrices.push_back(glm::mat4(1.0f));
 
     // Calculate bounding sphere radius
     float max_distance = 0.0f;
@@ -140,7 +139,10 @@ int StaticMeshSatellite::turn_surface(int surface_id, float angle__rad) {
     // Not implemented for static mesh
     return -1;
 }
-
+int StaticMeshSatellite::turn_surface_around_axis(const int surface_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) {
+    // Not implemented for static mesh
+    return -1;
+}
 int StaticMeshSatellite::turn_surfaces() {
     // Not implemented for static mesh
     return -1;

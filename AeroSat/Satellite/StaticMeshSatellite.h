@@ -8,13 +8,13 @@
 #include "Core/ISatellite_Manipulator.h"
 
 class StaticMeshSatellite: public ISatelliteShadingData, public ISatelliteManipulator {
-private:
+protected:
     std::vector<float> m_vertices;
     std::vector<std::uint32_t> m_triangle_ids;
     std::vector<float> m_normals;
     std::vector<float> m_areas;
     std::vector<float> m_centroids;
-    std::vector<glm::mat4> m_model_matrices;
+	std::vector<glm::mat4> m_model_matrices;
     std::vector<unsigned int> m_num_triangles_per_mesh;
     unsigned int m_total_triangles;
     float m_bounding_sphere_radius;
@@ -46,5 +46,6 @@ public:
 
 	//ISatelliteManipulator interface
     int turn_surface(int surface_id, float angle__rad) override;
+    int turn_surface_around_axis(const int surface_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) override;
     int turn_surfaces() override;
 };

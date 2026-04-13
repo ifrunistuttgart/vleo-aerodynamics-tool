@@ -28,15 +28,15 @@ VTK_MODULE_INIT(vtkRenderingFreeType);
 #include <stdexcept>
 #include <span>
 #include <eigen3/Eigen/Dense>
-#include "StaticMeshSatellite.h"
+#include "RotatableMeshSatellite.h"
 #include "ShadingPipeline.h"
 #include "ShadingAlgorithmFactory.h"
 #include "Sentman.h"
 #include "Hybrid_force_torque_calculator.h"
 #include "Core/Core.h"
 #include <filesystem>
-
-
+#include <cmath>
+#define _USE_MATH_DEFINES
 
 // Get path relative to this source file
 std::string GetPath(const std::string& filename) {
@@ -46,7 +46,7 @@ std::string GetPath(const std::string& filename) {
 }
 
 void ShowMeshWithShadingAndWind(
-    StaticMeshSatellite& satellite,
+    RotatableMeshSatellite& satellite,
     const std::vector<float>& triangle_visibility,
     const Eigen::Vector3f& v_rel__m_per_s) {
     const Eigen::Vector3f kVisibleSurfaceColor(0.0f, 1.0f, 0.0f);
@@ -165,9 +165,9 @@ int main() {
         // ============================================================================
         std::cout << "[1] Loading satellite model..." << std::endl;
 
-        std::string satellite_path = GetPath("ISS_cut.obj");
-        std::unique_ptr<StaticMeshSatellite> satellite =
-            std::make_unique<StaticMeshSatellite>(satellite_path);
+        std::string satellite_path = GetPath("ISS_cut_no_materials.obj");
+        std::unique_ptr<RotatableMeshSatellite> satellite =
+            std::make_unique<RotatableMeshSatellite>(satellite_path);
 
         std::cout << "     Loaded " << satellite->get_num_triangles() << " triangles" << std::endl;
 
@@ -210,12 +210,17 @@ int main() {
         // ============================================================================
         // STEP 6: Define Satellite State
         // ============================================================================
-        Eigen::Vector3f velocity__m_per_s(0.0f, 0.0f, 7800.0f);  // ~7.8 km/s orbital velocity
+        Eigen::Vector3f velocity__m_per_s(0.0f, 7800.0f, 0.0f);  // ~7.8 km/s orbital velocity
         float surface_temperature__K = 300.0f;                     // 300 K (~27°C)
 
+        // ============================================================================
+        // STEP 7: rotate mesh
+        // ============================================================================
+		//rotate one solar panel by 180 degrees around its hinge axis (x-axis)
+        satellite->turn_surface_around_axis(1, 3.14159265358979323846f / 1.0f, { 0.0f, 0.1789f, 1.5f }, { 1.0f, 0.0f, 0.0f });
 
         // ============================================================================
-        // STEP 7: Calculate Aerodynamic Forces & Torques
+        // STEP 8: Calculate Aerodynamic Forces & Torques
         // ============================================================================
         std::cout << "[7] CALCULATING AERODYNAMIC FORCES & TORQUES..." << std::endl;
         std::cout << std::string(50, '-') << std::endl;
@@ -226,7 +231,7 @@ int main() {
         auto calc_start = std::chrono::high_resolution_clock::now();
 
         int result = 0;
-        int cycles = 100;
+        int cycles = 10;
         for (int i = 0; i < cycles; ++i) {
             int result = calculator->calc_aero_torque_force(
                 velocity__m_per_s,
@@ -284,6 +289,7 @@ int main() {
 
             int shade_result = shading_pipeline->shade(std::span<float>(triangle_visibility), velocity__m_per_s.normalized());
 			std::cout <<"shade result: " << shade_result << std::endl;
+           
             if (shade_result == 0) {
                 ShowMeshWithShadingAndWind(*satellite, triangle_visibility, velocity__m_per_s);
             }
