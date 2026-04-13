@@ -29,21 +29,22 @@ StaticMeshSatellite::StaticMeshSatellite(std::string file)
 
     std::cout << "[StaticMeshSatellite] Successfully loaded " << scene->mNumMeshes << " meshes" << std::endl;
 
-    unsigned int mesh_triangle_count = 0;
-
     // Extract mesh data
     for (unsigned int mesh_idx = 0; mesh_idx < scene->mNumMeshes; ++mesh_idx) {
         const aiMesh* mesh = scene->mMeshes[mesh_idx];
-
+        std::cout << "[StaticMeshSatellite] Processing mesh " << mesh_idx << " with " << mesh->mNumFaces << " faces and " 
+			<< mesh->mNumVertices << " vertices" << std::endl;
+        unsigned int mesh_triangle_count = 0;
         // Extract triangles and normals
         for (unsigned int face_idx = 0; face_idx < mesh->mNumFaces; ++face_idx) {
             const aiFace& face = mesh->mFaces[face_idx];
             
             // Assume triangulated mesh
             if (face.mNumIndices == 3) {
-                m_triangle_ids.push_back(face_idx+1);
-				m_triangle_ids.push_back(face_idx+1);
-				m_triangle_ids.push_back(face_idx+1);
+                const std::uint32_t triangle_id = static_cast<std::uint32_t>(m_total_triangles + 1);
+                m_triangle_ids.push_back(triangle_id);
+				m_triangle_ids.push_back(triangle_id);
+				m_triangle_ids.push_back(triangle_id);
 
                 // Extract vertices
                 for (unsigned int vertex_idx = 0; vertex_idx < 3; ++vertex_idx) {
@@ -79,9 +80,9 @@ StaticMeshSatellite::StaticMeshSatellite(std::string file)
                 m_total_triangles++;
             }
         }
-    }
 
-    m_num_triangles_per_mesh.push_back(mesh_triangle_count);
+        m_num_triangles_per_mesh.push_back(mesh_triangle_count);
+    }
 
     // Add identity model matrix for the single mesh
     m_model_matrices.push_back(glm::mat4(1.0f));

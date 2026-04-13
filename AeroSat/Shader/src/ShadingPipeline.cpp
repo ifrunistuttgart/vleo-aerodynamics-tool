@@ -5,7 +5,7 @@ ShadingPipeline::ShadingPipeline(
     ISatelliteShadingData& satellite,
     ShadingAlgorithmType algorithm_type,
     unsigned int num_pixel)
-    : m_context(std::make_unique<GlfwOpenGLContext>(800, 800, "Triangle Renderer", false)),
+    : m_context(std::make_unique<GlfwOpenGLContext>(num_pixel, num_pixel, "Triangle Renderer", false)),
       m_algorithm(create_shading_algorithm(algorithm_type, num_pixel)),
       m_satellite(satellite) {
     m_context->make_current();

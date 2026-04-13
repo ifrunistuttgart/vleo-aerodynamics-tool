@@ -2,6 +2,7 @@
 #include "src/BinaryShader/Binary_Shader.h"
 #include <iostream>
 #include <algorithm>
+#include <cstring>
 
 //math includes
 #include "glm/glm.hpp"
@@ -44,6 +45,7 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
         return -1;
 	}
     // framebuffer um ids zu zählen
+	std::cout << "create framebuffer with ID texture of size " << NUM_PIXEL << "x" << NUM_PIXEL << std::endl;
     GLCall(glGenTextures(1, &m_ID_texture));
     GLCall(glBindTexture(GL_TEXTURE_2D, m_ID_texture));
     GLCall(glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, NUM_PIXEL, NUM_PIXEL, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr));
@@ -74,7 +76,6 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
     GLCall(glFrontFace(GL_CCW)); // Counter-clockwise is front-facing
 
     m_lenVertices = vertices.size();
-	m_numTriangles = static_cast<unsigned int>(triangleIDs.size());
 	m_vao.reset(new VertexArray());
     VertexBufferLayout layoutVertices;
     layoutVertices.Push<float>(3);           // vec3 position
@@ -89,6 +90,8 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
 }
 
 int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec3 v_rel_hat, float bounding_sphere_radius) {
+    std::fill(triangle_visibility.begin(), triangle_visibility.end(), 0.0f);
+
     //projection matrices
     glm::vec3 camera_position = v_rel_hat * bounding_sphere_radius;
 
@@ -116,6 +119,7 @@ int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec
 	m_vao->Bind();
     m_shader->setUniformMat4f("u_MVP", u_MVP);
     glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(m_lenVertices / 3));
+    GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT));
 
     // Histogram-Buffer leeren
     GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_histogramBuffer));
@@ -134,6 +138,7 @@ int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec
     m_compute_shader->Bind();
 
     // Compute-Shader dispatchen (16x16 Work Groups)
+    std::cout << "Dispatch compute shader with " << NUM_PIXEL << " pixels" << std::endl;
     GLCall(glDispatchCompute((NUM_PIXEL + 15) / 16, (NUM_PIXEL + 15) / 16, 1));
 
     // Warten bis Compute-Shader fertig ist
