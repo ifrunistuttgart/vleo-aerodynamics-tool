@@ -1,7 +1,0 @@
-{
-  "dependencies": [
-    "glew",
-    "glm",
-    "glfw3"
-  ]
-}

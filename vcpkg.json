@@ -12,8 +12,7 @@
     {
       "name": "vtk",
       "features": [
-        "opengl",
-        "utf8"
+        "opengl"
       ]
     }
   ]
