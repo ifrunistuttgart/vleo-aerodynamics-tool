@@ -1,7 +1,8 @@
 #include "ComputeShader.h"
 
-#include <iostream>
 #include <string>
+#define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
+#include <spdlog/spdlog.h>
 
 #include "src/opengl/GLHelpers.h"
 
@@ -10,7 +11,7 @@ ComputeShader::ComputeShader(const std::string& computeSource, bool fromSource)
     : m_FilePath(""), m_ComputeShaderID(0)
 {
     if (computeSource.empty()) {
-        std::cerr << "ComputeShader::ComputeShader - empty source" << std::endl;
+		SPDLOG_ERROR("Computeshader source is empty");
         return;
     }
     m_ComputeShaderID = CreateShader(computeSource);
@@ -48,7 +49,7 @@ int ComputeShader::GetUniformLocation(const std::string& name)
 
     GLCall(int location = glGetUniformLocation(m_ComputeShaderID, name.c_str()));
     if (location == -1)
-        std::cout << "warning: uniform " << name << " doesn't exist !" << std::endl;
+        spdlog::warn("Uniform {} doesn't exist!", name);
     m_UniformLocationCache[name] = location;
     return location;
 }
@@ -59,7 +60,7 @@ unsigned int ComputeShader::CreateShader(const std::string& source)
     unsigned int cs = CompileShader(GL_COMPUTE_SHADER, source);
 
     if (cs == 0) {
-        std::cerr << "ComputeShader::CreateShader - compute shader compilation failed, abort linking." << std::endl;
+		SPDLOG_ERROR("Compute shader compilation failed, aborting shader program creation.");
         return 0;
     }
 
@@ -75,7 +76,7 @@ unsigned int ComputeShader::CreateShader(const std::string& source)
 unsigned int ComputeShader::CompileShader(unsigned int type, const std::string& source)
 {
     if (source.empty()) {
-        std::cerr << "CompileShader: empty source" << std::endl;
+		SPDLOG_ERROR("Compute shader source is empty, cannot compile shader.");
         return 0;
     }
 
@@ -92,16 +93,16 @@ unsigned int ComputeShader::CompileShader(unsigned int type, const std::string& 
         glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
         std::string message(length, '\0');
         glGetShaderInfoLog(id, length, &length, &message[0]);
-        std::cerr << "Failed to compile compute shader!\nInfoLog:\n" << message << std::endl;
+        SPDLOG_ERROR("Failed to compile compute shader!\nInfoLog:\n{}", message);
 
         const GLubyte* glVersion = glGetString(GL_VERSION);
         const GLubyte* glslVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
-        std::cerr << "OpenGL: " << (glVersion ? reinterpret_cast<const char*>(glVersion) : "unknown")
-            << "\nGLSL: " << (glslVersion ? reinterpret_cast<const char*>(glslVersion) : "unknown") << std::endl;
+        SPDLOG_ERROR("OpenGL: {}\nGLSL: {}", glVersion ? reinterpret_cast<const char*>(glVersion) : "unknown",
+            glslVersion ? reinterpret_cast<const char*>(glslVersion) : "unknown");
 
         const size_t maxDump = 4096;
-        std::cerr << "Compute shader source (truncated to " << maxDump << " chars):\n"
-            << source.substr(0, std::min(source.size(), maxDump)) << std::endl;
+        SPDLOG_ERROR("Compute shader source (truncated to {} chars):\n{}", maxDump,
+            source.substr(0, std::min(source.size(), maxDump)));
 
         glDeleteShader(id);
         return 0;

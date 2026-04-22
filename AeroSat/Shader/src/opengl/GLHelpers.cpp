@@ -1,5 +1,6 @@
 #include "GLHelpers.h"
-#include <iostream>
+#define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
+#include <spdlog/spdlog.h>
 
 void GLClearError()
 {
@@ -10,7 +11,7 @@ bool GLLogCall(const char* function, const char* file, int line)
 {
     while (GLenum error = glGetError())
     {
-        std::cout << "[OPenGL Error] (" << error << "): " << function << " in " << file << " line: " << line << std::endl;
+		SPDLOG_ERROR("[OpenGL Error] ({0}): {1} in {2} line: {3}", error, function, file, line);
         return false;
     }
     return true;

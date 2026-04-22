@@ -7,7 +7,8 @@
 #include "tetraeder_vector.h"
 #include "StaticMeshSatellite.h"
 #include <filesystem>
-#include <iostream>
+#define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
+#include <spdlog/spdlog.h>
 #include <memory>
 
 
@@ -25,9 +26,9 @@ protected:
 
     void SetUp() override {
         std::string obj_path = GetTestDataPath("tetraeder.obj");
-        std::cout << "[TEST] Loading OBJ from: " << obj_path << std::endl;
+		SPDLOG_INFO("[TEST] Loading OBJ from: {}", obj_path);
         satellite = std::make_unique<StaticMeshSatellite>(obj_path);
-        std::cout << "[TEST] Loaded " << satellite->get_num_triangles() << " triangles" << std::endl;
+		SPDLOG_INFO("[TEST] Loaded {} triangles", satellite->get_num_triangles());
     }
 };
 

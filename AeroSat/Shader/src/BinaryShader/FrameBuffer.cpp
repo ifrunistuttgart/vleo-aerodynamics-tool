@@ -1,6 +1,7 @@
 #include "FrameBuffer.h"
 #include "src/opengl/GLHelpers.h"
-#include "iostream"
+#define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
+#include <spdlog/spdlog.h>
 
 FrameBuffer::FrameBuffer(unsigned int texture2D, unsigned int width, unsigned int heigth)
 {
@@ -19,7 +20,7 @@ FrameBuffer::FrameBuffer(unsigned int texture2D, unsigned int width, unsigned in
 
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	if (status != GL_FRAMEBUFFER_COMPLETE) {
-		std::cout << "Framebuffer not complete! Status: " << status << std::endl;
+		spdlog::warn("Framebuffer not complete! Status: {}", status);
 	}
 };
 

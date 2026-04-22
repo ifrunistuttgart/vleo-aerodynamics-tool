@@ -1,7 +1,6 @@
 #include "Hybrid_force_torque_calculator.h"
 #include <vector>
 #include <span>
-#include <iostream>
 #include <glm/glm.hpp>
 
 /**

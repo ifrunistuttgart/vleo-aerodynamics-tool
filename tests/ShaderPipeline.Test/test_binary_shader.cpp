@@ -15,7 +15,8 @@ protected:
         // Initialize GLFW
         if (!glfwInit())
         {
-            std::cout << "Failed to initialize GLFW" << std::endl;
+            SPDLOG_ERROR("Failed to initialize GLFW");
+            return;
         }
 
         // Configure GLFW
@@ -28,7 +29,8 @@ protected:
         m_window = glfwCreateWindow(800, 800, "Triangle Renderer", nullptr, nullptr);
         if (m_window == nullptr)
         {
-            std::cout << "Failed to create GLFW window" << std::endl;
+			SPDLOG_ERROR("Failed to create GLFW window");
+			return;
         }
 
         glfwMakeContextCurrent(m_window);
@@ -36,11 +38,12 @@ protected:
         // Initialize GLEW
         if (glewInit() != GLEW_OK)
         {
-            std::cout << "Failed to initialize GLEW" << std::endl;
+			SPDLOG_ERROR("Failed to initialize GLEW");
             glfwTerminate();
+            return;
         }
 
-        std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
+		SPDLOG_INFO("OpenGL context initialized successfully with version: {}", glGetString(GL_VERSION));
 
     }
 

@@ -15,18 +15,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Hybrid_force_torque_calculator.cpp">
+    <ClCompile Include="showMesh.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Hybrid_force_torque_calculator.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="IGSI_Model.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="IShadingPipeline.h">
+    <ClInclude Include="showMesh.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

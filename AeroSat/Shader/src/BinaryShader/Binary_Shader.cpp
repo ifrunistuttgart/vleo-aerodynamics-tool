@@ -1,6 +1,7 @@
 #pragma once
 #include "src/BinaryShader/Binary_Shader.h"
-#include <iostream>
+#define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
+#include <spdlog/spdlog.h>
 #include <algorithm>
 #include <cstring>
 
@@ -41,11 +42,11 @@ BinaryShader::~BinaryShader() {
 int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) {
 	m_numTriangles = static_cast<unsigned int>(triangleIDs.size() / 3); //assume 3 vertices per triangle
     if (m_numTriangles > MAX_TRIANGLES) {
-        std::cerr << "Error: Too many triangles. Max supported is " << MAX_TRIANGLES << "." << std::endl;
+		SPDLOG_ERROR("Number of triangles ({}) exceeds the maximum supported ({}).", m_numTriangles, MAX_TRIANGLES);
         return -1;
 	}
     // framebuffer for counting ids
-	std::cout << "create framebuffer with ID texture of size " << NUM_PIXEL << "x" << NUM_PIXEL << std::endl;
+    SPDLOG_DEBUG("create framebuffer with ID texture of size {}x{}", NUM_PIXEL, NUM_PIXEL);
     GLCall(glGenTextures(1, &m_ID_texture));
     GLCall(glBindTexture(GL_TEXTURE_2D, m_ID_texture));
     GLCall(glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, NUM_PIXEL, NUM_PIXEL, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr));
@@ -148,7 +149,7 @@ int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec
 
 	// Dispatch compute shader to count pixels per triangle ID
     m_compute_shader->Bind();
-    std::cout << "Dispatch compute shader with " << NUM_PIXEL << " pixels" << std::endl;
+	SPDLOG_DEBUG("Dispatching compute shader with work group size {}x{}", (NUM_PIXEL + 15) / 16, (NUM_PIXEL + 15) / 16);
     GLCall(glDispatchCompute((NUM_PIXEL + 15) / 16, (NUM_PIXEL + 15) / 16, 1));
     GLCall(glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT));
 

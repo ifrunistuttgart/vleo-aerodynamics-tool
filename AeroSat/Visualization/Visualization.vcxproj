@@ -21,32 +21,32 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{fbd5c09c-0add-410b-8e83-bd392c147592}</ProjectGuid>
-    <RootNamespace>Main</RootNamespace>
+    <ProjectGuid>{a222cc65-c6ab-4cf3-ac30-ee7334636be2}</ProjectGuid>
+    <RootNamespace>Visualization</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -70,6 +70,18 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
+  </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
   </PropertyGroup>
@@ -80,7 +92,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG;SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat;$(SolutionDir)AeroSat\Shader;$(SolutionDir)vcpkg_installed\x64-windows\x64-windows\include\vtk-9.3</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat;$(SolutionDir)vcpkg_installed/x64-windows/x64-windows/include/vtk-9.3</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -96,7 +108,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat;$(SolutionDir)AeroSat\Shader;$(SolutionDir)vcpkg_installed\x64-windows\x64-windows\include\vtk-9.3</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat;$(SolutionDir)vcpkg_installed/x64-windows/x64-windows/include/vtk-9.3</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -110,7 +122,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG;SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat;$(SolutionDir)AeroSat\Shader;$(SolutionDir)vcpkg_installed\x64-windows\x64-windows\include\vtk-9.3</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat;$(SolutionDir)vcpkg_installed/x64-windows/x64-windows/include/vtk-9.3</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -126,7 +138,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat;$(SolutionDir)AeroSat\Shader;$(SolutionDir)vcpkg_installed\x64-windows\x64-windows\include\vtk-9.3</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat;$(SolutionDir)vcpkg_installed/x64-windows/x64-windows/include/vtk-9.3</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -134,24 +146,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="showMesh.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AeroSat\Aero_Force_Torque\Aero_Force_Torque.vcxproj">
-      <Project>{699f3c57-2756-4438-9439-65c40ac06dc2}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\AeroSat\GSI\GSI.vcxproj">
-      <Project>{bf65ec8c-8430-4bfc-9ce3-90064cdda70a}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\AeroSat\Satellite\Satellite.vcxproj">
-      <Project>{812e31a6-8e44-4234-95ab-2a83335b60ef}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\AeroSat\Shader\Shader.vcxproj">
-      <Project>{1446f28f-8725-49d2-97f0-2a6a295f034c}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\AeroSat\Visualization\Visualization.vcxproj">
-      <Project>{a222cc65-c6ab-4cf3-ac30-ee7334636be2}</Project>
-    </ProjectReference>
+    <ClInclude Include="showMesh.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -12,7 +12,7 @@ const float BOLTZMANN_CONSTANT__J_PER_K = 1.380649e-23f; // Boltzmann constant i
 Sentman::Sentman(int temperature_ratio_method)
     : temperature_ratio_method(temperature_ratio_method) {
     if (temperature_ratio_method < 1 || temperature_ratio_method > 3) {
-        spdlog::error("Invalid temperature_ratio_method: must be 1, 2, or 3 (value={})", temperature_ratio_method);
+        SPDLOG_ERROR("Invalid temperature_ratio_method: must be 1, 2, or 3 (value={})", temperature_ratio_method);
         throw std::invalid_argument(
             "Invalid temperature_ratio_method: must be 1, 2, or 3"
         );

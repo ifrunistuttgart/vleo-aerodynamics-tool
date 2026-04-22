@@ -34,12 +34,14 @@ float RotatableMeshSatellite::get_bounding_sphere_radius() {
 	return m_bounding_sphere_radius;
 }
 
+//TODO meshid statt surface id
 int RotatableMeshSatellite::turn_surface_around_axis(const int surface_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) {
 	// Create rotation matrix
-	glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), angle__rad, glm::vec3(axis[0], axis[1], axis[2]));
 	glm::mat4 translation_to_origin = glm::translate(glm::mat4(1.0f), glm::vec3(-origin[0], -origin[1], -origin[2]));
+	glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), angle__rad, glm::vec3(axis[0], axis[1], axis[2])); //TODO: consider normalizing axis vector
 	glm::mat4 translation_back = glm::translate(glm::mat4(1.0f), glm::vec3(origin[0], origin[1], origin[2]));
 	glm::mat4 transform = translation_back * rotation * translation_to_origin;
+
 	// Apply transformation to the specified surface's vertices
 	m_model_matrices[surface_id] = transform;
 	return 0; // Success

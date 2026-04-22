@@ -1,8 +1,8 @@
 #include "Shader.h"
-#include <iostream>
 #include <string>
 #include "GLHelpers.h"
-
+#define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
+#include <spdlog/spdlog.h>
 // Constructor: create shader directly from provided source strings
 Shader::Shader(const std::string& vertexSource, const std::string& fragmentSource, bool fromSource)
     : m_FilePath(""), m_ShaderID(0)
@@ -42,7 +42,7 @@ int Shader::GetUniformLocation(const std::string& name)
 
     GLCall(int location = glGetUniformLocation(m_ShaderID, name.c_str()));
     if (location == -1)
-        std::cout << "warning: uniform " << name << " doesn't exist !" << std::endl;
+        spdlog::warn("Uniform '{}' doesn't exist!", name);
     m_UniformLocationCache[name] = location;
     return location;
 }
@@ -54,7 +54,7 @@ unsigned int Shader::CreateShader(const std::string& vertexShader, const std::st
     unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
 
     if (vs == 0 || fs == 0) {
-        std::cerr << "Shader::CreateShader - shader compilation failed, abort linking." << std::endl;
+        SPDLOG_ERROR("Shader compilation failed, abort linking");
         if (vs) glDeleteShader(vs);
         if (fs) glDeleteShader(fs);
         return 0;
@@ -75,7 +75,7 @@ unsigned int Shader::CreateShader(const std::string& vertexShader, const std::st
 unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
 {
     if (source.empty()) {
-        std::cerr << "CompileShader: empty source" << std::endl;
+		SPDLOG_ERROR("empty shader source provided for type {}", (type == GL_VERTEX_SHADER ? "vertex" : "fragment"));
         return 0;
     }
 
@@ -95,16 +95,15 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
 
         const GLubyte* glVersion = glGetString(GL_VERSION);
         const GLubyte* glslVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
-        std::cerr << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment")
-            << " shader!\nOpenGL: " << (glVersion ? reinterpret_cast<const char*>(glVersion) : "unknown")
-            << "\nGLSL: " << (glslVersion ? reinterpret_cast<const char*>(glslVersion) : "unknown") << std::endl;
+        SPDLOG_ERROR("Failed to compile {} shader! OpenGL: {}, GLSL: {}",
+            (type == GL_VERTEX_SHADER ? "vertex" : "fragment"),
+            (glVersion ? reinterpret_cast<const char*>(glVersion) : "unknown"),
+			(glslVersion ? reinterpret_cast<const char*>(glslVersion) : "unknown"));
 
-        std::cerr << "InfoLog:\n" << message << std::endl;
+		SPDLOG_ERROR("Shader compilation error: {}", message);
 
         const size_t maxDump = 4096;
-        std::cerr << "Shader source (truncated to " << maxDump << " chars):\n"
-            << source.substr(0, std::min(source.size(), maxDump)) << std::endl;
-
+        SPDLOG_ERROR("Shader source (truncated to {} chars):\n{}", maxDump, source.substr(0, std::min(source.size(), maxDump)));
         glDeleteShader(id);
         return 0;
     }

@@ -1,16 +1,15 @@
 #include "StaticMeshSatellite.h"
-#include <iostream>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <cmath>
-
+#define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
+#include <spdlog/spdlog.h>
 
 StaticMeshSatellite::StaticMeshSatellite(std::string file)
     : ISatelliteShadingData(), ISatelliteManipulator(), m_total_triangles(0), m_bounding_sphere_radius(0.0f) {
     
-    std::cout << "[StaticMeshSatellite] Loading file: " << file << std::endl;
-    
+    SPDLOG_INFO("Loading file {}", file);
     Assimp::Importer importer;
     
     // Load the scene with post-processing flags
@@ -20,20 +19,17 @@ StaticMeshSatellite::StaticMeshSatellite(std::string file)
     ); 
 
     if (!scene || scene->mNumMeshes == 0) {
-        std::cerr << "[StaticMeshSatellite] Failed to load model: " << file << std::endl;
+		SPDLOG_ERROR("Failed to load model: {}", file);
         if (importer.GetErrorString()) {
-            std::cerr << "[StaticMeshSatellite] ASSIMP Error: " << importer.GetErrorString() << std::endl;
+			SPDLOG_ERROR("ASSIMP Error: {}", importer.GetErrorString());
         }
         return;
     }
-
-    std::cout << "[StaticMeshSatellite] Successfully loaded " << scene->mNumMeshes << " meshes" << std::endl;
-
+    SPDLOG_DEBUG("Successfully loaded {} meshes", scene->mNumMeshes);
     // Extract mesh data
     for (unsigned int mesh_idx = 0; mesh_idx < scene->mNumMeshes; ++mesh_idx) {
         const aiMesh* mesh = scene->mMeshes[mesh_idx];
-        std::cout << "[StaticMeshSatellite] Processing mesh " << mesh_idx << " with " << mesh->mNumFaces << " faces and " 
-			<< mesh->mNumVertices << " vertices" << std::endl;
+        SPDLOG_DEBUG("Processing mesh {} with {} faces and {} vertices", mesh_idx, mesh->mNumFaces, mesh->mNumVertices);
         unsigned int mesh_triangle_count = 0;
         // Extract triangles and normals
         for (unsigned int face_idx = 0; face_idx < mesh->mNumFaces; ++face_idx) {
@@ -96,7 +92,7 @@ StaticMeshSatellite::StaticMeshSatellite(std::string file)
     }
     m_bounding_sphere_radius = max_distance;
 
-    std::cout << "Successfully loaded model with " << m_total_triangles << " triangles" << std::endl;
+	SPDLOG_INFO("Finished loading model. Total triangles: {}", m_total_triangles);
 }
 
 std::span<const float> StaticMeshSatellite::get_vertices() {

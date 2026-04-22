@@ -3,7 +3,7 @@
 #include "ShadingAlgorithmFactory.h"
 #include "StaticMeshSatellite.h"
 #include <filesystem>
-#include <iostream>
+#include <spdlog/spdlog.h>
 #include <memory>
 #include <glm/glm.hpp>
 #include <Sentman.h>
@@ -39,9 +39,9 @@ protected:
     void SetUp() override {
         std::string obj_path = GetTestDataPath("tetraeder.obj");
         //std::string obj_path = GetTestDataPath("International Space Station.obj");
-        std::cout << "[TEST] Loading OBJ from: " << obj_path << std::endl;
+		SPDLOG_INFO("[TEST] loading Test data from: {}", obj_path);
         satellite = std::make_unique<StaticMeshSatellite>(obj_path);
-        std::cout << "[TEST] Loaded " << satellite->get_num_triangles() << " triangles" << std::endl;
+        SPDLOG_INFO("[TEST] Loaded {} triangles", satellite->get_num_triangles());
 		sentman = std::make_unique<Sentman>(1);
 		shading_pipeline = std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::Binary, 800);
 		force_torque_calculator = std::make_unique<HybridForceTorqueCalculator>(*satellite, *shading_pipeline, *sentman);
@@ -52,7 +52,7 @@ protected:
 TEST_F(HybridForceTorqueIntegrationTest, TestShading) {
 	glm::vec3 torque(0.0f, 0.0f, 0.0f);
 	glm::vec3 force(0.0f, 0.0f, 0.0f);
-	std::cout << "[TEST] Calculating aero torque and force..." << std::endl;
+	SPDLOG_INFO("[TEST] Starting aero torque and force calculation test...");
 	AeroConditions conditions = create_leo_conditions();
 	force_torque_calculator->calc_aero_torque_force(v_rel__m_per_s,300.0f, conditions, torque, force);
 
@@ -62,4 +62,5 @@ TEST_F(HybridForceTorqueIntegrationTest, TestShading) {
 	EXPECT_NEAR(torque.x, 0.0f, 1e-5f);
 	EXPECT_NEAR(torque.y, -0.3820e-4f, 1e-5f);
 	EXPECT_NEAR(torque.z, 0.0f, 1e-5f);
+	SPDLOG_INFO("[TEST] Aero torque and force calculation test completed.");
 }
