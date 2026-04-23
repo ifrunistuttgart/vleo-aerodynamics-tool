@@ -2,20 +2,12 @@
 #include <memory>
 #include <chrono>
 #include <iomanip>
-#include <vector>
-#include <stdexcept>
-#include <span>
 #include <glm/glm.hpp>
 #define FMT_UNICODE 0 // avoid error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
 #include "VleoAerodynamics.h"
 #include "RotatableMeshSatellite.h"
-#include "ShadingPipeline.h"
-#include "ShadingAlgorithmFactory.h"
-#include "Sentman.h"
-#include "Hybrid_force_torque_calculator.h"
-#include "showMesh.h"
 #include "Core/Core.h"
 #include <filesystem>
 

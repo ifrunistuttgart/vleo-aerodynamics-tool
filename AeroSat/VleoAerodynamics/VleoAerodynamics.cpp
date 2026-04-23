@@ -1,4 +1,8 @@
 #include "VleoAerodynamics.h"
+#include "Sentman.h"
+#include "showMesh.h"
+#include "Hybrid_force_torque_calculator.h"
+#include "ShadingPipeline.h"
 
 #define FMT_UNICODE 0 // avoid error: 'Unicode support requires compiling with /utf-8'
 #include "spdlog/spdlog.h"

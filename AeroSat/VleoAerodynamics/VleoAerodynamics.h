@@ -1,11 +1,8 @@
 #pragma once
 #include "Core/ISatellite_shading_data.h"
-#include "RotatableMeshSatellite.h"
-#include "ShadingPipeline.h"
-#include "ShadingAlgorithmFactory.h"
-#include "Sentman.h"
-#include "Hybrid_force_torque_calculator.h"
-#include "showMesh.h"
+#include "IGSI_Model.h"
+#include "Core/IAero_calculator.h"
+#include "IShadingPipeline.h"
 #include <memory>
 #include "Core/Core.h"
 #include <string>
@@ -14,7 +11,7 @@
 class VleoAerodynamics {
 private:
 	ISatelliteShadingData& m_satellite;
-	std::unique_ptr<ShadingPipeline> m_shading_pipeline;
+	std::unique_ptr<IShadingPipeline> m_shading_pipeline;
 	std::unique_ptr<IGSIModel> m_gsi_model;
 	std::unique_ptr<IAeroCalculator> m_aero_calculator;
 
