@@ -135,6 +135,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="VleoAerodynamics.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AeroSat\Aero_Force_Torque\Aero_Force_Torque.vcxproj">
@@ -152,6 +153,9 @@
     <ProjectReference Include="..\AeroSat\Visualization\Visualization.vcxproj">
       <Project>{a222cc65-c6ab-4cf3-ac30-ee7334636be2}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="VleoAerodynamics.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
