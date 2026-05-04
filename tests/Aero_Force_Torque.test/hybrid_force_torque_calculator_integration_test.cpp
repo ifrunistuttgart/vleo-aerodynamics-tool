@@ -3,7 +3,10 @@
 #include "ShadingAlgorithmFactory.h"
 #include "StaticMeshSatellite.h"
 #include <filesystem>
+
+#define FMT_UNICODE 0 // avoid error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
+
 #include <memory>
 #include <glm/glm.hpp>
 #include <Sentman.h>

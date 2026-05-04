@@ -7,6 +7,9 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#define FMT_UNICODE 0 // avoid error: 'Unicode support requires compiling with /utf-8'
+#include <spdlog/spdlog.h>
+
 class BinaryShaderTest : public ::testing::Test {
 protected:
     GLFWwindow* m_window = nullptr;
@@ -43,7 +46,8 @@ protected:
             return;
         }
 
-		SPDLOG_INFO("OpenGL context initialized successfully with version: {}", glGetString(GL_VERSION));
+		const auto* gl_version = reinterpret_cast<const char*>(glGetString(GL_VERSION));
+        SPDLOG_INFO("OpenGL context initialized successfully with version: {}", gl_version != nullptr ? gl_version : "unknown");
 
     }
 

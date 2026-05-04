@@ -36,7 +36,7 @@ int Sentman::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal,
     // Velocity magnitude
     const float v_rel_magnitude__m_per_s = glm::length(v_rel_inv__m_per_s);
     if (v_rel_magnitude__m_per_s < 1e-10f) {
-        spdlog::warn("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.", v_rel_magnitude__m_per_s);
+        SPDLOG_WARN("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.", v_rel_magnitude__m_per_s);
         return 0; // No relative velocity, no force
     }
 
