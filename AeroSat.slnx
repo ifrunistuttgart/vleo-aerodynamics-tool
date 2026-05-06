@@ -3,16 +3,16 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="AeroSat/Aero_Force_Torque/Aero_Force_Torque.vcxproj" Id="699f3c57-2756-4438-9439-65c40ac06dc2" />
-  <Project Path="AeroSat/Core/Core.vcxproj" Id="9df4eba4-09c4-4001-ba71-caefd1be7bf1" />
-  <Project Path="AeroSat/GSI/GSI.vcxproj" Id="bf65ec8c-8430-4bfc-9ce3-90064cdda70a" />
-  <Project Path="AeroSat/Satellite/Satellite.vcxproj" Id="812e31a6-8e44-4234-95ab-2a83335b60ef" />
-  <Project Path="AeroSat/Shader/Shader.vcxproj" Id="1446f28f-8725-49d2-97f0-2a6a295f034c" />
-  <Project Path="AeroSat/Visualization/Visualization.vcxproj" Id="a222cc65-c6ab-4cf3-ac30-ee7334636be2" />
-  <Project Path="AeroSat/VleoAerodynamics/VleoAerodynamics.vcxproj" Id="1e79b7d3-2960-4eac-bf71-e8c359169200" />
-  <Project Path="Main/Main.vcxproj" Id="fbd5c09c-0add-410b-8e83-bd392c147592" />
-  <Project Path="tests/Aero_Force_Torque.test/Aero_Force_Torque.test.vcxproj" Id="55cea0ca-202f-4558-b571-2d09680ebbbc" />
-  <Project Path="tests/GSI.Test/GSI.Test.vcxproj" Id="59745d6b-927b-49b2-bd2f-157d149dd416" />
-  <Project Path="tests/Satellite.test/Satellite.test.vcxproj" Id="5cc57cb1-45e1-45b7-9f0b-331981a00bc3" />
-  <Project Path="tests/ShaderPipeline.Test/ShaderPipeline.Test.vcxproj" Id="4c160f03-fa45-4d91-8a78-35e70102b011" />
+  <Project Path="aero_sat/aero_load_calculators/aero_load_calculators.vcxproj" Id="699f3c57-2756-4438-9439-65c40ac06dc2" />
+  <Project Path="aero_sat/core/core.vcxproj" Id="9df4eba4-09c4-4001-ba71-caefd1be7bf1" />
+  <Project Path="aero_sat/gsi/gsi.vcxproj" Id="bf65ec8c-8430-4bfc-9ce3-90064cdda70a" />
+  <Project Path="aero_sat/main/main.vcxproj" Id="fbd5c09c-0add-410b-8e83-bd392c147592" />
+  <Project Path="aero_sat/satellite/satellite.vcxproj" Id="812e31a6-8e44-4234-95ab-2a83335b60ef" />
+  <Project Path="aero_sat/shading_pipeline/shading_pipeline.vcxproj" Id="1446f28f-8725-49d2-97f0-2a6a295f034c" />
+  <Project Path="aero_sat/visualization/visualization.vcxproj" Id="a222cc65-c6ab-4cf3-ac30-ee7334636be2" />
+  <Project Path="aero_sat/vleo_aerodynamics/vleo_aerodynamics.vcxproj" Id="1e79b7d3-2960-4eac-bf71-e8c359169200" />
+  <Project Path="tests/aero_load_calculators.test/aero_load_calculators.test.vcxproj" Id="55cea0ca-202f-4558-b571-2d09680ebbbc" />
+  <Project Path="tests/GSI.Test/GSI.Test.vcxproj" DisplayName="gsi.test" Id="59745d6b-927b-49b2-bd2f-157d149dd416" />
+  <Project Path="tests/Satellite.test/Satellite.test.vcxproj" DisplayName="satellite.test" Id="5cc57cb1-45e1-45b7-9f0b-331981a00bc3" />
+  <Project Path="tests/shading_pipeline.test/shading_pipeline.test.vcxproj" Id="4c160f03-fa45-4d91-8a78-35e70102b011" />
 </Solution>
