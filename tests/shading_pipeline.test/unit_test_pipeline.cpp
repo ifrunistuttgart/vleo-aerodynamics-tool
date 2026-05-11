@@ -1,9 +1,9 @@
 #include "pch.h"
-#include "src/ShadingPipeline.h"
-#include "src/BinaryShader/Binary_Shader.h"
-#include "Core/ISatellite_shading_data.h"
+#include "src/shading_pipeline.h"
+#include "src/binary_shader/binary_shader.h"
+#include "core/ISatellite_shading_data.h"
 #include "res/Geometries/tetraeder_vector.h"
-#include "src/ShadingAlgorithmFactory.h"
+#include "src/shading_algorithm_factory.h"
 #include <span>
 #include <vector>
 #include <cstdint>

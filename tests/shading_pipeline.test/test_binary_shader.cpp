@@ -1,14 +1,16 @@
 #include "pch.h"
-#include "Binary_Shader.h"
-#include "tetraeder.h"
+#include <spdlog/spdlog.h>
 #include <span>
 #include <vector>
 #include <cstdint>
+#include <algorithm>
+#include <glm/glm.hpp>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#define FMT_UNICODE 0 // avoid error: 'Unicode support requires compiling with /utf-8'
-#include <spdlog/spdlog.h>
+#include "binary_shader.h"
+#include "tetraeder_vector.h"
+
 
 class BinaryShaderTest : public ::testing::Test {
 protected:
@@ -28,7 +30,7 @@ protected:
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // Fenster unsichtbar machen
 
-        // Create window 
+        // Create window
         m_window = glfwCreateWindow(800, 800, "Triangle Renderer", nullptr, nullptr);
         if (m_window == nullptr)
         {
@@ -65,10 +67,10 @@ TEST_F(BinaryShaderTest, ShadeTetrahedron) {
     BinaryShader shader(800);
 
     shader.set_vertices(
-        std::span<const float>(vertices, sizeof(vertices) / sizeof(float)),
-        std::span<const std::uint32_t>(triangleIDs, sizeof(triangleIDs) / sizeof(unsigned int)));
+        std::span<const float>(vertices),
+        std::span<const std::uint32_t>(triangleIDs));
 
-    std::vector<float> isTriangleVisible(sizeof(triangleIDs) / sizeof(unsigned int), 0.0f);
+    std::vector<float> isTriangleVisible(triangleIDs.size(), 0.0f);
     std::vector<unsigned int> numTrianglesPerMesh{ numFaces };
     std::vector<glm::mat4> modelMatrices{ glm::mat4(1.0f) };
     glm::vec3 windDir(1.0f, 0.0f, 0.0f);

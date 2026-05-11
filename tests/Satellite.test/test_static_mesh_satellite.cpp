@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "tetraeder_vector.h"
-#include "StaticMeshSatellite.h"
+#include "static_mesh_satellite.h"
 #include <algorithm>
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>

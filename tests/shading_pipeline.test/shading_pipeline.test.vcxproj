@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -25,7 +25,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <ProjectName>ShadingPipeline.Test</ProjectName>
+    <ProjectName>shading_pipeline.test</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -62,7 +62,7 @@
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>$(SolutionDir)\AeroSat;$(SolutionDir)\AeroSat\Shader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)aero_sat;$(SolutionDir)aero_sat\shading_pipeline;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -79,7 +79,7 @@
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>$(SolutionDir)\AeroSat;$(SolutionDir)\AeroSat\Shader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)aero_sat;$(SolutionDir)aero_sat\shading_pipeline;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -95,7 +95,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(SolutionDir)\AeroSat;$(SolutionDir)\AeroSat\Shader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)aero_sat;$(SolutionDir)aero_sat\shading_pipeline;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -113,7 +113,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(SolutionDir)\AeroSat;$(SolutionDir)\AeroSat\Shader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)aero_sat;$(SolutionDir)aero_sat\shading_pipeline;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -138,10 +138,16 @@
     <ClCompile Include="unit_test_pipeline.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\AeroSat\Satellite\Satellite.vcxproj">
+    <ProjectReference Include="..\..\aero_sat\aero_load_calculators\aero_load_calculators.vcxproj">
+      <Project>{699f3c57-2756-4438-9439-65c40ac06dc2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\\..\\aero_sat\\satellite\\satellite.vcxproj">
       <Project>{812e31a6-8e44-4234-95ab-2a83335b60ef}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\AeroSat\Shader\Shader.vcxproj">
+    <ProjectReference Include="..\\..\\aero_sat\\shading_pipeline\\shading_pipeline.vcxproj">
+      <Project>{1446f28f-8725-49d2-97f0-2a6a295f034c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\aero_sat\shading_pipeline\shading_pipeline.vcxproj">
       <Project>{1446f28f-8725-49d2-97f0-2a6a295f034c}</Project>
     </ProjectReference>
   </ItemGroup>

@@ -1,15 +1,15 @@
 #include "pch.h"
-#include "src/ShadingPipeline.h"
-#include "src/ShadingAlgorithmFactory.h"
+#include <spdlog/spdlog.h>
+#include <memory>
 #include <span>
 #include <vector>
 #include <glm/glm.hpp>
-#include "tetraeder_vector.h"
-#include "StaticMeshSatellite.h"
 #include <filesystem>
-#define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
-#include <spdlog/spdlog.h>
-#include <memory>
+
+#include "src/shading_pipeline.h"
+#include "src/shading_algorithm_factory.h"
+#include "tetraeder_vector.h"
+#include "static_mesh_satellite.h"
 
 
 // Get path relative to this source file
@@ -36,7 +36,7 @@ protected:
 TEST_F(ShadingPipelineIntegrationTest, TestShading) {
     ShadingPipeline pipeline(*satellite, ShadingAlgorithmType::Binary, 800);
 
-    std::vector<float> isTriangleVisible(triangleIDs.size(), 0.0f);
+    std::vector<float> isTriangleVisible(satellite->get_num_triangles(), 0.0f);
     pipeline.shade(std::span<float>(isTriangleVisible), glm::vec3(1.0f, 0.0f, 0.0f));
 
     EXPECT_NEAR(isTriangleVisible[0], 0.0f, 1e-5);

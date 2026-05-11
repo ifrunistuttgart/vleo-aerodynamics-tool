@@ -25,6 +25,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <ProjectName>gsi.test</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -45,7 +46,7 @@
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)aero_sat</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -62,7 +63,7 @@
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)aero_sat</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -78,7 +79,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)aero_sat</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -96,7 +97,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(SolutionDir)AeroSat</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)aero_sat</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -122,7 +123,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\AeroSat\GSI\GSI.vcxproj">
+    <ProjectReference Include="..\\..\\aero_sat\\gsi\\gsi.vcxproj">
+      <Project>{bf65ec8c-8430-4bfc-9ce3-90064cdda70a}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\aero_sat\gsi\gsi.vcxproj">
       <Project>{bf65ec8c-8430-4bfc-9ce3-90064cdda70a}</Project>
     </ProjectReference>
   </ItemGroup>

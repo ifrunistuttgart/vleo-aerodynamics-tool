@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "Sentman.h"
-#include "Core/Core.h"
+#include "sentman.h"
+#include "core/core.h"
 #include <glm/glm.hpp>
 
 

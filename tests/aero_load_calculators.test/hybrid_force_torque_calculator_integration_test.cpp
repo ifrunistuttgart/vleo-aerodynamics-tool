@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "ShadingPipeline.h"
-#include "ShadingAlgorithmFactory.h"
-#include "StaticMeshSatellite.h"
+#include "shading_pipeline.h"
+#include "shading_algorithm_factory.h"
+#include "static_mesh_satellite.h"
 #include <filesystem>
 
 #define FMT_UNICODE 0 // avoid error: 'Unicode support requires compiling with /utf-8'
@@ -9,9 +9,9 @@
 
 #include <memory>
 #include <glm/glm.hpp>
-#include <Sentman.h>
-#include <Hybrid_force_torque_calculator.h>
-#include "Core/Core.h"
+#include <sentman.h>
+#include <hybrid_force_torque_calculator.h>
+#include "core/core.h"
 
 
 // Get path relative to this source file
