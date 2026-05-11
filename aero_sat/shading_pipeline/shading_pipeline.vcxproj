@@ -164,7 +164,6 @@
     <ClCompile Include="src\opengl\vertex_buffer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="res\geometries\tetraeder.h" />
     <ClInclude Include="res\geometries\tetraeder_vector.h" />
     <ClInclude Include="res\shaders\color_shader.h" />
     <ClInclude Include="res\shaders\compute_shader.h" />
