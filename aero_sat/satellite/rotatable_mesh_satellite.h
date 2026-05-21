@@ -5,6 +5,10 @@
 #include <glm/glm.hpp>
 #include "static_mesh_satellite.h"
 
+/*
+ * A satellite class that allows for rotation of its surfaces. It inherits from StaticMeshSatellite and implements the ISatelliteManipulator interface.
+ * This class maintains transformed vertices, normals, and centroids to reflect the changes in the satellite's configuration after rotations.
+ */
 class RotatableMeshSatellite : public StaticMeshSatellite {
 protected:
 	std::vector<float> m_transformed_vertices;
@@ -14,19 +18,14 @@ public:
     RotatableMeshSatellite(std::string file);
     ~RotatableMeshSatellite() = default;
 
-    //ISatelliteShadingData interface
-    // each vertex has three values (x, y, z)
     std::span<const float> get_vertices() override;
 
-    // three values per triangle 
     std::span<const float> get_normals() override;
 
-    // three values per triangle
     std::span<const float> get_centroids() override;
 
     float get_bounding_sphere_radius() override;
 
-    //ISatelliteManipulator interface
     int turn_surface_around_axis(const int surface_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) override;
 
 private:

@@ -1,0 +1,6 @@
+﻿add_subdirectory(core)
+add_subdirectory(aero_load_calculator)
+add_subdirectory(gsi)
+add_subdirectory(satellite)
+add_subdirectory(shading_pipeline)
+#add_subdirectory(visualization)

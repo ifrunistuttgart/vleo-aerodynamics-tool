@@ -1,10 +1,12 @@
-#include "static_mesh_satellite.h"
+#define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
+#include <spdlog/spdlog.h>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <cmath>
-#define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
-#include <spdlog/spdlog.h>
+
+#include "static_mesh_satellite.h"
+
 
 StaticMeshSatellite::StaticMeshSatellite(std::string file)
     : ISatelliteShadingData(), ISatelliteManipulator(), m_total_triangles(0), m_bounding_sphere_radius(0.0f) {

@@ -2,6 +2,9 @@
 #include <array>
 #include <glm/gtc/matrix_transform.hpp>
 
+#define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
+#include <spdlog/spdlog.h>
+
 RotatableMeshSatellite::RotatableMeshSatellite(std::string file)
 	: StaticMeshSatellite(file) {
 }
@@ -36,6 +39,10 @@ float RotatableMeshSatellite::get_bounding_sphere_radius() {
 
 //TODO meshid statt surface id
 int RotatableMeshSatellite::turn_surface_around_axis(const int surface_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) {
+	if (surface_id < 0 || surface_id >= static_cast<int>(m_model_matrices.size())) {
+		SPDLOG_ERROR("turn_surface_around_axis invalid surface_id={} (num_surfaces={})", surface_id, m_model_matrices.size());
+		return -1;
+	}
 	// Create rotation matrix
 	glm::mat4 translation_to_origin = glm::translate(glm::mat4(1.0f), glm::vec3(-origin[0], -origin[1], -origin[2]));
 	glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), angle__rad, glm::vec3(axis[0], axis[1], axis[2])); //TODO: consider normalizing axis vector

@@ -48,6 +48,7 @@ The naming style is inspired by Python PEP 8 while following C++ interface conve
 - Functions: snake_case, for example `calculate_drag`
 - Variables: snake_case, for example `drag_coefficient`
 - Constants: UPPER_SNAKE_CASE, for example `PI`
+- folders and files: snake_case
 
 ### Units in identifiers
 - Use `__` to separate variable name and unit suffix

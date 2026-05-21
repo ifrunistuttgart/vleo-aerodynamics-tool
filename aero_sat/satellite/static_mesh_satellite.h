@@ -4,9 +4,15 @@
 #include <vector>
 #include <span>
 #include <glm/glm.hpp>
-#include "core/Isatellite_shading_data.h"
-#include "core/Isatellite_manipulator.h"
+#include "Isatellite_shading_data.h"
+#include "Isatellite_manipulator.h"
 
+
+/**
+* A satellite class with a static mesh structure. It implements both the ISatelliteShadingData and ISatelliteManipulator interfaces. 
+* Altough it implements the ISatelliteManipulator interface, the turn_surface and turn_surface_around_axis functions do not actually change the satellite's configuration, since the mesh is static.
+* This class is useful for testing and benchmarking purposes, as it provides a simple implementation of the satellite interfaces without the complexity of handling dynamic transformations.
+*/
 class StaticMeshSatellite: public ISatelliteShadingData, public ISatelliteManipulator {
 protected:
     std::vector<float> m_vertices;
@@ -23,22 +29,11 @@ public:
 	StaticMeshSatellite(std::string file);
     ~StaticMeshSatellite() = default;
 
-	//ISatelliteShadingData interface
-    // each vertex has three values (x, y, z)
     std::span<const float> get_vertices() override;
-
-    // one per vertex
     std::span<const std::uint32_t> get_triangle_ids() override;
-
-    // three values per triangle 
     std::span<const float> get_normals() override;
-
-    // one value per triangle
     std::span<const float> get_areas() override;
-
-    // three values per triangle
     std::span<const float> get_centroids() override;
-
     std::span<const glm::mat4> get_model_matrices() override;
     std::span<const unsigned int> get_num_triangles_per_mesh() override;
     const unsigned int get_num_triangles() override;

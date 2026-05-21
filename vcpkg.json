@@ -1,19 +1,10 @@
 {
-  "name": "aerosat",
-  "version": "1.0.0",
   "dependencies": [
     "assimp",
-    "eigen3",
     "glew",
     "glfw3",
     "glm",
     "gtest",
-    "spdlog",
-    {
-      "name": "vtk",
-      "features": [
-        "opengl"
-      ]
-    }
+    "spdlog"
   ]
 }
