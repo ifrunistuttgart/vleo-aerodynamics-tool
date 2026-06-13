@@ -22,5 +22,5 @@ public:
     );
 
     ~ShadingPipeline() override;
-    int shade(std::span<float> triangle_visibility, const glm::vec3& v_rel_hat) override;
+    std::vector<float> shade(const glm::vec3& v_rel_hat) override;
 };

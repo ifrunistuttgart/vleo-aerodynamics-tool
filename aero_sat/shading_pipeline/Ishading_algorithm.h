@@ -20,12 +20,11 @@ public:
 
 	/**
 	 * Calculate the shading for a set of triangles.
-	 * @param triangle_visibility - Span containing the resulting visibility values for each triangle. They can range from 0 to 1, where 0 means fully shaded and 1 means fully visible.
 	 * @param v_rel_hat normalized - normalized relative velocity vector of the satellite with respect to the surrounding gas, in the satellite's body frame.
 	 * @param bounding_sphere_radius - The radius of the bounding sphere that encompasses the entire satellite.
 	 * @param num_triangles_per_mesh - Span containing the number of triangles in each mesh.
 	 * @param model_matrices - Span containing the 4x4 transformation matrices of the satellite meshes.
 	 * @return 0 on success.
 	 */
-	virtual int shade_satellite(std::span<float> triangle_visibility, glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) = 0;
+	virtual std::vector<float> shade_satellite( glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) = 0;
 };

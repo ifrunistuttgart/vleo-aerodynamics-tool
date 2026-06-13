@@ -30,13 +30,9 @@ int main() {
 	std::unique_ptr<ShadingPipeline> pipeline = std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::Binary, 800);
 	SPDLOG_INFO("Created shading pipeline (algorithm=Binary, pixels={})", 800);
 
-	std::vector<float> triangle_visibility(satellite->get_num_triangles(), 0.0f);
 	glm::vec3 velocity__m_per_s(0.0f, -7800.0f, 0.0f);  // ~7.8 km/s orbital velocity
 
-	int shade_result = pipeline->shade(std::span<float>(triangle_visibility), glm::normalize(velocity__m_per_s));
-	if (shade_result != 0) {
-		SPDLOG_ERROR("Shading failed (code={})", shade_result);
-	}
+	std::vector<float> triangle_visibility = pipeline->shade(glm::normalize(velocity__m_per_s));
 
 	//ShowMeshWithShadingAndWind(*satellite, triangle_visibility, velocity__m_per_s);
 	return 0;

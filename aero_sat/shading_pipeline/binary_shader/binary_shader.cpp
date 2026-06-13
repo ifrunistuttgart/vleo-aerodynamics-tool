@@ -89,8 +89,8 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
     return 0;
 }
 
-int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) {
-    std::fill(triangle_visibility.begin(), triangle_visibility.end(), 0.0f);
+std::vector<float> BinaryShader::shade_satellite(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) {
+    std::vector<float> triangle_visibility(m_numTriangles,0);
 
     //projection matrices
     glm::vec3 camera_position = v_rel_hat * bounding_sphere_radius;
@@ -166,5 +166,5 @@ int BinaryShader::shade_satellite(std::span<float> triangle_visibility, glm::vec
     }
 
 	m_vao->Unbind();
-    return 0;
+    return triangle_visibility;
 };
