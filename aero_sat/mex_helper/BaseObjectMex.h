@@ -1,8 +1,0 @@
-//
-// Created by Jan_L on 09.06.2026.
-//
-
-#ifndef AEROSAT_BASEOBJECTMEX_H
-#define AEROSAT_BASEOBJECTMEX_H
-
-#endif //AEROSAT_BASEOBJECTMEX_H

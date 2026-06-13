@@ -16,7 +16,7 @@ public:
 	 * @param torque__Nm - output parameter for the calculated aerodynamic torque in Newton-meters
 	 * @param force__N - output parameter for the calculated aerodynamic force in Newtons
      */
-    virtual int calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions aero, glm::vec3& torque__Nm, glm::vec3& force__N) = 0;
+    virtual int calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions& aero, glm::vec3& torque__Nm, glm::vec3& force__N) = 0;
 
     virtual ~IAeroLoadCalculator() = default;
 };

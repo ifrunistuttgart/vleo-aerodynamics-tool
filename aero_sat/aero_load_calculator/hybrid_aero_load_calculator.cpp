@@ -24,7 +24,7 @@ HybridForceTorqueCalculator::~HybridForceTorqueCalculator() {
 
 }
 
-int HybridForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions aero, glm::vec3& torque__Nm, glm::vec3& force__N) {
+int HybridForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions& aero, glm::vec3& torque__Nm, glm::vec3& force__N) {
 	const float rel_speed = glm::length(v_rel__m_per_s);
 	if (rel_speed <= 0.0f) {
 		SPDLOG_WARN("calc_aero_torque_force called with zero relative velocity; returning zero force/torque");
@@ -33,14 +33,10 @@ int HybridForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__
 		return 0;
 	}
 
-	std::vector<float> triangle_visibility(m_satellite.get_num_triangles(), 0.0f);
 	torque__Nm = glm::vec3(0.0f);
 	force__N = glm::vec3(0.0f);
 
-	const int shade_result = m_shading_pipeline.shade(std::span<float>(triangle_visibility), glm::normalize(v_rel__m_per_s));
-	if (shade_result != 0) {
-		SPDLOG_ERROR("Shading failed in calc_aero_torque_force (code={}, triangles={})", shade_result, triangle_visibility.size());
-	}
+	std::vector<float> triangle_visibility = m_shading_pipeline.shade(glm::normalize(v_rel__m_per_s));
 	std::span<const float> areas = m_satellite.get_areas();
 	std::span<const float> normals = m_satellite.get_normals();
 	std::span<const float> centroids = m_satellite.get_centroids();
