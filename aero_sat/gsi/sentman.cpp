@@ -20,7 +20,7 @@ Sentman::Sentman(int temperature_ratio_method)
 }
 
 
-int Sentman::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal, const glm::vec3& centroid__m, const glm::vec3& v_rel__m_per_s, float surf_temp__K, AeroConditions aero, glm::vec3& aero_force__N, glm::vec3& aero_torque__Nm){
+int Sentman::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal, const glm::vec3& centroid__m, const glm::vec3& v_rel__m_per_s, float surf_temp__K, AeroConditions& aero, glm::vec3& aero_force__N, glm::vec3& aero_torque__Nm){
     // Initialize outputs
     aero_force__N = glm::vec3(0.0f);
     aero_torque__Nm = glm::vec3(0.0f);

@@ -24,7 +24,7 @@ HybridForceTorqueCalculator::~HybridForceTorqueCalculator() {
 
 }
 
-int HybridForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions aero, glm::vec3& torque__Nm, glm::vec3& force__N) {
+int HybridForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions& aero, glm::vec3& torque__Nm, glm::vec3& force__N) {
 	const float rel_speed = glm::length(v_rel__m_per_s);
 	if (rel_speed <= 0.0f) {
 		SPDLOG_WARN("calc_aero_torque_force called with zero relative velocity; returning zero force/torque");
