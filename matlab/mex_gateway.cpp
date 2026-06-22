@@ -262,7 +262,7 @@ public:
                     validate_output_size(outputs, 0);
                     validate_argument(inputs, 1, "int", 1);
                     const int id = inputs[1][0];
-                    satellite_map.erase(id);
+                    shading_pipeline_map.erase(id);
                     return;
                 }
             }
