@@ -20,6 +20,7 @@
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
 #include "hybrid_aero_load_calculator.h"
+#include "show_mesh.h"
 
 #define LEVEL_ERROR 2
 #define LEVEL_WARN 1
@@ -319,6 +320,25 @@ public:
                     validate_argument(inputs, 1, "int", 1);
                     const int id = inputs[1][0];
                     hybrid_aero_load_calculator_map.erase(id);
+                    return;
+                }
+            }
+            if (cls == "Visualization") {
+                if (cmd == "show_mesh") {
+                    validate_input_size(inputs, 4);
+                    validate_output_size(outputs, 0);
+                    validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 3, "double", 3);
+
+                    const int satellite_id = inputs[1][0];
+                    RotatableMeshSatellite& satellite = *satellite_map.at(satellite_id);
+                    validate_argument(inputs, 2, "double", satellite.get_num_triangles());
+
+                    matlab::data::TypedArray<double> const typed_array = inputs[2];
+                    std::vector<float> triangle_visibility(typed_array.begin(), typed_array.end());
+                    glm::vec3 velocity__m_per_s(inputs[3][0], inputs[3][1], inputs[3][2]);
+
+                    ShowMeshWithShadingAndWind(satellite, triangle_visibility, velocity__m_per_s);
                     return;
                 }
             }

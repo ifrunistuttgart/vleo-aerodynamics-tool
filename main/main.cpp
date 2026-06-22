@@ -8,7 +8,7 @@
 #include "rotatable_mesh_satellite.h"
 #include "shading_pipeline.h"
 #include "hybrid_aero_load_calculator.h"
-//#include "show_mesh.h"
+#include "show_mesh.h"
 
 // Get path relative to this source file
 std::string get_path(const std::string& filename) {
@@ -28,8 +28,8 @@ int main() {
 	std::unique_ptr<Sentman> gsi_model = std::make_unique<Sentman>(1);
 	SPDLOG_INFO("Initialized Sentman model");
 
-	std::unique_ptr<ShadingPipeline> pipeline = std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::Binary, 800);
-	SPDLOG_INFO("Created shading pipeline (algorithm=Binary, pixels={})", 800);
+	std::unique_ptr<ShadingPipeline> pipeline = std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::Binary, 2000);
+	SPDLOG_INFO("Created shading pipeline (algorithm=Binary, pixels={})", 2000);
 
 	std::unique_ptr<HybridForceTorqueCalculator> aero_calculator = std::make_unique<HybridForceTorqueCalculator>(*satellite, *pipeline, *gsi_model);
 	SPDLOG_INFO("Created hybrid aero load calculator");
@@ -53,6 +53,6 @@ int main() {
 	SPDLOG_INFO("calculate force: {}, {}, {} N", force__N.x, force__N.y, force__N.z);
 	SPDLOG_INFO("calculate torque: {}, {}, {} Nm", torque__Nm.x, torque__Nm.y, torque__Nm.z);
 	SPDLOG_INFO("test shading completed");
-	//ShowMeshWithShadingAndWind(*satellite, triangle_visibility, velocity__m_per_s);
+	ShowMeshWithShadingAndWind(*satellite, triangle_visibility, velocity__m_per_s);
 	return 0;
 }
