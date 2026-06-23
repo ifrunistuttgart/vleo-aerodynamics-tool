@@ -3,17 +3,16 @@
 #include <spdlog/spdlog.h>
 #include <span>
 #include <vector>
-#include <cstdint>
 #include <algorithm>
 #include <glm/glm.hpp>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "binary_shader/binary_shader.h"
+#include "cop_shader/cop_shader.h"
 #include "geometries/tetraeder_vector.h"
 
 
-class BinaryShaderTest : public ::testing::Test {
+class CoPShaderTest : public ::testing::Test {
 protected:
     GLFWwindow* m_window = nullptr;
 
@@ -64,8 +63,8 @@ protected:
     }
 };
 
-TEST_F(BinaryShaderTest, ShadeTetrahedron) {
-    BinaryShader shader(800);
+TEST_F(CoPShaderTest, ShadeTetrahedron) {
+    CoPShader shader(800);
 
     shader.set_vertices(
         std::span<const float>(vertices),

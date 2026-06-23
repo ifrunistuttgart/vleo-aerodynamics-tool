@@ -21,7 +21,7 @@ public:
     // therefore the usage of triangel ids does not bring any additional benefit that just relying on the order of the returned data.
     /**
 	 * Get the triangle IDs of the traingles in the satellite meshes
-     * @return - Span containing the triangle IDs
+     * @return - Span containing the triangle IDs, one entry per vertex
      */
     virtual  std::span<const std::uint32_t> get_triangle_ids() = 0;
 

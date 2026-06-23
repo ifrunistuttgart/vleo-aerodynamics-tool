@@ -12,5 +12,6 @@ target_link_libraries(shading_pipeline PUBLIC core glm::glm aero_load_calculator
 
 add_subdirectory(opengl)
 add_subdirectory(binary_shader)
+add_subdirectory(cop_shader)
 
 add_library(AeroSat::shading_pipeline ALIAS shading_pipeline)
