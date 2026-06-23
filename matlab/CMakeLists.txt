@@ -11,7 +11,7 @@ if (Matlab_FOUND)
         NAME MexGateway
         SRC mex_gateway.cpp
         LINK_TO ${Matlab_MX_LIBRARY} ${Matlab_MEX_LIBRARY} ${Matlab_ENG_LIBRARY}
-                glm::glm gsi core satellite shading_pipeline aero_load_calculator
+                glm::glm gsi core satellite shading_pipeline aero_load_calculator visualization
     )
 
     set_target_properties(MexGateway

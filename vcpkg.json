@@ -1,10 +1,6 @@
 {
-  "dependencies": [
-    "assimp",
-    "glew",
-    "glfw3",
-    "glm",
-    "gtest",
-    "spdlog"
-  ]
+  "dependencies" : [ "assimp", "glew", "glfw3", "glm", "gtest", "spdlog", {
+    "name" : "vtk",
+    "version>=" : "9.3.0-pv5.12.1#16"
+  } ]
 }

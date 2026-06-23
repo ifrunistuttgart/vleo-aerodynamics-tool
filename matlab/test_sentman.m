@@ -28,10 +28,10 @@ mesh_file_path = fullfile(current_folder, 'International Space Station.obj');
 iss_satellite = RotatableMeshSatellite(mesh_file_path);
 
 % Rotate a specific surface/panel of the satellite 90 degrees around the Y-axis
-rotation_angle_rad = pi / 2;
-rotation_center = [0, 0, 0];
-rotation_axis = [0, 1, 0];
-iss_satellite.turn_surface_around_axis(1, rotation_angle_rad, rotation_center, rotation_axis);
+% rotation_angle_rad = pi / 2;
+% rotation_center = [0, 0, 0];
+% rotation_axis = [0, 1, 0];
+% iss_satellite.turn_surface_around_axis(1, rotation_angle_rad, rotation_center, rotation_axis);
 
 satellite_vertices = iss_satellite.get_vertices();
 fprintf("loaded satellite geometry with %d triangles",iss_satellite.get_num_triangles())
@@ -66,3 +66,6 @@ avg_load_calc_time = total_load_calc_time / num_iterations;
 fprintf('Average load calculation call duration: %.6f seconds.\n', avg_load_calc_time);
 
 disp("All tests completed successfully.");
+
+%% visualize last shading result
+show_mesh(iss_satellite, panel_visibility, relative_velocity_m_s);
