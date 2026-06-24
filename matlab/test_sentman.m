@@ -37,7 +37,7 @@ satellite_vertices = iss_satellite.get_vertices();
 fprintf("loaded satellite geometry with %d triangles",iss_satellite.get_num_triangles())
 %% Benchmark Shading Pipeline
 % Initialize shading pipeline with a resolution/grid size of 800
-shading_pipeline = ShadingPipeline(iss_satellite, 800);
+shading_pipeline = ShadingPipeline(iss_satellite,1, 800);
 num_iterations = 100;
 relative_velocity_m_s = [7800.0; 0.0; 0.0];
 

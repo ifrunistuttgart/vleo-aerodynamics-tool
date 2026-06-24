@@ -28,7 +28,7 @@ int main() {
 	std::unique_ptr<Sentman> gsi_model = std::make_unique<Sentman>(1);
 	SPDLOG_INFO("Initialized Sentman model");
 
-	std::unique_ptr<ShadingPipeline> pipeline = std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::Binary, 2000);
+	std::unique_ptr<ShadingPipeline> pipeline = std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::Binary,  800);
 	SPDLOG_INFO("Created shading pipeline (algorithm=Binary, pixels={})", 2000);
 
 	std::unique_ptr<HybridForceTorqueCalculator> aero_calculator = std::make_unique<HybridForceTorqueCalculator>(*satellite, *pipeline, *gsi_model);

@@ -12,6 +12,7 @@ target_sources(shading_pipeline PRIVATE
     vertex_array.cpp
     vertex_buffer.cpp
     compute_shader.h
+    frame_buffer.cpp
     glfw_opengl_context.h
     gl_helpers.h
     index_buffer.h
@@ -19,6 +20,7 @@ target_sources(shading_pipeline PRIVATE
     vertex_array.h
     vertex_buffer.h
     vertex_buffer_layout.h
+    frame_buffer.h
 )
 
 target_include_directories(shading_pipeline PUBLIC
