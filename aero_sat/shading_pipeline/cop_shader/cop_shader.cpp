@@ -208,6 +208,6 @@ std::vector<float> CoPShader::shade_satellite(glm::vec3 v_rel_hat, float boundin
         }
         GLCall(glUnmapBuffer(GL_SHADER_STORAGE_BUFFER));
     }
-
+    m_compute_shader->Unbind();
     return triangle_visibility;
 };

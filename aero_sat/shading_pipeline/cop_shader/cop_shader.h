@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "Ishading_algorithm.h"
-#include "binary_shader/frame_buffer.h"
+#include "opengl/frame_buffer.h"
 #include "opengl/shader.h"
 #include "opengl/compute_shader.h"
 #include "opengl/vertex_array.h"

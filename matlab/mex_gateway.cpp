@@ -25,7 +25,7 @@
 #define LEVEL_ERROR 2
 #define LEVEL_WARN 1
 #define LEVEL_INFO 0
-#define LOG_LEVEL LEVEL_ERROR
+#define LOG_LEVEL LEVEL_INFO
 #define LOG(level, msg) do { if ((level) >= LOG_LEVEL) { log((level), std::string(msg), __LINE__); } } while (0)
 
 class MatlabLogger : public matlab::mex::Function {
@@ -230,15 +230,29 @@ public:
             if (cls == "Shading") {
                 if (cmd == "new") {
                     LOG(LEVEL_INFO, "Creating new Shading instance.");
-                    validate_input_size(inputs, 3);
+                    validate_input_size(inputs, 4);
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
                     validate_argument(inputs, 2, "int", 1);
+                    validate_argument(inputs, 3, "int", 1);
 
                     const int id = inputs[1][0];
                     RotatableMeshSatellite& satellite = *satellite_map.at(id);
+                    const int shading_key = inputs[2][0];
+                    ShadingAlgorithmType algorithm_type;
+                    switch (shading_key) {
+                        case 0:
+                            algorithm_type = ShadingAlgorithmType::Binary;
+                            break;
+                        case 1:
+                            algorithm_type = ShadingAlgorithmType::CoP;
+                            break;
+                        default:
+                            LOG(LEVEL_ERROR, "Unknown shading algorithm type: " + std::to_string(shading_key));
+                            throw std::invalid_argument(std::string("Unknown shading algorithm type: ") + std::to_string(shading_key));
+                    };
                     shading_pipeline_map.insert({shading_pipeline_max_id,
-                                                std::make_unique<ShadingPipeline>(satellite, ShadingAlgorithmType::Binary, inputs[2][0])});
+                                                std::make_unique<ShadingPipeline>(satellite,algorithm_type, inputs[3][0])});
                     outputs[0] = factory.createScalar<int>(shading_pipeline_max_id);
                     shading_pipeline_max_id++;
                     return;
@@ -345,7 +359,9 @@ public:
             LOG(LEVEL_ERROR, "Unknown command: " + cmd + " for class: " + cls);
             throw std::invalid_argument("Unknown command: " + cmd + " for class: " + cls);
         } catch (const std::exception& e) {
+            // Log the error to MATLAB console and rethrow so MATLAB receives a proper error
             LOG(LEVEL_ERROR, e.what());
+            throw; // propagate the exception back to MATLAB instead of silently returning with no outputs
         }
     }
 
