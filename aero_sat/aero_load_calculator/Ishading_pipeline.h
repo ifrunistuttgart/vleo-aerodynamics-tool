@@ -4,15 +4,23 @@
 #include "Isatellite_shading_data.h"    
 
 /**
- * Interface for calculation of 
+ * Interface for the shading pipeline.
+ *
+ * The shading pipeline is responsible for determining the visibility (shading) of 
+ * satellite surface elements from the perspective of the incoming gas flow.
+ * This is used to determine which surfaces are exposed to the flow and thus
+ * contribute to the aerodynamic loads.
  */
 class IShadingPipeline {
     public:
     /**
-    * Calculate the shading for a set of triangles based on their visibility and relative velocity.
-	* @param v_rel_hat normalized relative velocity vector of the satellite with respect to the surrounding gas, in the satellite's body frame.
-    * @return 0 on success.
-    */
+     * Calculates the visibility/shading for all triangles in the satellite model.
+     *
+     * @param v_rel_hat The normalized relative velocity vector of the incoming flow
+     *                  in the satellite's body frame.
+     * @return A vector containing the visibility factor for each triangle.
+     *         Typically, 1.0 means fully exposed and 0.0 means fully shaded/occluded.
+     */
     virtual std::vector<float> shade(const glm::vec3& v_rel_hat) = 0;
 
 	virtual ~IShadingPipeline() = default;
