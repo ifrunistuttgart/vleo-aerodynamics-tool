@@ -3,67 +3,83 @@
 #include <span>
 #include <glm/glm.hpp>
 
-/*
- * Interface for providing shading data form the satellite, that could be relevant for aero load calculations. 
- * This includes vertex positions, triangle IDs, normals, areas, centroids, and model matrices.
+/**
+ * Interface for providing geometric and shading-related data of the satellite.
+ *
+ * This data is used for aerodynamic load calculations and visibility analysis.
+ * It includes vertex positions, triangle definitions, normals, and physical properties
+ * like areas and centroids of the satellite's surface elements.
  */
 class ISatelliteShadingData {
 public:
     virtual ~ISatelliteShadingData() = default;
 
     /**
-     * Get the vertex positions of the satellites meshes
-	 * @return - Span containing the vertex positions, flat array with three values per vertex (x, y, z)
+     * Retrieves the vertex positions of the satellite's meshes.
+     *
+     * @return A span containing vertex positions (x, y, z triplets).
      */
     virtual std::span<const float> get_vertices() = 0;
 
-	// TODO remove this from the compuation, since either way the correct maping of ids depends on the order of the returned data,
-    // therefore the usage of triangel ids does not bring any additional benefit that just relying on the order of the returned data.
     /**
-	 * Get the triangle IDs of the traingles in the satellite meshes
-     * @return - Span containing the triangle IDs, one entry per vertex
+     * Retrieves the triangle IDs for the satellite's meshes.
+     *
+     * Note: This mapping is essential for identifying which vertices form a triangle,
+     * although it's recommended to rely on consistent data ordering where possible.
+     *
+     * @return A span containing the triangle IDs (indices into the vertex array).
      */
     virtual  std::span<const std::uint32_t> get_triangle_ids() = 0;
 
     /**
-     * Get the normals of the triangles in the satellite meshes
-     * @return - Span containing the normals, flat array with three values per normal (x, y, z)
+     * Retrieves the surface normals of the triangles in the satellite meshes.
+     *
+     * @return A span containing the normal vectors (x, y, z triplets).
      */
     virtual std::span<const float> get_normals() = 0;
 
     /**
-     * Get the areas of the triangles in the satellite meshes
-     * @return - Span containing the areas, flat array with one value per triangle
+     * Retrieves the surface areas of the triangles in the satellite meshes.
+     *
+     * @return A span containing the area of each triangle.
      */
     virtual std::span<const float> get_areas() = 0;
 
     /**
-     * Get the centroids of the triangles in the satellite meshes
-     * @return - Span containing the centroids, flat array with three values per centroid (x, y, z)
+     * Retrieves the centroids of the triangles in the satellite meshes.
+     *
+     * @return A span containing the centroid positions (x, y, z triplets).
      */
     virtual std::span<const float> get_centroids() = 0;
 
     /**
-	 * Get the 4x4 transformation matrices of the satellite meshes. resempling the translation , rotation, and scaling of the meshes.
-     * @return - Span containing the model matrices
+     * Retrieves the 4x4 transformation (model) matrices for each satellite mesh.
+     *
+     * These matrices define the current position, rotation, and scale of each component.
+     *
+     * @return A span containing the model matrices.
      */
     virtual std::span<const glm::mat4> get_model_matrices() = 0;
 
     /**
-     * Get the number of triangles in each mesh
-     * @return - Span containing the number of triangles per mesh
+     * Retrieves the number of triangles in each individual mesh of the satellite.
+     *
+     * @return A span containing the triangle count per mesh.
      */
     virtual std::span<const unsigned int> get_num_triangles_per_mesh() = 0;
 
     /**
-     * Get the total number of triangles in the satellite meshes
-     * @return - The total number of triangles
+     * Retrieves the total number of triangles across all meshes of the satellite.
+     *
+     * @return The total triangle count.
      */
     virtual const unsigned int get_num_triangles() = 0;
 
-	/**
-	 * Get the radius of the bounding sphere that encompasses the entire satellite in its current configuration.
-	 * @return - The radius of the bounding sphere
-	 */
+    /**
+     * Retrieves the radius of a bounding sphere that encompasses the entire satellite
+     * in its current configuration.
+     *
+     * @return The bounding sphere radius.
+     */
     virtual float get_bounding_sphere_radius() = 0;
 };

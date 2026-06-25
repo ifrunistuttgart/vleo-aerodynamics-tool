@@ -4,27 +4,40 @@
 #include <glm/glm.hpp>
 
 /**
- * Interface for shading algorithms that calculate the visibility of satellite surfaces based on their geometry and relative velocity.
+ * Interface for shading algorithms.
+ *
+ * Shading algorithms calculate the visibility of satellite surface elements 
+ * based on their geometry and the direction of the incoming flow (relative velocity).
+ * Implementations may use different techniques such as Z-buffering,
+ * or other GPU-accelerated methods.
  */
 class IShadingAlgorithm {
 public:
 	virtual ~IShadingAlgorithm() = default;
 
 	/**
-	 * Set the vertex positions and triangle IDs for the shading algorithm.
-	 * @param vertices - Span containing the vertex positions, flat array with three values per vertex (x, y, z)
-	 * @param triangleIDs - Span containing the triangle IDs
-	 * @return 0 on success.
+	 * Sets the geometric data for the shading algorithm.
+	 *
+	 * This method initializes the algorithm with the vertex positions and triangle
+	 * definitions of the satellite model.
+	 *
+	 * @param vertices A span containing the vertex positions (x, y, z triplets).
+	 * @param triangleIDs A span containing the triangle IDs (indices).
+	 * @return 0 on success, or a non-zero error code on failure.
 	 */
 	virtual int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) = 0;
 
 	/**
-	 * Calculate the shading for a set of triangles.
-	 * @param v_rel_hat normalized - normalized relative velocity vector of the satellite with respect to the surrounding gas, in the satellite's body frame.
-	 * @param bounding_sphere_radius - The radius of the bounding sphere that encompasses the entire satellite.
-	 * @param num_triangles_per_mesh - Span containing the number of triangles in each mesh.
-	 * @param model_matrices - Span containing the 4x4 transformation matrices of the satellite meshes.
-	 * @return 0 on success.
+	 * Calculates the visibility of satellite triangles from a specific direction.
+	 *
+	 * This method performs the actual shading calculation, considering the satellite's
+	 * bounding volume and the current transformation of its individual meshes.
+	 *
+	 * @param v_rel_hat The normalized relative velocity vector in the satellite's body frame.
+	 * @param bounding_sphere_radius The radius of the satellite's bounding sphere.
+	 * @param num_triangles_per_mesh A span containing the triangle count for each mesh component.
+	 * @param model_matrices A span containing the transformation matrices for each mesh component.
+	 * @return A vector of visibility factors (one per triangle).
 	 */
 	virtual std::vector<float> shade_satellite(glm::vec3 v_rel_hat,
 											   float bounding_sphere_radius,
