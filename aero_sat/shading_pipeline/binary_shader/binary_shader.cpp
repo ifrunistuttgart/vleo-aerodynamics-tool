@@ -14,7 +14,6 @@
 
 // embedded shader headers
 #include "binary_shader/shaders/id_shader.h"
-#include "binary_shader/shaders/compute_shader.h"
 #include "opengl/vertex_buffer_layout.h"
 
 BinaryShader::BinaryShader(unsigned int num_pixel)
@@ -24,7 +23,6 @@ BinaryShader::BinaryShader(unsigned int num_pixel)
 }
 
 BinaryShader::~BinaryShader() {
-    m_compute_shader.reset();
     m_shader.reset();
     m_frame_buffer.reset();
     m_vao.reset();
@@ -32,10 +30,6 @@ BinaryShader::~BinaryShader() {
     if (m_ID_texture != 0) {
         GLCall(glDeleteTextures(1, &m_ID_texture));
     }
-    if (m_histogramBuffer != 0) {
-        GLCall(glDeleteBuffers(1, &m_histogramBuffer));
-    }
-
 }
 
 int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) {
@@ -53,17 +47,9 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
     m_frame_buffer.reset(new FrameBuffer(m_ID_texture, NUM_PIXEL, NUM_PIXEL));
     m_frame_buffer->UnBind();
 
-	// histogrambuffer for compute shader to count pixels per triangle ID
-    GLCall(glGenBuffers(1, &m_histogramBuffer));
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_histogramBuffer));
-	GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER, (m_numTriangles + 1) * sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW)); // +1 für Hintergrund (ID 0)
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
-
     // Create shader program from embedded sources
     m_shader.reset(new Shader(ID_vertex_shader, ID_fragment_shader, true));
     m_shader->Unbind();
-    m_compute_shader.reset(new ComputeShader(Compute_shader, true));
-    m_compute_shader->Unbind();
 
     // Enable depth testing for proper occlusion
     GLCall(glEnable(GL_DEPTH_TEST));
@@ -135,35 +121,31 @@ std::vector<float> BinaryShader::shade_satellite(glm::vec3 v_rel_hat, float boun
         offset += num_triangles_per_mesh[i] * 3;
     }
 
-	// clear histogram buffer before compute shader dispatch
+	// Ensure all framebuffer writes are visible to the subsequent imageLoad in the compute shader.
+    // GL_FRAMEBUFFER_BARRIER_BIT only covers framebuffer->framebuffer visibility.
+    // GL_SHADER_IMAGE_ACCESS_BARRIER_BIT is required for framebuffer writes to be visible
+    // to imageLoad in compute shaders. NVIDIA flushes all caches on any barrier (masking
+    // the bug); AMD/Intel are spec-precise and only flush the framebuffer cache.
+    // Read pixel IDs back to CPU via glReadPixels.
+    // imageLoad from uimage2D is unreliable on AMD/Intel (returns 0 for all pixels);
+    // glReadPixels from the bound FBO is spec-guaranteed and works on all drivers.
     GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT));
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_histogramBuffer));
-    GLuint* histogramData = (GLuint*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
-    if (histogramData) {
-        memset(histogramData, 0, (m_numTriangles + 1) * sizeof(GLuint)); // +1 for background with ID 0
-        GLCall(glUnmapBuffer(GL_SHADER_STORAGE_BUFFER));
-    }
-    GLCall(glBindImageTexture(0, m_ID_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI));
-    GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_histogramBuffer));
+    GLCall(glReadBuffer(GL_COLOR_ATTACHMENT0));
+    std::vector<GLuint> pixel_ids(NUM_PIXEL * NUM_PIXEL, 0);
+    GLCall(glReadPixels(0, 0, NUM_PIXEL, NUM_PIXEL, GL_RED_INTEGER, GL_UNSIGNED_INT, pixel_ids.data()));
+    m_frame_buffer->UnBind();
 
-	// Dispatch compute shader to count pixels per triangle ID
-    m_compute_shader->Bind();
-	SPDLOG_DEBUG("Dispatching compute shader with work group size {}x{}", (NUM_PIXEL + 15) / 16, (NUM_PIXEL + 15) / 16);
-    GLCall(glDispatchCompute((NUM_PIXEL + 15) / 16, (NUM_PIXEL + 15) / 16, 1));
-    GLCall(glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT));
-
-    // read histogram results
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_histogramBuffer));
-    histogramData = (GLuint*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-    if (histogramData) {
-		const size_t count = std::min(triangle_visibility.size(), static_cast<size_t>(m_numTriangles)); // TODO: waring when triangle_visibility.size() < m_numTriangles
-        for (size_t i = 0; i < count; i++) {
-            if (histogramData[i + 1] > 0) {
-                triangle_visibility[i] = 1.0f;
-            }
-        }
-        GLCall(glUnmapBuffer(GL_SHADER_STORAGE_BUFFER));
+    // Count visible triangles on CPU
+    const size_t count = std::min(triangle_visibility.size(), static_cast<size_t>(m_numTriangles));
+    std::vector<bool> seen(m_numTriangles + 1, false);
+    for (GLuint id : pixel_ids) {
+        if (id > 0 && id <= m_numTriangles) seen[id] = true;
     }
+    int visible = 0;
+    for (size_t i = 0; i < count; i++) {
+        if (seen[i + 1]) { triangle_visibility[i] = 1.0f; visible++; }
+    }
+    SPDLOG_INFO("BinaryShader: {}/{} panels visible", visible, m_numTriangles);
 
 	m_vao->Unbind();
     return triangle_visibility;
