@@ -304,6 +304,25 @@ Confirmed via research (see chat history / links below) before deciding:
     result: `matlab/bin` is fully self-contained, no `PATH` change needed for MATLAB
     at all. Not yet added to the user-facing MATLAB instructions — do that as part of
     step 7 (final doc rewrite).
+- Cherry-picked 4 commits from a separate `matlab-script-examples` branch (parallel
+  MATLAB-focused work) after reviewing each one: a real bugfix where
+  `mex_gateway.cpp`'s shading-algorithm switch used `case 0/1` for Binary/CoP while
+  `ShadingPipeline.m`'s own docstring already documented `1/2` — confirmed as a
+  genuine pre-existing mismatch, not a style choice, by diffing both the `.m` and
+  `.cpp` sides; a `MEX_GATEWAY_VERBOSE_LOGGING` compile-time toggle (default OFF) since
+  per-call INFO logging routes through the MATLAB Engine API and is slow enough to
+  matter for the project's own sweep-heavy use case — wired to `MEX_GATEWAY_VERBOSE_LOGGING`
+  ON on `pixi-debug-matlab` and OFF on `pixi-release-matlab`, plus matching
+  `configure-release-matlab`/`build-release-matlab` pixi tasks (the release+MATLAB
+  preset existed before but had no task wired to it); standard MathWorks
+  `.gitattributes` (binary/merge-driver rules for `.mat`/`.mlx`/`.slx`/etc.); and
+  `*.asv` (MATLAB autosave files) added to `.gitignore`. Left out of the cherry-pick:
+  that branch's `matlab/examples/soar_rotatable.m` example-script expansion (sweep
+  demo) — out of scope for "how the MATLAB binding is built," and worth the user's
+  own call on whether/when to bring it over. Verified `pixi run build-matlab` and
+  `pixi run build-release-matlab` both still build `MexGateway.mexw64` correctly with
+  the new option, and the plain `pixi run build` (core toolbox, no MATLAB) is
+  unaffected.
 
 ## Open items to resolve during implementation (not yet decided/verified)
 
