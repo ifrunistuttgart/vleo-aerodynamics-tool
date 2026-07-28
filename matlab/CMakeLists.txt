@@ -14,12 +14,6 @@ if (Matlab_FOUND)
                 glm::glm gsi core satellite shading_pipeline aero_load_calculator visualization
     )
 
-    # Per-call INFO logging is slow (MATLAB Engine API); off by default, see mex_gateway.cpp.
-    option(MEX_GATEWAY_VERBOSE_LOGGING "Enable INFO-level MexGateway logging" OFF)
-    target_compile_definitions(MexGateway PRIVATE
-        $<$<BOOL:${MEX_GATEWAY_VERBOSE_LOGGING}>:MEX_GATEWAY_VERBOSE_LOGGING>
-    )
-
     set_target_properties(MexGateway
         PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/matlab/bin"

@@ -56,8 +56,7 @@ Linux and macOS are supported by the same `pixi.toml`/`pixi.lock`, but only the 
 path has been fully verified so far.
 
 If you prefer VS Code's CMake Tools UI over the `pixi run` tasks, the same setup is
-available as CMake presets: `pixi-debug`, `pixi-release`, `pixi-debug-matlab`,
-`pixi-release-matlab`.
+available as CMake presets: `pixi-debug`, `pixi-release`, `pixi-debug-matlab`.
 
 ### MATLAB bindings
 
@@ -78,6 +77,10 @@ test_sentman
 
 See `matlab/` for the example scripts (`Sentman.m`, `HybridAeroLoadCalculator.m`,
 `RotatableMeshSatellite.m`, `test_sentman.m`).
+
+`MexGateway` only logs warnings/errors by default (per-call INFO logging goes through
+the MATLAB Engine API and is slow). Set `MEX_GATEWAY_LOG_LEVEL=INFO` in the
+environment before starting MATLAB to see per-call logs — no rebuild needed.
 
 ### Tests
 
