@@ -30,7 +30,20 @@ spdlog = "*"
 # migration step). CMAKE_PREFIX_PATH points CMake's find_package() calls at the
 # pixi-managed environment so VTK/assimp/glew/glfw/glm/gtest/spdlog resolve from
 # there instead of vcpkg.
+#
+# Build type is RelWithDebInfo, not Debug: conda-forge's Windows C++ packages are
+# built Release-only (/MD, MSVCP140.dll). CMAKE_BUILD_TYPE=Debug uses /MDd
+# (MSVCP140D.dll) by default -- mixing those CRTs across a DLL boundary corrupts
+# any std::string/std::vector passed into spdlog/assimp/VTK and segfaults almost
+# immediately. RelWithDebInfo uses /MD (CRT-compatible) while still keeping debug
+# symbols for actual debugging.
 [tasks]
-configure = "cmake -S . -B out/build/pixi-debug -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=$CONDA_PREFIX"
+configure = "cmake -S . -B out/build/pixi-debug -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=$CONDA_PREFIX"
 build = { cmd = "cmake --build out/build/pixi-debug", depends-on = ["configure"] }
 test = { cmd = "ctest --test-dir out/build/pixi-debug --output-on-failure", depends-on = ["build"] }
+
+# Run built executables through this task (not directly), since conda-forge ships
+# shared DLLs (spdlog.dll, vtk*.dll, etc.) in the pixi env's Library/bin, which is
+# only on PATH inside a pixi-activated shell. Running main.exe directly bypasses
+# that and fails with "code execution cannot proceed because X.dll was not found".
+run = { cmd = "out/build/pixi-debug/main/main.exe", depends-on = ["build"] }

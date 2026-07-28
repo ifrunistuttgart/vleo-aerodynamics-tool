@@ -204,16 +204,62 @@ Confirmed via research (see chat history / links below) before deciding:
    "Migration Plan" section (or mark it done) so `CLAUDE.md` reflects only the current,
    working process — don't leave two conflicting sets of build instructions live long-term.
 
+## Progress so far (branch `migrate-build-to-pixi`)
+
+- `pixi.toml`/`pixi.lock` added at repo root with `cmake`, `ninja`, `c-compiler`,
+  `cxx-compiler`, `vtk`, `assimp`, `glew`, `glfw`, `glm`, `gtest`, `spdlog` for
+  `win-64`/`linux-64`/`osx-64`/`osx-arm64`. `pixi run build` (→ `configure` → `build`)
+  produces a working `main.exe` on Windows, `CMAKE_PREFIX_PATH=$CONDA_PREFIX` resolves
+  every dependency's CMake config with no `CMakeLists.txt` changes needed — package
+  names, config filenames, and target names (`glfw`, `GLEW::GLEW`, `VTK::*`, etc.) all
+  matched what the source already expected.
+- Confirmed pixi does set `CONDA_PREFIX` to the environment path (e.g.
+  `<project>/.pixi/envs/default`) — one of the previously-open items, now verified.
+- Confirmed all 10 VTK components the project links against exist in the conda-forge
+  9.6.2 build (`RenderingOpenGL2`, `InteractionWidgets`, `RenderingAnnotation`,
+  `RenderingFreeType`, etc.) — the main technical risk from item 4 above is cleared.
+- **New, important finding not in the original research:** conda-forge's Windows C++
+  packages are Release-only (`/MD`, linked against `MSVCP140.dll`) — there is no Debug
+  (`/MDd`) variant. Configuring with `CMAKE_BUILD_TYPE=Debug` on Windows mixes `/MDd`
+  application code with `/MD` third-party DLLs (spdlog, assimp, VTK, …); any
+  `std::string`/`std::vector` crossing that boundary corrupts memory and segfaults
+  almost immediately (reproduced: crashed inside `StaticMeshSatellite`'s constructor
+  before its first log line). **Use `RelWithDebInfo` instead of `Debug` on Windows** —
+  it maps to `/MD` (CRT-compatible) while still keeping debug symbols. This didn't come
+  up with vcpkg because vcpkg triplets build separate debug and release copies of every
+  library. `pixi.toml`'s `configure` task now uses `RelWithDebInfo`.
+- Running a built executable directly (double-click or bare `./main.exe`) fails with
+  "X.dll was not found" — conda-forge's shared DLLs live in `.pixi/envs/default/Library/bin`,
+  which is only on `PATH` inside a pixi-activated shell. Added a `pixi run run` task
+  instead of solving this with a post-build DLL-copy step (deferred — revisit if VS
+  Code's debugger needs it).
+- Fixed three pre-existing source bugs surfaced (not caused) by the newer VTK/compiler:
+  missing `#include <vector>` in `Ishading_pipeline.h` and `Ishading_algorithm.h`, and a
+  hardcoded `vtk-9.3/` include prefix in `show_mesh.cpp` (VTK's CMake targets already put
+  the versioned include dir on the path, so the version-agnostic `#include <vtkActor.h>`
+  form is correct going forward regardless of VTK version).
+- Fixed `main.cpp` pointing at `main/International Space Station.obj`, which was never
+  actually committed to git (0 history) — repointed at `matlab/soar_satellite.obj`, the
+  only mesh asset that actually exists in the repo.
+- Noted but not yet resolved: conda-forge's VTK build is Python-version-locked
+  (`vtk-9.6.2-py314h...`) and pulls in a full Python + numpy/matplotlib-style dependency
+  chain (`aiohttp`, `contourpy`, `cycler`, etc.) that the project doesn't use. Still far
+  faster than building VTK from source, but a real footprint/complexity trade-off that
+  wasn't visible before actually running `pixi install`.
+
 ## Open items to resolve during implementation (not yet decided/verified)
 
-- Exact conda-forge package names for `glfw`/`glfw3`, and whether `gtest` ships both
-  `GTest::gtest` and `GTest::gtest_main` CMake targets as expected by `test/CMakeLists.txt`.
+- Whether `gtest` ships both `GTest::gtest` and `GTest::gtest_main` CMake targets as
+  expected by `test/CMakeLists.txt` — not yet tried.
 - Whether the `x86-debug`/`x86-release` presets are still needed.
 - Whether MATLAB needs to be validated on Linux/macOS or Windows-only in practice.
-- Exact pixi environment variable(s) to feed into `CMAKE_PREFIX_PATH`.
 - Whether VS Code's CMake Tools extension needs any special configuration to pick up a
   pixi-activated environment, or whether `pixi run` wrapping `cmake`/`ninja` directly is
   simpler and should replace the CMake Tools UI workflow entirely.
+- `CMakePresets.json` itself hasn't been touched yet (step 2) — `pixi.toml` currently
+  has its own standalone `configure`/`build`/`test`/`run` tasks instead.
+- Whether to add a CMake post-build DLL-copy step so built executables run standalone
+  (needed for VS Code's debugger; skipped for now in favor of `pixi run run`).
 
 ## References consulted while planning this
 
