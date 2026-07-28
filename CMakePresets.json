@@ -94,18 +94,21 @@
         {
             "name": "pixi-debug-matlab",
             "displayName": "Pixi Debug (RelWithDebInfo) + MATLAB bindings",
-            "description": "Same as pixi-debug, with BUILD_MATLAB_BINDINGS=ON. Requires MATLAB to be installed -- find_package(Matlab) is REQUIRED, so configure fails without it. Kept as an opt-in preset rather than the default so building the core toolbox never requires MATLAB.",
+            "description": "Same as pixi-debug, with BUILD_MATLAB_BINDINGS=ON. Requires MATLAB to be installed -- find_package(Matlab) is REQUIRED, so configure fails without it. Kept as an opt-in preset rather than the default so building the core toolbox never requires MATLAB. Also turns on MEX_GATEWAY_VERBOSE_LOGGING.",
             "inherits": "pixi-debug",
             "cacheVariables": {
-              "BUILD_MATLAB_BINDINGS": "ON"
+              "BUILD_MATLAB_BINDINGS": "ON",
+              "MEX_GATEWAY_VERBOSE_LOGGING": "ON"
             }
         },
         {
             "name": "pixi-release-matlab",
             "displayName": "Pixi Release + MATLAB bindings",
+            "description": "Same as pixi-release, with BUILD_MATLAB_BINDINGS=ON. MEX_GATEWAY_VERBOSE_LOGGING left OFF.",
             "inherits": "pixi-release",
             "cacheVariables": {
-              "BUILD_MATLAB_BINDINGS": "ON"
+              "BUILD_MATLAB_BINDINGS": "ON",
+              "MEX_GATEWAY_VERBOSE_LOGGING": "OFF"
             }
         }
     ],
