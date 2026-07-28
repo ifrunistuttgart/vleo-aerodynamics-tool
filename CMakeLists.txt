@@ -6,10 +6,6 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
-#if(DEFINED ENV{VCPKG_ROOT})
-#    include($ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
-#endif()
-
 project (AeroSat)
 
 set(CMAKE_CXX_STANDARD 20)

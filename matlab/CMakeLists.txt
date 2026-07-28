@@ -21,11 +21,10 @@ if (Matlab_FOUND)
         RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/matlab/bin"
     )
 
-    # Only for pixi-based Windows builds (guarded by CONDA_PREFIX so this doesn't
-    # touch the vcpkg fallback, which already gets its DLLs copied automatically via
-    # VCPKG_APPLOCAL_DEPS). MATLAB loads MexGateway.mexw64 with no knowledge that the
-    # pixi environment exists, so its runtime DLL dependencies (spdlog, VTK, assimp,
-    # GLEW, GLFW, ...) need to be copied next to it -- see cmake/copy_runtime_deps.cmake.
+    # Windows-only (guarded by CONDA_PREFIX, i.e. a pixi-provided environment). MATLAB
+    # loads MexGateway.mexw64 with no knowledge that the pixi environment exists, so
+    # its runtime DLL dependencies (spdlog, VTK, assimp, GLEW, GLFW, ...) need to be
+    # copied next to it -- see cmake/copy_runtime_deps.cmake.
     if (WIN32 AND DEFINED ENV{CONDA_PREFIX})
         add_custom_command(TARGET MexGateway POST_BUILD
             COMMAND ${CMAKE_COMMAND}

@@ -59,9 +59,6 @@ compile_commands.json
 *.bak
 *.swp
 
-# vcpkg
-vcpkg_installed/
-
 # pixi (local env cache only — pixi.lock IS committed for reproducibility)
 .pixi/
 
