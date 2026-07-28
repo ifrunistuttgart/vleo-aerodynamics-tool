@@ -3,21 +3,13 @@ name = "vleo-aerodynamics-tool"
 channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 
-# Toolchain: CMake/Ninja for the build itself, c-compiler/cxx-compiler as the
-# conda-forge meta-packages that resolve to the right native compiler per platform
-# (vs2022_win-64 on Windows, gcc on linux-64, clang on osx-64/osx-arm64).
-# Note: on Windows this still expects a system-installed Visual Studio 2022 Build
-# Tools — conda-forge cannot redistribute cl.exe itself, only activation scripts
-# that locate it.
+# Native compiler per platform; on Windows still needs system VS 2022 Build Tools.
 [dependencies]
 cmake = "*"
 ninja = "*"
 c-compiler = "*"
 cxx-compiler = "*"
 
-# Project dependencies (replacing vcpkg.json). All confirmed available prebuilt
-# on conda-forge for win-64/linux-64/osx-64/osx-arm64 as of the migration research
-# (see CLAUDE.md, "Build System Migration Plan").
 vtk = "*"
 assimp = "*"
 glew = "*"
@@ -26,34 +18,20 @@ glm = "*"
 gtest = "*"
 spdlog = "*"
 
-# Tasks wrap the "pixi-debug" preset defined in CMakePresets.json (CMAKE_PREFIX_PATH
-# points at $CONDA_PREFIX there; RelWithDebInfo, not Debug -- see that file and
-# CLAUDE.md for why). Keeping the actual flags in one place (the presets file) so
-# VS Code's CMake Tools extension and these CLI tasks can't drift apart.
-#
-# CMAKE_GENERATOR/CMAKE_GENERATOR_PLATFORM/CMAKE_GENERATOR_TOOLSET/CMAKE_ARGS are
-# cleared here because Windows' cxx-compiler activation (vs2022_win-64) sets them
-# to Visual-Studio-generator defaults (CMAKE_GENERATOR_PLATFORM=x64) for people who
-# don't use presets. Since our preset explicitly picks Ninja (a single-platform
-# generator), that leftover CMAKE_GENERATOR_PLATFORM=x64 conflicts and CMake errors
-# with "Generator Ninja does not support platform specification". Setting a "null"
-# override inside the preset's own "environment" block does NOT fix this -- CMake
-# reads these env vars before applying preset-level environment overrides -- so
-# they have to be cleared here, at the shell/task level, before cmake even starts.
+# Flags live in CMakePresets.json; env vars below clear VS-generator defaults that
+# conflict with our Ninja preset.
 [tasks]
 configure = { cmd = "cmake --preset pixi-debug", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_PLATFORM = "", CMAKE_GENERATOR_TOOLSET = "", CMAKE_ARGS = "" } }
 build = { cmd = "cmake --build --preset pixi-debug", depends-on = ["configure"] }
 test = { cmd = "ctest --preset pixi-debug", depends-on = ["build"] }
 
-# Run built executables through this task (not directly), since conda-forge ships
-# shared DLLs (spdlog.dll, vtk*.dll, etc.) in the pixi env's Library/bin, which is
-# only on PATH inside a pixi-activated shell. Running main.exe directly bypasses
-# that and fails with "code execution cannot proceed because X.dll was not found".
+# Needed so conda-forge's DLLs (on PATH only in a pixi-activated shell) are found.
 run = { cmd = "out/build/pixi-debug/main/main.exe", depends-on = ["build"] }
 
-# Opt-in MATLAB bindings build (separate task, separate build directory
-# out/build/pixi-debug-matlab). BUILD_MATLAB_BINDINGS is intentionally NOT on by
-# default -- find_package(Matlab) is REQUIRED, so turning it on unconditionally would
-# make MATLAB a hard prerequisite for building the core toolbox, which it isn't.
+# Opt-in MATLAB bindings (MATLAB required). "matlab" logs every call; "release-matlab"
+# stays quiet for performance-sensitive runs.
 configure-matlab = { cmd = "cmake --preset pixi-debug-matlab", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_PLATFORM = "", CMAKE_GENERATOR_TOOLSET = "", CMAKE_ARGS = "" } }
 build-matlab = { cmd = "cmake --build --preset pixi-debug-matlab", depends-on = ["configure-matlab"] }
+
+configure-release-matlab = { cmd = "cmake --preset pixi-release-matlab", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_PLATFORM = "", CMAKE_GENERATOR_TOOLSET = "", CMAKE_ARGS = "" } }
+build-release-matlab = { cmd = "cmake --build --preset pixi-release-matlab", depends-on = ["configure-release-matlab"] }

@@ -25,7 +25,13 @@
 #define LEVEL_ERROR 2
 #define LEVEL_WARN 1
 #define LEVEL_INFO 0
+// INFO logs route through the (slow) MATLAB Engine API on every call; off by
+// default. See MEX_GATEWAY_VERBOSE_LOGGING in matlab/CMakeLists.txt.
+#ifdef MEX_GATEWAY_VERBOSE_LOGGING
 #define LOG_LEVEL LEVEL_INFO
+#else
+#define LOG_LEVEL LEVEL_WARN
+#endif
 #define LOG(level, msg) do { if ((level) >= LOG_LEVEL) { log((level), std::string(msg), __LINE__); } } while (0)
 
 class MatlabLogger : public matlab::mex::Function {
