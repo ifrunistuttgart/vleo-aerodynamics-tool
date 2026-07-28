@@ -20,7 +20,7 @@ std::string get_path(const std::string& filename) {
 int main() {
 	SPDLOG_INFO("Loading satellite model...");
 
-	std::string satellite_path = get_path("International Space Station.obj");
+	std::string satellite_path = get_path("../matlab/soar_satellite.obj");
 	std::unique_ptr<RotatableMeshSatellite> satellite =
 		std::make_unique<RotatableMeshSatellite>(satellite_path);
 	SPDLOG_INFO("Loaded {} triangles", satellite->get_num_triangles());

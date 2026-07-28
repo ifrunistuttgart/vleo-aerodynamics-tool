@@ -1,0 +1,36 @@
+[workspace]
+name = "vleo-aerodynamics-tool"
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+
+# Toolchain: CMake/Ninja for the build itself, c-compiler/cxx-compiler as the
+# conda-forge meta-packages that resolve to the right native compiler per platform
+# (vs2022_win-64 on Windows, gcc on linux-64, clang on osx-64/osx-arm64).
+# Note: on Windows this still expects a system-installed Visual Studio 2022 Build
+# Tools — conda-forge cannot redistribute cl.exe itself, only activation scripts
+# that locate it.
+[dependencies]
+cmake = "*"
+ninja = "*"
+c-compiler = "*"
+cxx-compiler = "*"
+
+# Project dependencies (replacing vcpkg.json). All confirmed available prebuilt
+# on conda-forge for win-64/linux-64/osx-64/osx-arm64 as of the migration research
+# (see CLAUDE.md, "Build System Migration Plan").
+vtk = "*"
+assimp = "*"
+glew = "*"
+glfw = "*"
+glm = "*"
+gtest = "*"
+spdlog = "*"
+
+# Standalone tasks for now (not yet wired into CMakePresets.json — that's the next
+# migration step). CMAKE_PREFIX_PATH points CMake's find_package() calls at the
+# pixi-managed environment so VTK/assimp/glew/glfw/glm/gtest/spdlog resolve from
+# there instead of vcpkg.
+[tasks]
+configure = "cmake -S . -B out/build/pixi-debug -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=$CONDA_PREFIX"
+build = { cmd = "cmake --build out/build/pixi-debug", depends-on = ["configure"] }
+test = { cmd = "ctest --test-dir out/build/pixi-debug --output-on-failure", depends-on = ["build"] }
