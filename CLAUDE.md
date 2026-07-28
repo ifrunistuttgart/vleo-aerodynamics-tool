@@ -269,10 +269,19 @@ Confirmed via research (see chat history / links below) before deciding:
   on the `configure` task in `pixi.toml`). Anyone driving these presets from a plain
   `pixi shell` (rather than the `pixi run` tasks) will hit this and need to `unset` those
   four variables manually first.
-- **MATLAB bindings work with no changes to `matlab/CMakeLists.txt`.** Added
-  `BUILD_MATLAB_BINDINGS: ON` to the `pixi-base` preset; `matlab_add_mex()` found
-  MATLAB (R2026a/R2024b, both installed) and built `MexGateway.mexw64` against the
-  pixi-resolved compiler with only a benign narrowing-conversion warning.
+- **MATLAB bindings work with no changes to `matlab/CMakeLists.txt`.** Initially added
+  `BUILD_MATLAB_BINDINGS: ON` to the shared `pixi-base` preset — wrong, caught before
+  it shipped in the README: `find_package(Matlab)` is `REQUIRED`, so that would have
+  made MATLAB a hard prerequisite for building the core toolbox at all, contradicting
+  the project's own "MATLAB only required for MATLAB bindings" framing. Fixed: it's
+  opt-in via dedicated `pixi-debug-matlab`/`pixi-release-matlab` presets (inheriting
+  `pixi-debug`/`pixi-release`) and matching `configure-matlab`/`build-matlab` tasks in
+  `pixi.toml`, building into their own `out/build/pixi-debug-matlab` directory so they
+  don't collide with a plain core build. Verified both independently: the plain
+  `pixi run build` produces 48 targets and never touches MATLAB; `pixi run build-matlab`
+  additionally builds `MexGateway.mexw64` (`matlab_add_mex()` found MATLAB — R2026a/
+  R2024b both installed — and built against the pixi-resolved compiler with only a
+  benign narrowing-conversion warning).
   - Found and cleaned up stale leftover DLLs in `matlab/bin/` from an old vcpkg Debug
     build (`vtkCommonCore-9.3d.dll`, `spdlogd.dll`, `glfw3.dll`, etc.) — a real hazard,
     since Windows resolves a DLL's dependencies from its own folder before `PATH`, so a

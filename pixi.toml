@@ -50,3 +50,10 @@ test = { cmd = "ctest --preset pixi-debug", depends-on = ["build"] }
 # only on PATH inside a pixi-activated shell. Running main.exe directly bypasses
 # that and fails with "code execution cannot proceed because X.dll was not found".
 run = { cmd = "out/build/pixi-debug/main/main.exe", depends-on = ["build"] }
+
+# Opt-in MATLAB bindings build (separate task, separate build directory
+# out/build/pixi-debug-matlab). BUILD_MATLAB_BINDINGS is intentionally NOT on by
+# default -- find_package(Matlab) is REQUIRED, so turning it on unconditionally would
+# make MATLAB a hard prerequisite for building the core toolbox, which it isn't.
+configure-matlab = { cmd = "cmake --preset pixi-debug-matlab", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_PLATFORM = "", CMAKE_GENERATOR_TOOLSET = "", CMAKE_ARGS = "" } }
+build-matlab = { cmd = "cmake --build --preset pixi-debug-matlab", depends-on = ["configure-matlab"] }

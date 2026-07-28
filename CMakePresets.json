@@ -71,8 +71,7 @@
             "binaryDir": "${sourceDir}/out/build/${presetName}",
             "installDir": "${sourceDir}/out/install/${presetName}",
             "cacheVariables": {
-              "CMAKE_PREFIX_PATH": "$env{CONDA_PREFIX}",
-              "BUILD_MATLAB_BINDINGS": "ON"
+              "CMAKE_PREFIX_PATH": "$env{CONDA_PREFIX}"
             }
         },
         {
@@ -91,6 +90,23 @@
             "cacheVariables": {
               "CMAKE_BUILD_TYPE": "Release"
             }
+        },
+        {
+            "name": "pixi-debug-matlab",
+            "displayName": "Pixi Debug (RelWithDebInfo) + MATLAB bindings",
+            "description": "Same as pixi-debug, with BUILD_MATLAB_BINDINGS=ON. Requires MATLAB to be installed -- find_package(Matlab) is REQUIRED, so configure fails without it. Kept as an opt-in preset rather than the default so building the core toolbox never requires MATLAB.",
+            "inherits": "pixi-debug",
+            "cacheVariables": {
+              "BUILD_MATLAB_BINDINGS": "ON"
+            }
+        },
+        {
+            "name": "pixi-release-matlab",
+            "displayName": "Pixi Release + MATLAB bindings",
+            "inherits": "pixi-release",
+            "cacheVariables": {
+              "BUILD_MATLAB_BINDINGS": "ON"
+            }
         }
     ],
     "buildPresets": [
@@ -101,6 +117,14 @@
         {
             "name": "pixi-release",
             "configurePreset": "pixi-release"
+        },
+        {
+            "name": "pixi-debug-matlab",
+            "configurePreset": "pixi-debug-matlab"
+        },
+        {
+            "name": "pixi-release-matlab",
+            "configurePreset": "pixi-release-matlab"
         }
     ],
     "testPresets": [
