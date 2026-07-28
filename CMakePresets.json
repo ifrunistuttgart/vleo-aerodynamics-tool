@@ -71,7 +71,8 @@
             "binaryDir": "${sourceDir}/out/build/${presetName}",
             "installDir": "${sourceDir}/out/install/${presetName}",
             "cacheVariables": {
-              "CMAKE_PREFIX_PATH": "$env{CONDA_PREFIX}"
+              "CMAKE_PREFIX_PATH": "$env{CONDA_PREFIX}",
+              "BUILD_MATLAB_BINDINGS": "ON"
             }
         },
         {

@@ -269,6 +269,32 @@ Confirmed via research (see chat history / links below) before deciding:
   on the `configure` task in `pixi.toml`). Anyone driving these presets from a plain
   `pixi shell` (rather than the `pixi run` tasks) will hit this and need to `unset` those
   four variables manually first.
+- **MATLAB bindings work with no changes to `matlab/CMakeLists.txt`.** Added
+  `BUILD_MATLAB_BINDINGS: ON` to the `pixi-base` preset; `matlab_add_mex()` found
+  MATLAB (R2026a/R2024b, both installed) and built `MexGateway.mexw64` against the
+  pixi-resolved compiler with only a benign narrowing-conversion warning.
+  - Found and cleaned up stale leftover DLLs in `matlab/bin/` from an old vcpkg Debug
+    build (`vtkCommonCore-9.3d.dll`, `spdlogd.dll`, `glfw3.dll`, etc.) — a real hazard,
+    since Windows resolves a DLL's dependencies from its own folder before `PATH`, so a
+    freshly-built `MexGateway.mexw64` sitting next to stale same-named DLLs
+    (`glfw3.dll` in particular looked like a likely name collision) could have silently
+    loaded the wrong, incompatible library.
+  - `MexGateway.mexw64` needs ~15 conda-forge DLLs at runtime (spdlog, VTK, assimp,
+    glew, glfw, …) that aren't copied next to it by default, and unlike `main.exe`,
+    MATLAB can't reasonably be launched via `pixi run` for daily use. First decided to
+    just document a `PATH` prerequisite instead of solving it in the build — reversed
+    that: added `cmake/copy_runtime_deps.cmake`, a `file(GET_RUNTIME_DEPENDENCIES)`-based
+    script wired as a `POST_BUILD` step on the `MexGateway` target (Windows +
+    `CONDA_PREFIX`-only, guarded so it doesn't touch the vcpkg fallback, which already
+    gets this via `VCPKG_APPLOCAL_DEPS`). It walks `MexGateway.mexw64`'s actual PE
+    import table recursively (so it can't silently go stale the way a hardcoded DLL
+    list would) and copies the resolved closure into `matlab/bin` — 65 DLLs, verified
+    with a clean rebuild, zero unresolved dependencies (aside from MATLAB's own
+    `libmx`/`libmex`/`libmat`/`libMatlab*` libraries, deliberately excluded since
+    MATLAB always has its own install directory on its search path already). Net
+    result: `matlab/bin` is fully self-contained, no `PATH` change needed for MATLAB
+    at all. Not yet added to the user-facing MATLAB instructions — do that as part of
+    step 7 (final doc rewrite).
 
 ## Open items to resolve during implementation (not yet decided/verified)
 
@@ -279,8 +305,10 @@ Confirmed via research (see chat history / links below) before deciding:
 - Whether VS Code's CMake Tools extension needs any special configuration to pick up a
   pixi-activated environment, or whether `pixi run` wrapping `cmake`/`ninja` directly is
   simpler and should replace the CMake Tools UI workflow entirely.
-- Whether to add a CMake post-build DLL-copy step so built executables run standalone
-  (needed for VS Code's debugger; skipped for now in favor of `pixi run run`).
+- Whether to add the same CMake post-build DLL-copy step (now implemented for
+  `MexGateway`, see above) to `main.exe`/other executables too, so they run standalone
+  without `pixi run` (needed for VS Code's debugger; skipped for now for `main.exe`
+  specifically since `pixi run run` covers today's needs).
 
 ## References consulted while planning this
 
