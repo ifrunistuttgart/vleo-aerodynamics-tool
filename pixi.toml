@@ -28,8 +28,9 @@ test = { cmd = "ctest --preset pixi-debug", depends-on = ["build"] }
 # Needed so conda-forge's DLLs (on PATH only in a pixi-activated shell) are found.
 run = { cmd = "out/build/pixi-debug/main/main.exe", depends-on = ["build"] }
 
-# Opt-in MATLAB bindings (MATLAB required). "matlab" logs every call; "release-matlab"
-# stays quiet for performance-sensitive runs.
+# Opt-in MATLAB bindings (MATLAB required). Just one preset -- MexGateway's log
+# verbosity is a runtime env var (MEX_GATEWAY_LOG_LEVEL=INFO), not a compile-time
+# option, so there's no separate quiet/verbose build to maintain.
 configure-matlab = { cmd = "cmake --preset pixi-debug-matlab", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_PLATFORM = "", CMAKE_GENERATOR_TOOLSET = "", CMAKE_ARGS = "" } }
 build-matlab = { cmd = "cmake --build --preset pixi-debug-matlab", depends-on = ["configure-matlab"] }
 

@@ -304,6 +304,35 @@ Confirmed via research (see chat history / links below) before deciding:
     result: `matlab/bin` is fully self-contained, no `PATH` change needed for MATLAB
     at all. Not yet added to the user-facing MATLAB instructions — do that as part of
     step 7 (final doc rewrite).
+- Cherry-picked 4 commits from a separate `matlab-script-examples` branch (parallel
+  MATLAB-focused work) after reviewing each one: a real bugfix where
+  `mex_gateway.cpp`'s shading-algorithm switch used `case 0/1` for Binary/CoP while
+  `ShadingPipeline.m`'s own docstring already documented `1/2` — confirmed as a
+  genuine pre-existing mismatch, not a style choice, by diffing both the `.m` and
+  `.cpp` sides; a `MEX_GATEWAY_VERBOSE_LOGGING` compile-time toggle plus a matching
+  `pixi-release-matlab` preset/tasks (see below for why this got simplified further);
+  standard MathWorks `.gitattributes` (binary/merge-driver rules for
+  `.mat`/`.mlx`/`.slx`/etc.); and `*.asv` (MATLAB autosave files) added to
+  `.gitignore`. Left out of the cherry-pick: that branch's
+  `matlab/examples/soar_rotatable.m` example-script expansion (sweep demo) — out of
+  scope for "how the MATLAB binding is built," and worth the user's own call on
+  whether/when to bring it over.
+- **Simplified the logging toggle immediately after, on the user's prompt** ("why do
+  we need debug-matlab and release-matlab as well as pixi — don't we just need one
+  with logging and one without?"). The real answer: the two axes (build type,
+  log verbosity) had been coupled 1:1 for no real reason, and `Release` vs
+  `RelWithDebInfo` makes negligible practical difference here (both use `/MD`, similar
+  optimization; `RelWithDebInfo` just also keeps debug symbols, which is worth having
+  for a MEX file). Converted `MEX_GATEWAY_LOG_LEVEL` from a compile-time `#ifdef` to a
+  runtime check (`std::getenv`, cached in a function-local `static`) in
+  `mex_gateway.cpp` — set `MEX_GATEWAY_LOG_LEVEL=INFO` in the environment before
+  starting MATLAB to get verbose logs, no rebuild required. This let the whole
+  `MEX_GATEWAY_VERBOSE_LOGGING` CMake option and the `pixi-release-matlab`
+  preset/`configure-release-matlab`/`build-release-matlab` tasks be deleted outright —
+  down to a single `pixi-debug-matlab` preset and `configure-matlab`/`build-matlab`
+  tasks for all MATLAB builds. Verified: `pixi run build-matlab` still builds
+  `MexGateway.mexw64` correctly, and the plain `pixi run build` (core toolbox, no
+  MATLAB) is unaffected.
 
 ## Open items to resolve during implementation (not yet decided/verified)
 

@@ -4,6 +4,7 @@
 #include "mex.hpp"
 #include "mexAdapter.hpp"
 
+#include <cstdlib>
 #include <exception>
 #include <memory>
 #include <stdexcept>
@@ -25,14 +26,18 @@
 #define LEVEL_ERROR 2
 #define LEVEL_WARN 1
 #define LEVEL_INFO 0
-// INFO logs route through the (slow) MATLAB Engine API on every call; off by
-// default. See MEX_GATEWAY_VERBOSE_LOGGING in matlab/CMakeLists.txt.
-#ifdef MEX_GATEWAY_VERBOSE_LOGGING
-#define LOG_LEVEL LEVEL_INFO
-#else
-#define LOG_LEVEL LEVEL_WARN
-#endif
-#define LOG(level, msg) do { if ((level) >= LOG_LEVEL) { log((level), std::string(msg), __LINE__); } } while (0)
+
+// INFO logs route through the (slow) MATLAB Engine API on every call, so they're off
+// by default. Runtime (not compile-time) so a single build serves both cases: set
+// MEX_GATEWAY_LOG_LEVEL=INFO in the environment before starting MATLAB to enable them.
+int log_level() {
+    static const int level = []() {
+        const char* env = std::getenv("MEX_GATEWAY_LOG_LEVEL");
+        return (env && std::string(env) == "INFO") ? LEVEL_INFO : LEVEL_WARN;
+    }();
+    return level;
+}
+#define LOG(level, msg) do { if ((level) >= log_level()) { log((level), std::string(msg), __LINE__); } } while (0)
 
 class MatlabLogger : public matlab::mex::Function {
 public:
