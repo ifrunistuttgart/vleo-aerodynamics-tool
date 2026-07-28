@@ -26,21 +26,24 @@ glm = "*"
 gtest = "*"
 spdlog = "*"
 
-# Standalone tasks for now (not yet wired into CMakePresets.json — that's the next
-# migration step). CMAKE_PREFIX_PATH points CMake's find_package() calls at the
-# pixi-managed environment so VTK/assimp/glew/glfw/glm/gtest/spdlog resolve from
-# there instead of vcpkg.
+# Tasks wrap the "pixi-debug" preset defined in CMakePresets.json (CMAKE_PREFIX_PATH
+# points at $CONDA_PREFIX there; RelWithDebInfo, not Debug -- see that file and
+# CLAUDE.md for why). Keeping the actual flags in one place (the presets file) so
+# VS Code's CMake Tools extension and these CLI tasks can't drift apart.
 #
-# Build type is RelWithDebInfo, not Debug: conda-forge's Windows C++ packages are
-# built Release-only (/MD, MSVCP140.dll). CMAKE_BUILD_TYPE=Debug uses /MDd
-# (MSVCP140D.dll) by default -- mixing those CRTs across a DLL boundary corrupts
-# any std::string/std::vector passed into spdlog/assimp/VTK and segfaults almost
-# immediately. RelWithDebInfo uses /MD (CRT-compatible) while still keeping debug
-# symbols for actual debugging.
+# CMAKE_GENERATOR/CMAKE_GENERATOR_PLATFORM/CMAKE_GENERATOR_TOOLSET/CMAKE_ARGS are
+# cleared here because Windows' cxx-compiler activation (vs2022_win-64) sets them
+# to Visual-Studio-generator defaults (CMAKE_GENERATOR_PLATFORM=x64) for people who
+# don't use presets. Since our preset explicitly picks Ninja (a single-platform
+# generator), that leftover CMAKE_GENERATOR_PLATFORM=x64 conflicts and CMake errors
+# with "Generator Ninja does not support platform specification". Setting a "null"
+# override inside the preset's own "environment" block does NOT fix this -- CMake
+# reads these env vars before applying preset-level environment overrides -- so
+# they have to be cleared here, at the shell/task level, before cmake even starts.
 [tasks]
-configure = "cmake -S . -B out/build/pixi-debug -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=$CONDA_PREFIX"
-build = { cmd = "cmake --build out/build/pixi-debug", depends-on = ["configure"] }
-test = { cmd = "ctest --test-dir out/build/pixi-debug --output-on-failure", depends-on = ["build"] }
+configure = { cmd = "cmake --preset pixi-debug", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_PLATFORM = "", CMAKE_GENERATOR_TOOLSET = "", CMAKE_ARGS = "" } }
+build = { cmd = "cmake --build --preset pixi-debug", depends-on = ["configure"] }
+test = { cmd = "ctest --preset pixi-debug", depends-on = ["build"] }
 
 # Run built executables through this task (not directly), since conda-forge ships
 # shared DLLs (spdlog.dll, vtk*.dll, etc.) in the pixi env's Library/bin, which is

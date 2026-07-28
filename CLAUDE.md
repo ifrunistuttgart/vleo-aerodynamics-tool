@@ -246,6 +246,29 @@ Confirmed via research (see chat history / links below) before deciding:
   chain (`aiohttp`, `contourpy`, `cycler`, etc.) that the project doesn't use. Still far
   faster than building VTK from source, but a real footprint/complexity trade-off that
   wasn't visible before actually running `pixi install`.
+- Added `pixi-debug`/`pixi-release` presets to `CMakePresets.json` (`CMAKE_PREFIX_PATH`
+  set to `$env{CONDA_PREFIX}`, `RelWithDebInfo`/`Release`), plus matching `buildPresets`
+  and `testPresets` entries (`cmake --build --preset <name>` and `ctest --preset <name>`
+  both require an explicit entry in those arrays — a bare `configurePresets` entry isn't
+  enough). The old vcpkg-based `x64-debug`/`x64-release`/`x86-*` presets are untouched,
+  kept as fallback. `pixi.toml`'s tasks now call these presets instead of duplicating
+  raw `cmake` flags, so there's one source of truth.
+- **Another environment gotcha found via presets specifically:** pixi's Windows
+  `cxx-compiler` activation (`vs2022_win-64`) sets `CMAKE_GENERATOR=Visual Studio 17
+  2022`, `CMAKE_GENERATOR_PLATFORM=x64`, `CMAKE_GENERATOR_TOOLSET=v143`, and
+  `CMAKE_ARGS=-DCMAKE_BUILD_TYPE=Release` as convenience defaults for people not using
+  presets. Configuring through a preset that explicitly picks `Ninja` then fails with
+  "Generator Ninja does not support platform specification, but platform x64 was
+  specified" — the leftover `CMAKE_GENERATOR_PLATFORM` env var conflicts with Ninja
+  (a single-platform generator). A raw `cmake -G Ninja ...` command line isn't affected,
+  only the preset path is. **Setting `"environment": {"CMAKE_GENERATOR_PLATFORM": null}`
+  inside the preset itself does NOT fix this** — confirmed by testing — CMake reads
+  these env vars before applying preset-level environment overrides. The working fix:
+  clear `CMAKE_GENERATOR`/`CMAKE_GENERATOR_PLATFORM`/`CMAKE_GENERATOR_TOOLSET`/
+  `CMAKE_ARGS` at the shell/task level, before `cmake` even starts (done via `env = {...}`
+  on the `configure` task in `pixi.toml`). Anyone driving these presets from a plain
+  `pixi shell` (rather than the `pixi run` tasks) will hit this and need to `unset` those
+  four variables manually first.
 
 ## Open items to resolve during implementation (not yet decided/verified)
 
@@ -256,8 +279,6 @@ Confirmed via research (see chat history / links below) before deciding:
 - Whether VS Code's CMake Tools extension needs any special configuration to pick up a
   pixi-activated environment, or whether `pixi run` wrapping `cmake`/`ninja` directly is
   simpler and should replace the CMake Tools UI workflow entirely.
-- `CMakePresets.json` itself hasn't been touched yet (step 2) — `pixi.toml` currently
-  has its own standalone `configure`/`build`/`test`/`run` tasks instead.
 - Whether to add a CMake post-build DLL-copy step so built executables run standalone
   (needed for VS Code's debugger; skipped for now in favor of `pixi run run`).
 

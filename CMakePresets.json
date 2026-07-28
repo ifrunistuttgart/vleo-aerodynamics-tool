@@ -63,6 +63,55 @@
               "CMAKE_BUILD_TYPE": "Release",
               "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
             }
+        },
+        {
+            "name": "pixi-base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "installDir": "${sourceDir}/out/install/${presetName}",
+            "cacheVariables": {
+              "CMAKE_PREFIX_PATH": "$env{CONDA_PREFIX}"
+            }
+        },
+        {
+            "name": "pixi-debug",
+            "displayName": "Pixi Debug (RelWithDebInfo)",
+            "description": "Uses RelWithDebInfo, not Debug: conda-forge's Windows C++ packages are Release-only (/MD); mixing them with a /MDd (Debug) build corrupts memory across the DLL boundary. See CLAUDE.md.",
+            "inherits": "pixi-base",
+            "cacheVariables": {
+              "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            }
+        },
+        {
+            "name": "pixi-release",
+            "displayName": "Pixi Release",
+            "inherits": "pixi-base",
+            "cacheVariables": {
+              "CMAKE_BUILD_TYPE": "Release"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "pixi-debug",
+            "configurePreset": "pixi-debug"
+        },
+        {
+            "name": "pixi-release",
+            "configurePreset": "pixi-release"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "pixi-debug",
+            "configurePreset": "pixi-debug",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "pixi-release",
+            "configurePreset": "pixi-release",
+            "output": { "outputOnFailure": true }
         }
     ]
 }
