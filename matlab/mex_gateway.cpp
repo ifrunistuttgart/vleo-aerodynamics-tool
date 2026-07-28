@@ -241,10 +241,10 @@ public:
                     const int shading_key = inputs[2][0];
                     ShadingAlgorithmType algorithm_type;
                     switch (shading_key) {
-                        case 0:
+                        case 1:
                             algorithm_type = ShadingAlgorithmType::Binary;
                             break;
-                        case 1:
+                        case 2:
                             algorithm_type = ShadingAlgorithmType::CoP;
                             break;
                         default:
