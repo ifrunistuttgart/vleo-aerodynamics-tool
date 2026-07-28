@@ -76,3 +76,6 @@ Testing/
 .vs
 #clion
 .idea
+
+# MATLAB autosave files
+*.asv
