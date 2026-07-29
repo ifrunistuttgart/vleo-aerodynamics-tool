@@ -3,7 +3,7 @@
 #include <span>
 #include <glm/glm.hpp>
 #include "Ishading_pipeline.h"
-#include "ISatellite_shading_data.h"
+#include "Isatellite_shading_data.h"
 #include "Ishading_algorithm.h"
 #include "shading_algorithm_factory.h"
 #include "opengl/glfw_opengl_context.h"
