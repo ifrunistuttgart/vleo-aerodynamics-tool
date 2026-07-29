@@ -15,6 +15,7 @@ option(BUILD_MATLAB_BINDINGS "Build MATLAB bindings for Sentman" OFF)
 
 add_subdirectory("aero_sat")
 add_subdirectory("main")
+add_subdirectory("examples")
 
 if(BUILD_MATLAB_BINDINGS)
     add_subdirectory("matlab")
