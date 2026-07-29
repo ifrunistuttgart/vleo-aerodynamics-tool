@@ -45,10 +45,10 @@ finished, by deliberate choice rather than oversight.
   (CRT-compatible) while still keeping debug symbols. This didn't come up with vcpkg,
   since vcpkg triplets build separate debug and release copies of every library. All
   `pixi-*` presets in `CMakePresets.json` use `RelWithDebInfo`/`Release` accordingly.
-- **Always run built executables via `pixi run run` (or a `pixi shell`), never
-  directly.** conda-forge's shared DLLs live in `.pixi/envs/default/Library/bin`, which
-  is only on `PATH` inside a pixi-activated shell. Running `main.exe` directly fails
-  with "X.dll was not found".
+- **Always run built executables via `pixi run run-example <name>` (or a `pixi
+  shell`), never directly.** conda-forge's shared DLLs live in
+  `.pixi/envs/default/Library/bin`, which is only on `PATH` inside a pixi-activated
+  shell. Running an example `.exe` directly fails with "X.dll was not found".
 - **pixi's Windows compiler activation sets `CMAKE_GENERATOR`/`CMAKE_GENERATOR_PLATFORM`/
   `CMAKE_GENERATOR_TOOLSET`/`CMAKE_ARGS`** as convenience defaults for people not using
   presets (targeting the Visual Studio generator). Since our presets explicitly pick
@@ -70,9 +70,9 @@ finished, by deliberate choice rather than oversight.
   a hardcoded DLL list that would silently go stale. This exists because MATLAB loads
   the MEX file with no knowledge that a pixi environment exists, so its ~15 conda-forge
   DLL dependencies would otherwise be unfindable — copying them in means no `PATH`
-  changes are ever needed to use it from MATLAB. `main.exe` doesn't get this treatment
-  (covered by `pixi run run` instead) since, unlike MATLAB, it's always launched through
-  a pixi task anyway.
+  changes are ever needed to use it from MATLAB. The executables under `examples/`
+  don't get this treatment (covered by the `run-example` pixi task instead) since,
+  unlike MATLAB, they're always launched through a pixi task anyway.
 - **`MexGateway`'s log verbosity is a runtime env var, not a compile-time option.**
   `mex_gateway.cpp`'s `log_level()` reads `MEX_GATEWAY_LOG_LEVEL` from the environment
   once (cached in a function-local `static`); set it to `INFO` before starting MATLAB
@@ -95,9 +95,9 @@ finished, by deliberate choice rather than oversight.
 - Whether VS Code's CMake Tools extension needs special configuration to pick up a
   pixi-activated environment, or whether `pixi run` wrapping `cmake`/`ninja` directly
   should just replace that workflow entirely.
-- Whether to add the same DLL-copy step (`cmake/copy_runtime_deps.cmake`) to
-  `main.exe`/other executables, so they run standalone without `pixi run` (mainly
-  relevant for VS Code's debugger).
+- Whether to add the same DLL-copy step (`cmake/copy_runtime_deps.cmake`) to the
+  example executables, so they run standalone without `pixi run` (mainly relevant for
+  VS Code's debugger).
 
 ## References consulted during the migration
 
