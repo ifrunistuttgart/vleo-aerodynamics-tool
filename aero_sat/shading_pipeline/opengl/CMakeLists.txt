@@ -1,7 +1,7 @@
 find_package(spdlog REQUIRED CONFIG)
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED CONFIG)
-find_package(GLEW REQUIRED CONFIG)
+find_package(GLEW REQUIRED)
 
 target_sources(shading_pipeline PRIVATE
     compute_shader.cpp
