@@ -35,3 +35,6 @@ run-example = { cmd = "out/build/pixi-debug/examples/{{ name }}/{{ name }}.exe",
 # option, so there's no separate quiet/verbose build to maintain.
 configure-matlab = { cmd = "cmake --preset pixi-debug-matlab", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_PLATFORM = "", CMAKE_GENERATOR_TOOLSET = "", CMAKE_ARGS = "" } }
 build-matlab = { cmd = "cmake --build --preset pixi-debug-matlab", depends-on = ["configure-matlab"] }
+
+configure-release-matlab = { cmd = "cmake --preset pixi-release-matlab", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_PLATFORM = "", CMAKE_GENERATOR_TOOLSET = "", CMAKE_ARGS = "" } }
+build-release-matlab = { cmd = "cmake --build --preset pixi-release-matlab", depends-on = ["configure-release-matlab"] }
