@@ -39,18 +39,18 @@ Researcher-oriented use cases:
 
 **Build and run**
 ```powershell
-pixi install       # one-time: resolves and downloads all dependencies
-pixi run build      # configure + build the core toolbox
-pixi run run        # run the example executable
+pixi install                                  # one-time: resolves and downloads all dependencies
+pixi run build                                # configure + build the core toolbox and all examples
+pixi run run-example import_and_visualize     # run an example (see examples/)
 ```
 
 Two things worth knowing:
 - The build type is `RelWithDebInfo`, not `Debug`. conda-forge's Windows packages are
   Release-only (`/MD`); a `Debug` build (`/MDd`) corrupts memory across the DLL boundary
   between your code and theirs.
-- Always launch built executables via `pixi run run` (or from a `pixi shell`), not by
-  running `main.exe` directly — its DLLs live inside the pixi environment, not on your
-  normal `PATH`.
+- Always launch built executables via `pixi run run-example <name>` (or from a `pixi
+  shell`), not by running the `.exe` directly — its DLLs live inside the pixi
+  environment, not on your normal `PATH`.
 
 Linux and macOS are supported by the same `pixi.toml`/`pixi.lock`, but only the Windows
 path has been fully verified so far.
@@ -101,7 +101,8 @@ individual parts can be swapped or extended with minimal friction.
 - `aero_sat/shading_pipeline/` — occlusion/shading implementations, including an OpenGL
   backend under `opengl/`.
 - `aero_sat/visualization/` — optional VTK-based viewers used by the examples.
-- `main/` — small native example executable (`main/main.cpp`).
+- `examples/` — small standalone example programs (one per subfolder) demonstrating
+  toolbox usage, e.g. `examples/import_and_visualize/`.
 - `matlab/` — MATLAB MEX gateway and example/test scripts.
 - `test/` — unit and integration tests (GoogleTest).
 

@@ -25,10 +25,9 @@ configure = { cmd = "cmake --preset pixi-debug", env = { CMAKE_GENERATOR = "", C
 build = { cmd = "cmake --build --preset pixi-debug", depends-on = ["configure"] }
 test = { cmd = "ctest --preset pixi-debug", depends-on = ["build"] }
 
-# Needed so conda-forge's DLLs (on PATH only in a pixi-activated shell) are found.
-run = { cmd = "out/build/pixi-debug/main/main.exe", depends-on = ["build"] }
-
-# Run any example via Pixi command (e.g. pixi run run-example import_and_visualize)
+# Runs an example by folder name, e.g. `pixi run run-example import_and_visualize`.
+# Goes through pixi (rather than the .exe directly) so conda-forge's DLLs, which are
+# only on PATH inside a pixi-activated shell, can be found.
 run-example = { cmd = "out/build/pixi-debug/examples/{{ name }}/{{ name }}.exe", depends-on = ["build"], args = ["name"] }
 
 # Opt-in MATLAB bindings (MATLAB required). Just one preset -- MexGateway's log
