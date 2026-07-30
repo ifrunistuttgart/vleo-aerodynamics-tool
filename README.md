@@ -1,4 +1,17 @@
 # Readme: VLEO Aerodynamic Tool
+
+> **This is the original MATLAB/panel-method implementation** described in
+> Geyer et al., *"Aerodynamic attitude control of very-low-earth-orbit
+> satellites: simulative analysis and insights into nonlinear system
+> properties,"* CEAS Space Journal (2025).
+> [https://doi.org/10.1007/s12567-025-00684-x](https://doi.org/10.1007/s12567-025-00684-x)
+>
+> This branch is preserved permanently and unchanged for reproducibility
+> (see tag [`paper-v1.0`](../../releases/tag/paper-v1.0)). Development has
+> since moved to a faster, GPU-accelerated toolbox — see the
+> [`dev_gpu`](../../tree/dev_gpu) branch for the current version.
+
+
 The VLEO Aerodynamic Tool calculates aerodynamic forces and torques acting on a satellite in Very Low Earth Orbit (VLEO).
 It imports 3D body models, simulates their rotation and interaction with the atmospheric environment, and visualizes the results.
 The tool supports satellites consisting of several body parts, where each part is a rotatable geometry. 
