@@ -1,82 +1,140 @@
-# Readme: VLEO Aerodynamic Tool
-The VLEO Aerodynamic Tool calculates aerodynamic forces and torques acting on a satellite in Very Low Earth Orbit (VLEO).
-It imports 3D body models, simulates their rotation and interaction with the atmospheric environment, and visualizes the results.
-The tool supports satellites consisting of several body parts, where each part is a rotatable geometry. 
- 
-## Installation
-After making sure Git is installed, follow these steps:
-- Clone the repository
-     ```bash
-     git clone https://github.com/ifrunistuttgart/vleo-aerodynamics-tool.git --recurse-submodules
-     ```
-- Navigate into the cloned directory
-     ```bash
-     cd vleo-aerodynamics-tool
-     ```
-- Finally, make sure the repository and the external dependencies are on the Matlab path.
+# AeroSat Toolbox
+Modular C++ toolbox for aerodynamic analysis of VLEO satellites, combining computer-graphics-based surface visibility (shading) with gas-surface interaction (GSI) models.
 
-Once the setup is complete, you should be able to run the example code and utilize the main functions provided by the submodules.
+The toolbox is designed for research workflows where many configurations must be evaluated efficiently (attitude changes, flow directions, atmospheric conditions, and model parameters).
 
-## Important functions
+## Scientific Goal
+The main goal is to initialize geometry/model data once and then compute aerodynamic force and torque quickly for many parameter combinations.
 
-### Import CAD-Files with `importMultipleBodies.m`
+Typical target applications:
+- Comparative studies of GSI models
+- Sensitivity analyses for atmosphere/surface parameters
+- Fast generation of aerodynamic loads for simulation pipelines (for example Sadycos coupling)
+- Method development for GPU-based shading and force/torque acceleration
 
-After creating your satellite configuration in your preferred CAD-Tool, you can export each part individually as an `.obj`-file.
-These files include information on the geometry's surfaces that is used by the vleo-aerodynamics-tool to compute the aerodynamic forces and torques.
+## Researcher-Oriented Use Cases
+- Implement and benchmark new aerodynamic/GSI models
+- Implement new shading algorithms (CPU or GPU)
+- Implement alternative aggregation methods for total force/torque
+- Load custom satellite geometries (target path includes custom formats and `.urdf` workflows)
+- Run sweeps over orientation, flow vector, and environment parameters
+- Integrate aerodynamic load computation into external simulation frameworks
 
-#### Caution with the order of your imports
-The function `importMultipleBodies` prepares the .obj-files for the VLEO aerodynamics simulation.
-The function returns a cell array of structures containing the vertices, surface centroids, surface normals, rotation direction, rotation hinge points, surface temperatures, surface energy accommodation coefficients, and surface areas of the bodies.
 
-#### Input arguments
-- `object_files`: 1xN array of strings of the paths to the .obj files
-- `rotation_hinge_points_CAD`: 3xN array of the rotation hinge points of the bodies in the CAD frame
-- `rotation_directions_CAD`: 3xN array of the rotation directions of the bodies in the CAD frame
-- `temperatures__K`: 1xN cell array of the surface temperatures of the bodies
-- `energy_accommodation_coefficients`: 1xN cell array of the surface energy accommodation coefficients of the bodies
-- `DCM_B_from_CAD`: 3x3 array of the direction cosine matrix from the CAD frame to the body frame
-- `CoM_CAD`: 3x1 array of the center of mass of the bodies in the CAD frame
+## Architecture Overview
 
-#### Output
-- `bodies`: 1xN cell array of structures containing the vertices, surface centroids, surface normals, rotation direction, rotation hinge point, surface temperatures, surface energy accommodation coefficients, and surface areas of the bodies
+The project is organised as a small modular C++ library (root: `aero_sat/`) with separate responsibilities so individual parts can be swapped or extended with minimal friction.
 
-### Visualize your satellite configuration with `showBodies.m`
-The `showBodies`-function plots the bodies and their surface normals rotated by the given angles.
-The bodies are plotted in a 3D figure with the surface centroids and normals.
-In addition, scalar and vectorial values can be given to be plotted on the surfaces.
-Scalar values are plotted as surface colors and vectorial values are plotted as arrows.
+- `aero_sat/core/` — core interfaces, common data types and small utilities (examples: calculator interfaces, shared value types, configuration structs).
+- `aero_sat/aero_load_calculator/` — load/force/torque aggregation and calculator implementations that glue shading + GSI models into a final aerodynamic result.
+- `aero_sat/gsi/` — gas–surface interaction model implementations (Sentman, Schuette scaffolding and any future models).
+- `aero_sat/satellite/` — mesh, geometry loaders and satellite abstraction types (rotatable meshes)
+- `aero_sat/shading_pipeline/` — occlusion/shading implementations and backends (binary-shader utilities and an OpenGL backend under `opengl/`).
+- `aero_sat/visualization/` — optional visualization helpers (VTK wrappers and small viewers used by examples).
+- `main/` — small native example executables showing how to wire the library together (`main/main.cpp`).
+- `matlab/` — MATLAB MEX gateway and example/test scripts for the MATLAB bindings.
+- `test/` — unit and integration tests (GoogleTest).
 
-#### Input arguments
-- `bodies`: 1xN cell array of structures containing the vertices, surface centroids, surface normals, rotation direction, rotation hinge point (required)
-- `bodies_rotation_angles__rad`: 1xN array of the rotation angles of the bodies (required)
-- `face_alpha`: scalar, the transparency of the faces (optional)
-- `scale_normals`: scalar, the scale factor for the normals (optional)
-- `scalar_values`: 1xN cell array of scalar values to be plotted on the surfaces (optional)
-- `vectorial_values`: 1xN cell array of vectorial values to be plotted on the surfaces (optional)
-- `scale_vectorial_values`: scalar, the scale factor for the vectorial values (optional)
+Design notes:
+- Interface-first and strategy-style composition: shading, GSI and aggregation are decoupled so you can replace a shading backend or a GSI model independently.
+- Shading backends are intentionally separated from the load calculation; shading can be implemented on CPU or GPU and substituted via the pipeline interfaces.
 
-### Calculate torques and forces with `vleoAerodynamics.m`
-The `vleoAerodynamics`-function calculates the aerodynamic forces and torques acting on a satellite in VLEO.
-**This function ecpects the space_math_utilities namespace to be available on the MATLAB path.**
 
-#### Input arguments
-- `attitude_quaternion_BI`: 4x1 array of the attitude quaternion of the body frame with respect to the intertial frame
-- `rotational_velocity_BI_B__rad_per_s`: 3x1 array of the rotational velocity of the satellite with respect to the inertial frame expressed in the body frame
-- `velocity_I_I__m_per_s`: 3x1 array of the velocity of the satellite with respect to the inertial frame expressed in the inertial frame
-- `wind_velocity_I_I__m_per_s`: 3x1 array of the velocity of the wind with respect to the inertial frame expressed in the inertial frame
-- `density__kg_per_m3`: Scalar value of the density of the gas
-- `temperature__K`: Scalar value of the temperature of the gas
-- `particles_mass__kg`: Scalar value of the mass of the particles
-- `bodies`: 1xN cell array of structures containing the vertices, surface centroids, surface normals, rotation direction, rotation hinge point, surface temperatures, surface energy accommodation coefficients, and surface areas of the bodies
-- `bodies_rotation_angles__rad`: 1xN array of the rotation angles of the bodies
-- `temperature_ratio_method`: Scalar value of the method to calculate the temperature ratio        
-     - 1: Exact term     
-     - 2: Hyperthermal approximation 1 
-     - 3: Hyperthermal approximation 2
-     
-     For further explanation, see: https://arxiv.org/abs/2411.11597
+## Logging
+`spdlog` is used for logging across the project.
 
-#### Outputs
-- `aerodynamic_force_B__N`: 3x1 array of the aerodynamic force acting on the satellite expressed in the body frame
-- `aerodynamic_torque_B_B__Nm`: 3x1 array of the aerodynamic torque acting on the satellite with respect to the center of mass (origin of body frame) expressed in the body frame
+## Naming Conventions
+### General
+The naming style is inspired by Python PEP 8 while following C++ interface conventions.
+- Class names: PascalCase, for example `Satellite`
+- Interfaces: PascalCase with `I` prefix, for example `ISatellite`
+- Member variables: snake_case
+- Functions: snake_case, for example `calculate_drag`
+- Variables: snake_case, for example `drag_coefficient`
+- Constants: UPPER_SNAKE_CASE, for example `PI`
+- folders and files: snake_case
 
+### Units in identifiers
+- Use `__` to separate variable name and unit suffix
+- Use `_per_` for fractional units, for example `__m_per_s`
+- Put exponents directly after unit symbols, for example `__m2`
+
+### Velocity defintion
+The velocity of the incoming stream of molecules is defined in the body coordinate system of the satellite an will be referenced as `v_rel_B__m_per_s`. The following sketch illustrates that definition.
+
+![velocity_definition.png](velocity_definition.png)
+## Build and Dependencies
+
+- Language standard: C++20
+- Build system: CMake (project provides `CMakePresets.json` with commonly used presets)
+- Dependency management: vcpkg (manifest mode). The repository contains a `vcpkg.json` and `vcpkg-configuration.json` to record and reproduce the dependency set.
+
+Primary vcpkg manifest dependencies (see `vcpkg.json`):
+
+- `assimp` — mesh import (model loading)
+- `glew` / `glfw3` — OpenGL helper libraries used by the shading/visualization backends
+- `glm` — header-only math for graphics-friendly vector/matrix types
+- `gtest` — unit testing
+- `spdlog` — logging
+- `vtk` — optional visualization and some transitive numerical/IO dependencies (note: VTK pulls `eigen3` and other helper libs transitively)
+
+Notes and tips:
+- Before configuring, ensure your vcpkg installation is available and (when using the presets) that the presets point to the correct vcpkg toolchain file. The presets in `CMakePresets.json` set the toolchain for you when they are used.
+- Typical workflow (PowerShell, from project root):
+
+```powershell
+# configure via preset (example)
+cmake --preset x64-debug
+
+# build
+cmake --build out/build/x64-debug --config Debug -- -j 8
+```
+
+- Enable MATLAB bindings when you have MATLAB installed by configuring with the CMake option `-DBUILD_MATLAB_BINDINGS=ON` (the top-level `CMakeLists.txt` exposes this option).
+- Enable tests with the usual CTest/CMake testing options (tests live in `test/` and use GoogleTest).
+- An IDE solution file is generated by the presets/build (for example `AeroSat.slnx` appears under the configured build directory when using the Visual Studio generator).
+
+## examples
+
+The repository contains small example entry points for both native C++ usage and MATLAB integration. Build the project first (see "building").
+
+### matlab
+
+The MATLAB integration is implemented as a MEX gateway. To build the MATLAB bindings:
+
+1. Ensure MATLAB is installed and the CMake `find_package(Matlab)` call can locate it (the examples were validated with MATLAB R2026a).
+2. Configure with the MATLAB option and build:
+
+```powershell
+cmake --preset x64-debug -- -DBUILD_MATLAB_BINDINGS=ON
+cmake --build out/build/x64-debug --config Debug -- -j 8
+```
+
+3. After a successful build the MEX file will be placed in `matlab/bin`. From MATLAB you can add that folder to the path and run the example/test scripts included in the `matlab/` folder:
+
+```matlab
+addpath(fullfile(pwd, 'matlab', 'bin'))
+run('test_sentman.m')  % example test script included in the repo
+show_mesh();           % simple visualization helper
+```
+
+Refer to the `matlab/` folder for MATLAB example scripts (`Sentman.m`, `HybridAeroLoadCalculator.m`, `RotatableMeshSatellite.m`, and `test_sentman.m`).
+
+### c++
+
+The native C++ example executable is located in the `main/` subproject. After building, run the example executable produced by CMake. Example (PowerShell):
+
+```powershell
+# build (if not already built)
+cmake --preset x64-debug
+cmake --build out/build/x64-debug --config Debug -- -j 8
+
+# run the example executable (adjust path/preset name if you used a different preset)
+& "${PWD}\out\build\x64-debug\main\main.exe"
+```
+
+The `main` executable demonstrates how the library components are tied together; inspect `main/main.cpp` for a minimal usage example.
+
+## testing
+
+Unit tests are included under the `test/` folder and use GoogleTest.
