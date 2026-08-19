@@ -20,7 +20,6 @@ CoPShader::CoPShader(unsigned int num_pixel)
 };
 
 CoPShader::~CoPShader() {
-    m_compute_shader.reset();
     m_shader.reset();
     m_point_shader.reset();
     m_frame_buffer.reset();
@@ -29,9 +28,6 @@ CoPShader::~CoPShader() {
 
     if (m_ID_texture != 0) {
         GLCall(glDeleteTextures(1, &m_ID_texture));
-    }
-    if (m_histogramBuffer != 0) {
-        GLCall(glDeleteBuffers(1, &m_histogramBuffer));
     }
 }
 
@@ -64,6 +60,7 @@ int CoPShader::set_vertices(std::span<const float> vertices, std::span<const std
 
     m_point_shader.reset(new Shader(ID_point_shader, ID_fragment_shader, true));
     m_point_shader->Unbind();
+
     // Enable depth testing for proper occlusion
     GLCall(glEnable(GL_DEPTH_TEST));
     GLCall(glDepthFunc(GL_LESS));
@@ -169,45 +166,33 @@ std::vector<float> CoPShader::shade_satellite(glm::vec3 v_rel_hat, float boundin
     for (int i = 0; i < num_triangles_per_mesh.size(); i++) {
         glm::mat4 model = model_matrices[i];
         glm::mat4 u_MVP = orthoProj * view * model;
-        m_shader->setUniformMat4f("u_MVP", u_MVP);
+        m_point_shader->setUniformMat4f("u_MVP", u_MVP);
         glDrawArrays(GL_POINTS, cop_offset, static_cast<GLsizei>(num_triangles_per_mesh[i]));
         cop_offset += num_triangles_per_mesh[i];
     }
     m_cop_vao->Unbind();
     m_point_shader->Unbind();
 
-	// clear histogram buffer before compute shader dispatch
+    // Read pixel IDs back to CPU via glReadPixels.
+    // imageLoad from uimage2D is unreliable on AMD/Intel (returns 0 for all pixels);
+    // glReadPixels from the bound FBO is spec-guaranteed and works on all drivers.
     GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT));
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_histogramBuffer));
-    GLuint* histogramData = (GLuint*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
-    if (histogramData) {
-        memset(histogramData, 0, (m_numTriangles + 1) * sizeof(GLuint)); // +1 for background with ID 0
-        GLCall(glUnmapBuffer(GL_SHADER_STORAGE_BUFFER));
-    }
-    GLCall(glBindImageTexture(0, m_ID_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI));
-    GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_histogramBuffer));
+    GLCall(glReadBuffer(GL_COLOR_ATTACHMENT0));
+    std::vector<GLuint> pixel_ids(NUM_PIXEL * NUM_PIXEL, 0);
+    GLCall(glReadPixels(0, 0, NUM_PIXEL, NUM_PIXEL, GL_RED_INTEGER, GL_UNSIGNED_INT, pixel_ids.data()));
+    m_frame_buffer->UnBind();
 
-	// Dispatch compute shader to count pixels per triangle ID
-    m_compute_shader->Bind();
-	SPDLOG_DEBUG("Dispatching compute shader with work group size {}x{}", (NUM_PIXEL + 15) / 16, (NUM_PIXEL + 15) / 16);
-    GLCall(glDispatchCompute((NUM_PIXEL + 15) / 16, (NUM_PIXEL + 15) / 16, 1));
-    GLCall(glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT));
-
-    // read histogram results
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_histogramBuffer));
-    histogramData = (GLuint*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-    if (histogramData) {
-        if (triangle_visibility.size() < m_numTriangles) {
-            SPDLOG_WARN("triangle_visibility.size() ({}) is less than m_numTriangles ({}). This may lead to out-of-bounds access.", triangle_visibility.size(), m_numTriangles);
-        }
-		const size_t count = std::min(triangle_visibility.size(), static_cast<size_t>(m_numTriangles));
-        for (size_t i = 0; i < count; i++) {
-            if (histogramData[i + 1] > 0) {
-                triangle_visibility[i] = 1.0f;
-            }
-        }
-        GLCall(glUnmapBuffer(GL_SHADER_STORAGE_BUFFER));
+    // Count visible triangles on CPU
+    const size_t count = std::min(triangle_visibility.size(), static_cast<size_t>(m_numTriangles));
+    std::vector<bool> seen(m_numTriangles + 1, false);
+    for (GLuint id : pixel_ids) {
+        if (id > 0 && id <= m_numTriangles) seen[id] = true;
     }
-    m_compute_shader->Unbind();
+    int visible = 0;
+    for (size_t i = 0; i < count; i++) {
+        if (seen[i + 1]) { triangle_visibility[i] = 1.0f; visible++; }
+    }
+    SPDLOG_INFO("CoPShader: {}/{} panels visible", visible, m_numTriangles);
+
     return triangle_visibility;
 };
