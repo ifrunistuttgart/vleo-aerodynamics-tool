@@ -3,7 +3,7 @@ clc;
 clear;
 
 disp("Starting aerodynamic and shading tests...");
-
+setLogLevel("debug");
 %% Initialize Aerodynamic Models
 % Initialize the Sentman aerodynamic model (ID: 1)
 sentman_model = Sentman(1);

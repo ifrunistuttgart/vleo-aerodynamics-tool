@@ -8,21 +8,26 @@
 #define LEVEL_WARN 2
 #define LEVEL_INFO 1
 #define LEVEL_DEBUG 0
-#define LOG(level, msg) do { if ((level) >= LOG_LEVEL) { log((level), std::string(msg), __LINE__); } } while (0)
 
 class MatlabLogger {
 public:
-    MatlabLogger(std::shared_ptr<matlab::engine::MATLABEngine> matlab_ptr){
+    MatlabLogger(std::shared_ptr<matlab::engine::MATLABEngine> matlab_ptr, int log_level = LEVEL_DEBUG)
+        : log_level_(log_level){
         matlab_ptr_ = std::move(matlab_ptr);
     }
     void log(int level, const std::string& msg, std::string file, int line) {
-        switch (level) {
-            case LEVEL_INFO: info(msg, file, line); break;
-            case LEVEL_WARN: warning(msg,file, line); break;
-            case LEVEL_ERROR: error(msg, file, line); break;
-            case LEVEL_DEBUG: debug(msg, file, line); break;
-            default: warning("Unknown log level: " + std::to_string(level), "matalb_logger.h", __LINE__); break;
+        if (level >= log_level_) {
+            switch (level) {
+                case LEVEL_INFO: info(msg, file, line); break;
+                case LEVEL_WARN: warning(msg,file, line); break;
+                case LEVEL_ERROR: error(msg, file, line); break;
+                case LEVEL_DEBUG: debug(msg, file, line); break;
+                default: warning("Unknown log level: " + std::to_string(level), "matalb_logger.h", __LINE__); break;
+            }
         }
+    }
+    void set_log_level(int level) {
+        log_level_ = level;
     }
 
 private:
@@ -64,4 +69,5 @@ private:
 
     std::shared_ptr<matlab::engine::MATLABEngine> matlab_ptr_;
     matlab::data::ArrayFactory factory_;
+    int log_level_ = LEVEL_DEBUG;
 };

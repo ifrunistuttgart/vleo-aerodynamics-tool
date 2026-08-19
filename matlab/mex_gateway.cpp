@@ -25,31 +25,33 @@
 #include "custom_spdlog_sink.h"
 
 
-#define LOG_LEVEL LEVEL_DEBUG
-
-
 class MexFunction : public matlab::mex::Function {
 public:
     MexFunction() {
-        matlab_logger = std::make_unique<MatlabLogger>(getEngine());
+        matlab_logger = std::make_unique<MatlabLogger>(getEngine(),LEVEL_DEBUG);
         auto sink = std::make_shared<MatlabSink<std::mutex>>(*matlab_logger);
         auto logger = std::make_shared<spdlog::logger>("global", sink);
         spdlog::set_default_logger(logger);
-
-        // Set spdlog level based on the LOG_LEVEL macro
-        #if LOG_LEVEL == LEVEL_DEBUG
-                spdlog::set_level(spdlog::level::debug);
-        #elif LOG_LEVEL == LEVEL_INFO
-                spdlog::set_level(spdlog::level::info);
-        #elif LOG_LEVEL == LEVEL_WARN
-                spdlog::set_level(spdlog::level::warn);
-        #elif LOG_LEVEL == LEVEL_ERROR
-                spdlog::set_level(spdlog::level::err);
-        #else
-                spdlog::set_level(spdlog::level::off);
-        #endif
-
+        set_spdlog_level(LEVEL_DEBUG); // Default log level
     };
+    void set_spdlog_level(int level) {
+        // Set spdlog level based on the LOG_LEVEL macro
+        if (level == LEVEL_DEBUG) {
+            spdlog::set_level(spdlog::level::debug);
+        }
+        else if (level == LEVEL_INFO) {
+            spdlog::set_level(spdlog::level::info);
+        }
+        else if (level == LEVEL_WARN) {
+            spdlog::set_level(spdlog::level::warn);
+        }
+        else if (level == LEVEL_ERROR) {
+            spdlog::set_level(spdlog::level::err);
+        }
+        else {
+            spdlog::set_level(spdlog::level::off);
+        }
+    }
 
     void operator()(matlab::mex::ArgumentList outputs, matlab::mex::ArgumentList inputs) {
         try {
@@ -341,6 +343,19 @@ public:
                     glm::vec3 velocity__m_per_s(inputs[3][0], inputs[3][1], inputs[3][2]);
 
                     ShowMeshWithShadingAndWind(satellite, triangle_visibility, velocity__m_per_s);
+                    return;
+                }
+            }
+            if (cls == "none") {
+                if (cmd == "setLogLevel")
+                {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 0);
+                    validate_argument(inputs, 1, "int", 1);
+                    int log_level = static_cast<int>(inputs[1][0]);
+                    matlab_logger->set_log_level(log_level);
+                    matlab_logger->log(LEVEL_DEBUG, "Setting log level to: " + std::to_string(log_level),"mex_gateway.cpp",__LINE__);
+                    set_spdlog_level(log_level);
                     return;
                 }
             }
