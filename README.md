@@ -1,3 +1,12 @@
+> **For the original MATLAB/panel-method implementation** described in
+> Geyer et al., *"Aerodynamic attitude control of very-low-earth-orbit
+> satellites: simulative analysis and insights into nonlinear system
+> properties,"* CEAS Space Journal (2025).
+> [https://doi.org/10.1007/s12567-025-00684-x](https://doi.org/10.1007/s12567-025-00684-x)
+> please visit: [the `legacy-matlab-panel-method` branch](https://github.com/ifrunistuttgart/vleo-aerodynamics-tool/tree/legacy-matlab-panel-method)
+> (see tag [`paper-v1.0`](../../releases/tag/paper-v1.0)). Development has
+> since moved to a faster, GPU-accelerated toolbox
+
 # AeroSat Toolbox
 Modular C++ toolbox for aerodynamic analysis of VLEO satellites, combining computer-graphics-based surface visibility (shading) with gas-surface interaction (GSI) models.
 
