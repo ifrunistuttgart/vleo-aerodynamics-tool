@@ -3,28 +3,28 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
-#include <vtk-9.3/vtkActor.h>
-#include <vtk-9.3/vtkArrowSource.h>
-#include <vtk-9.3/vtkAxesActor.h>
-#include <vtk-9.3/vtkCellArray.h>
-#include <vtk-9.3/vtkCellData.h>
-#include <vtk-9.3/vtkLineSource.h>
-#include <vtk-9.3/vtkOrientationMarkerWidget.h>
-#include <vtk-9.3/vtkPoints.h>
-#include <vtk-9.3/vtkPolyData.h>
-#include <vtk-9.3/vtkPolyDataMapper.h>
-#include <vtk-9.3/vtkProperty.h>
-#include <vtk-9.3/vtkRenderWindow.h>
-#include <vtk-9.3/vtkRenderWindowInteractor.h>
-#include <vtk-9.3/vtkRenderer.h>
-#include <vtk-9.3/vtkInteractorStyleTrackballCamera.h>
-#include <vtk-9.3/vtkSmartPointer.h>
-#include <vtk-9.3/vtkTransform.h>
-#include <vtk-9.3/vtkTransformPolyDataFilter.h>
-#include <vtk-9.3/vtkTriangle.h>
-#include <vtk-9.3/vtkTubeFilter.h>
-#include <vtk-9.3/vtkUnsignedCharArray.h>
-#include <vtk-9.3/vtkAutoInit.h>
+#include <vtkActor.h>
+#include <vtkArrowSource.h>
+#include <vtkAxesActor.h>
+#include <vtkCellArray.h>
+#include <vtkCellData.h>
+#include <vtkLineSource.h>
+#include <vtkOrientationMarkerWidget.h>
+#include <vtkPoints.h>
+#include <vtkPolyData.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkProperty.h>
+#include <vtkRenderWindow.h>
+#include <vtkRenderWindowInteractor.h>
+#include <vtkRenderer.h>
+#include <vtkInteractorStyleTrackballCamera.h>
+#include <vtkSmartPointer.h>
+#include <vtkTransform.h>
+#include <vtkTransformPolyDataFilter.h>
+#include <vtkTriangle.h>
+#include <vtkTubeFilter.h>
+#include <vtkUnsignedCharArray.h>
+#include <vtkAutoInit.h>
 
 VTK_MODULE_INIT(vtkRenderingOpenGL2);
 VTK_MODULE_INIT(vtkInteractionStyle);

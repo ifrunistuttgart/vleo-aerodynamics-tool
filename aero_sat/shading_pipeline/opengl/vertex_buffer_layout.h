@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <type_traits>
 #include <GL/glew.h>
 #include "opengl/gl_helpers.h"
 
@@ -33,21 +34,20 @@ public:
 	template<typename T>
 	void Push(unsigned int count)
 	{
-		static_assert(false);
-	}
-
-	template<>
-	void Push<float>(unsigned int count)
-	{ 
-		m_Elements.push_back(VertexBufferElement{GL_FLOAT, count, GL_FALSE});
-		m_Stride += count *  VertexBufferElement::GetSizeOfType(GL_FLOAT);
-	}
-
-	template<>
-	void Push<unsigned int>(unsigned int count)
-	{
-		m_Elements.push_back(VertexBufferElement{ GL_UNSIGNED_INT, count, GL_FALSE });
-		m_Stride += count * VertexBufferElement::GetSizeOfType(GL_UNSIGNED_INT);
+		if constexpr (std::is_same_v<T, float>)
+		{
+			m_Elements.push_back(VertexBufferElement{GL_FLOAT, count, GL_FALSE});
+			m_Stride += count *  VertexBufferElement::GetSizeOfType(GL_FLOAT);
+		}
+		else if constexpr (std::is_same_v<T, unsigned int>)
+		{
+			m_Elements.push_back(VertexBufferElement{ GL_UNSIGNED_INT, count, GL_FALSE });
+			m_Stride += count * VertexBufferElement::GetSizeOfType(GL_UNSIGNED_INT);
+		}
+		else
+		{
+			static_assert(sizeof(T) == 0, "Unsupported type for VertexBufferLayout::Push");
+		}
 	}
 
 	inline const std::vector<VertexBufferElement> GetElements() const& { return m_Elements; };

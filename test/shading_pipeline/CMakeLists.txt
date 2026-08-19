@@ -1,7 +1,7 @@
 find_package(GTest)
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED CONFIG)
-find_package(GLEW REQUIRED CONFIG)
+find_package(GLEW REQUIRED)
 find_package(glm REQUIRED CONFIG)
 find_package(spdlog REQUIRED CONFIG)
 

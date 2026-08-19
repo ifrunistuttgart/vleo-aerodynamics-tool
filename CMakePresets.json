@@ -1,68 +1,67 @@
-﻿{
+{
     "version": 3,
     "configurePresets": [
         {
-            "name": "windows-base",
+            "name": "pixi-base",
             "hidden": true,
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/out/build/${presetName}",
             "installDir": "${sourceDir}/out/install/${presetName}",
             "cacheVariables": {
-              "CMAKE_C_COMPILER": "cl.exe",
-              "CMAKE_CXX_COMPILER": "cl.exe",
-              "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-              "VCPKG_MANIFEST_MODE": "ON",
-              "VCPKG_MANIFEST_DIR": "${sourceDir}"
-            },
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
+              "CMAKE_PREFIX_PATH": "$env{CONDA_PREFIX}"
             }
         },
         {
-            "name": "x64-debug",
-            "displayName": "x64 Debug",
-            "inherits": "windows-base",
-            "architecture": {
-                "value": "x64",
-                "strategy": "external"
-            },
+            "name": "pixi-debug",
+            "displayName": "Pixi Debug (RelWithDebInfo)",
+            "description": "Uses RelWithDebInfo, not Debug: conda-forge's Windows C++ packages are Release-only (/MD); mixing them with a /MDd (Debug) build corrupts memory across the DLL boundary. See CLAUDE.md.",
+            "inherits": "pixi-base",
             "cacheVariables": {
-              "CMAKE_BUILD_TYPE": "Debug",
-              "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+              "CMAKE_BUILD_TYPE": "RelWithDebInfo"
             }
         },
         {
-            "name": "x64-release",
-            "displayName": "x64 Release",
-            "inherits": "x64-debug",
+            "name": "pixi-release",
+            "displayName": "Pixi Release",
+            "inherits": "pixi-base",
             "cacheVariables": {
-              "CMAKE_BUILD_TYPE": "Release",
-              "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+              "CMAKE_BUILD_TYPE": "Release"
             }
         },
         {
-            "name": "x86-debug",
-            "displayName": "x86 Debug",
-            "inherits": "windows-base",
-            "architecture": {
-                "value": "x86",
-                "strategy": "external"
-            },
+            "name": "pixi-debug-matlab",
+            "displayName": "Pixi Debug (RelWithDebInfo) + MATLAB bindings",
+            "description": "Same as pixi-debug, with BUILD_MATLAB_BINDINGS=ON. Requires MATLAB to be installed -- find_package(Matlab) is REQUIRED, so configure fails without it. Kept as an opt-in preset rather than the default so building the core toolbox never requires MATLAB. Only one preset needed for MATLAB: MexGateway's log verbosity is a runtime env var (MEX_GATEWAY_LOG_LEVEL), not a compile-time option, so there's no separate quiet/verbose build.",
+            "inherits": "pixi-debug",
             "cacheVariables": {
-              "CMAKE_BUILD_TYPE": "Debug",
-              "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+              "BUILD_MATLAB_BINDINGS": "ON"
             }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "pixi-debug",
+            "configurePreset": "pixi-debug"
         },
         {
-            "name": "x86-release",
-            "displayName": "x86 Release",
-            "inherits": "x86-debug",
-            "cacheVariables": {
-              "CMAKE_BUILD_TYPE": "Release",
-              "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-            }
+            "name": "pixi-release",
+            "configurePreset": "pixi-release"
+        },
+        {
+            "name": "pixi-debug-matlab",
+            "configurePreset": "pixi-debug-matlab"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "pixi-debug",
+            "configurePreset": "pixi-debug",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "pixi-release",
+            "configurePreset": "pixi-release",
+            "output": { "outputOnFailure": true }
         }
     ]
 }

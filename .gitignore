@@ -5,7 +5,7 @@
 *.slo
 *.lo
 *.o
-*.obj
+#*.obj
 
 # Precompiled Headers
 *.gch
@@ -42,6 +42,8 @@
 build/
 Build/
 build-*/
+out/
+matlab/bin/
 
 # CMake generated files
 CMakeFiles/
@@ -57,6 +59,8 @@ compile_commands.json
 *.bak
 *.swp
 
+# pixi (local env cache only — pixi.lock IS committed for reproducibility)
+.pixi/
 # vcpkg
 vcpkg_installed/
 
@@ -71,3 +75,6 @@ Testing/
 .vs
 #clion
 .idea
+
+# MATLAB autosave files
+*.asv

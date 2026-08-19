@@ -1,0 +1,37 @@
+[workspace]
+name = "vleo-aerodynamics-tool"
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+
+# Native compiler per platform; on Windows still needs system VS 2022 Build Tools.
+[dependencies]
+cmake = "*"
+ninja = "*"
+c-compiler = "*"
+cxx-compiler = "*"
+
+vtk = "*"
+assimp = "*"
+glew = "*"
+glfw = "*"
+glm = "*"
+gtest = "*"
+spdlog = "*"
+
+# Flags live in CMakePresets.json; env vars below clear VS-generator defaults that
+# conflict with our Ninja preset.
+[tasks]
+configure = { cmd = "cmake --preset pixi-debug", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_PLATFORM = "", CMAKE_GENERATOR_TOOLSET = "", CMAKE_ARGS = "" } }
+build = { cmd = "cmake --build --preset pixi-debug", depends-on = ["configure"] }
+test = { cmd = "ctest --preset pixi-debug", depends-on = ["build"] }
+
+# Runs an example by folder name, e.g. `pixi run run-example import_and_visualize`.
+# Goes through pixi (rather than invoking the built binary directly) so conda-forge's
+# DLLs/shared libs, which are only on PATH inside a pixi-activated shell, can be found.
+run-example = { cmd = "out/build/pixi-debug/examples/{{ name }}/{{ name }}", depends-on = ["build"], args = ["name"] }
+
+# Opt-in MATLAB bindings (MATLAB required). Just one preset -- MexGateway's log
+# verbosity is a runtime env var (MEX_GATEWAY_LOG_LEVEL=INFO), not a compile-time
+# option, so there's no separate quiet/verbose build to maintain.
+configure-matlab = { cmd = "cmake --preset pixi-debug-matlab", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_PLATFORM = "", CMAKE_GENERATOR_TOOLSET = "", CMAKE_ARGS = "" } }
+build-matlab = { cmd = "cmake --build --preset pixi-debug-matlab", depends-on = ["configure-matlab"] }
