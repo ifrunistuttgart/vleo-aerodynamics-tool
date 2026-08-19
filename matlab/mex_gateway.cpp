@@ -357,9 +357,9 @@ public:
 
                     const int satellite_id = inputs[1][0];
                     RotatableMeshSatellite& satellite = *satellite_map.at(satellite_id);
-                    validate_argument(inputs, 2, "double", satellite.get_num_triangles());
+                    validate_argument(inputs, 2, "float", satellite.get_num_triangles());
 
-                    matlab::data::TypedArray<double> const typed_array = inputs[2];
+                    matlab::data::TypedArray<float> const typed_array = inputs[2];
                     std::vector<float> triangle_visibility(typed_array.begin(), typed_array.end());
                     glm::vec3 velocity__m_per_s(inputs[3][0], inputs[3][1], inputs[3][2]);
 
@@ -391,6 +391,11 @@ private:
         inputs[idx].getType() != matlab::data::ArrayType::COMPLEX_DOUBLE);
     };
 
+    static bool is_float(matlab::mex::ArgumentList& inputs, int idx) {
+        return (inputs[idx].getType() == matlab::data::ArrayType::SINGLE &&
+        inputs[idx].getType() != matlab::data::ArrayType::COMPLEX_SINGLE);
+    };
+
     static bool is_uint(matlab::mex::ArgumentList& inputs, int idx) {
         const matlab::data::ArrayType type = inputs[idx].getType();
         return (type == matlab::data::ArrayType::UINT8 ||
@@ -415,6 +420,10 @@ private:
         if (expected_type == "double" && !is_double(inputs, idx)) {
             LOG(LEVEL_ERROR, std::format("Expected argument at index {} to be a double.", idx));
             throw std::invalid_argument("Argument type mismatch: expected double.");
+        }
+        if (expected_type == "float" && !is_float(inputs, idx)) {
+            LOG(LEVEL_ERROR, std::format("Expected argument at index {} to be a float.", idx));
+            throw std::invalid_argument("Argument type mismatch: expected float.");
         }
         if (expected_type == "uint" && !is_uint(inputs, idx)) {
             LOG(LEVEL_ERROR, std::format("Expected argument at index {} to be an unsigned integer.", idx));
