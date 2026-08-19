@@ -5,7 +5,7 @@
 
 #include "shading_pipeline.h"
 #include "binary_shader/binary_shader.h"
-#include "ISatellite_shading_data.h"
+#include "Isatellite_shading_data.h"
 #include "geometries/tetraeder_vector.h"
 #include "shading_algorithm_factory.h"
 

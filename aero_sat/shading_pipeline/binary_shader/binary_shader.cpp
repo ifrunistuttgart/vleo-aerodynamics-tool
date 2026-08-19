@@ -1,4 +1,3 @@
-#pragma once
 #include "binary_shader.h"
 
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'

@@ -1,5 +1,6 @@
 #pragma once
 #include <span>
+#include <vector>
 #include <glm/glm.hpp>
 #include "Isatellite_shading_data.h"    
 
