@@ -24,8 +24,8 @@ classdef ShadingPipeline < handle
             %   Input Arguments:
             %       satellite         - A RotatableMeshSatellite object.
             %       shading_algorithm - An integer specifying the algorithm:
-            %                           1 = Binary Shader (Simple on/off)
-            %                           2 = COP Shader (More complex)
+            %                           0 = Binary Shader (Simple on/off)
+            %                           1 = COP Shader (More complex)
             %       num_pixel         - The resolution (number of pixels) 
             %                           used for the visibility analysis.
             %

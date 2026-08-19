@@ -11,15 +11,15 @@ disp("Created Sentman model.");
 
 % Initialize atmospheric conditions
 % Parameters: density, temperature, molecular mass, accommodation coefficient
-T_inf = 934.0; 
+T_inf = 934.0;
 atomic_oxygen_mass = 16 * 1.6605390689252e-27;
 accommodation_coeff = 0.9;
 aero_conditions = AeroConditions(1.2482e-11, T_inf, atomic_oxygen_mass, accommodation_coeff);
 disp("Created aerodynamic conditions.");
 
 % Run a single test calculation for the Sentman model
-% Arguments: panel_idx, normal_vec, center_vec, velocity_vec, temp, conditions
-sentman_model.calc_aero_force_torque(1, [0; 0; 1], [0; 0; 0], [7800; 0; 0], 288, aero_conditions);
+% Arguments: panel_area, normal_vec, center_vec, velocity_vec, temp, conditions
+sentman_model.calc_aero_force_torque(1, [0; 0; 1], [0; 0; 0], [0; 0; 0], 288, aero_conditions);
 
 %% Load Satellite Geometry
 current_folder = fileparts(mfilename('fullpath'));
