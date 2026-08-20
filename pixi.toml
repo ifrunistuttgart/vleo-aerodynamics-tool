@@ -23,7 +23,10 @@ spdlog = "*"
 [tasks]
 configure = { cmd = "cmake --preset pixi-debug", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_PLATFORM = "", CMAKE_GENERATOR_TOOLSET = "", CMAKE_ARGS = "" } }
 build = { cmd = "cmake --build --preset pixi-debug", depends-on = ["configure"] }
-test = { cmd = "ctest --preset pixi-debug", depends-on = ["build"] }
+
+configure-test = { cmd = "cmake --preset pixi-debug-gtest", env = { CMAKE_GENERATOR = "", CMAKE_GENERATOR_PLATFORM = "", CMAKE_GENERATOR_TOOLSET = "", CMAKE_ARGS = "" } }
+build-test = { cmd = "cmake --build --preset pixi-debug-gtest", depends-on = ["configure-test"] }
+test = { cmd = "ctest --preset pixi-debug-gtest", depends-on = ["build-test"] }
 
 # Runs an example by folder name, e.g. `pixi run run-example import_and_visualize`.
 # Goes through pixi (rather than invoking the built binary directly) so conda-forge's

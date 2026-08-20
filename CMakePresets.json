@@ -36,6 +36,15 @@
             "cacheVariables": {
               "BUILD_MATLAB_BINDINGS": "ON"
             }
+        },
+        {
+            "name": "pixi-debug-gtest",
+            "displayName": "Pixi Debug (RelWithDebInfo)",
+            "description": "Uses RelWithDebInfo, not Debug: conda-forge's Windows C++ packages are Release-only (/MD); mixing them with a /MDd (Debug) build corrupts memory across the DLL boundary. See CLAUDE.md.",
+            "inherits": "pixi-debug",
+            "cacheVariables": {
+                "BUILD_TESTING": "ON"
+            }
         }
     ],
     "buildPresets": [
@@ -50,6 +59,10 @@
         {
             "name": "pixi-debug-matlab",
             "configurePreset": "pixi-debug-matlab"
+        },
+        {
+            "name": "pixi-debug-gtest",
+            "configurePreset": "pixi-debug-gtest"
         }
     ],
     "testPresets": [
@@ -61,6 +74,11 @@
         {
             "name": "pixi-release",
             "configurePreset": "pixi-release",
+            "output": { "outputOnFailure": true }
+        },
+        {
+            "name": "pixi-debug-gtest",
+            "configurePreset": "pixi-debug-gtest",
             "output": { "outputOnFailure": true }
         }
     ]

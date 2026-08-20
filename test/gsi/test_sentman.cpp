@@ -82,7 +82,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
     // Arrange
     Sentman sentman{ 2 };
-    glm::vec3 normal(1.0f, 1.0f, 0.0f);
+    glm::vec3 normal(-1.0f, -1.0f, 0.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(1.0f, 1.0f, 1.0f);
     glm::vec3 velocity(7800.0f, 0.0f, 0.0f);
@@ -110,7 +110,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod3) {
     // Arrange
     Sentman sentman{ 3 };
-    glm::vec3 normal(1.0f, 1.0f, 0.0f);
+    glm::vec3 normal(-1.0f, -1.0f, 0.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(1.0f, 1.0f, 1.0f);
     glm::vec3 velocity(7800.0f, 0.0f, 0.0f);

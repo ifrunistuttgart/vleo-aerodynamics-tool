@@ -57,8 +57,7 @@ TEST(ShadingPipelineTests, TestShading) {
     FakeSatelliteData sat;
     ShadingPipeline pipeline(sat, ShadingAlgorithmType::Binary, 800);
 
-    std::vector<float> isTriangleVisible(triangleIDs.size(), 0.0f);
-    pipeline.shade(std::span<float>(isTriangleVisible), glm::vec3(1.0f, 0.0f, 0.0f));
+    std::vector<float> isTriangleVisible = pipeline.shade(glm::vec3(1.0f, 0.0f, 0.0f));
 
     EXPECT_NEAR(isTriangleVisible[0], 0.0f, 1e-5);
     EXPECT_NEAR(isTriangleVisible[1], 0.0f, 1e-5);
