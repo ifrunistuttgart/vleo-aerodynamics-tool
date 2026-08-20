@@ -9,7 +9,9 @@ add_library(gsi
         maxwell.cpp
         maxwell.h
         schaaf_chambre.cpp
-        schaaf_chambre.h)
+        schaaf_chambre.h
+		newton.cpp
+		newton.h)
 
 target_compile_features(gsi PRIVATE cxx_std_20)
 target_include_directories(gsi

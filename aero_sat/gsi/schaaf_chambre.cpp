@@ -18,7 +18,7 @@ int SchaafChambre::calc_aero_force_and_torque(float area__m2, const glm::vec3 &n
 
     // Extract aerodynamic conditions
     const float density__kg_per_m3 = aero.density__kg_per_m3;
-    const float temperature_i__K = aero.temperature__K;
+    const float temperature_i__K = aero.T_atmospheric__K;
     const float temperature_w__K = surf_temp__K;
     const float sigma_N = aero.sigma_N;
     const float sigma_T = aero.sigma_T;
