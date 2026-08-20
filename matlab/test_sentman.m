@@ -3,10 +3,10 @@ clc;
 clear;
 
 disp("Starting aerodynamic and shading tests...");
-
 %% Initialize Aerodynamic Models
 % Initialize the Sentman aerodynamic model (ID: 1)
-sentman_model = Sentman(1);
+%sentman_model = Sentman(1);
+sentman_model = SchaafChambre();
 disp("Created Sentman model.");
 
 % Initialize atmospheric conditions
@@ -68,4 +68,4 @@ fprintf('Average load calculation call duration: %.6f seconds.\n', avg_load_calc
 disp("All tests completed successfully.");
 
 %% visualize last shading result
-show_mesh(iss_satellite, panel_visibility, relative_velocity_m_s);
+%show_mesh(iss_satellite, panel_visibility, relative_velocity_m_s);
