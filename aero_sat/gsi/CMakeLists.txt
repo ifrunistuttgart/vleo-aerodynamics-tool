@@ -1,7 +1,15 @@
 find_package(glm REQUIRED CONFIG)
 find_package(spdlog REQUIRED CONFIG)
 
-add_library(gsi sentman.cpp sentman.h)
+add_library(gsi
+		sentman.cpp
+		sentman.h
+		cook.cpp
+		cook.h
+        maxwell.cpp
+        maxwell.h
+        schaaf_chambre.cpp
+        schaaf_chambre.h)
 
 target_compile_features(gsi PRIVATE cxx_std_20)
 target_include_directories(gsi
