@@ -1,7 +1,7 @@
 %% if the loglevel is never set it defaults to debug
 function setLogLevel(level)
     arguments
-        level {mustBeMember(level, ["debug", "info", "warn", "error"])}
+        level (1,1) {mustBeMember(level, ["debug", "info", "warn", "error"])}
     end
     level_id = 0;
     if level == "debug"
