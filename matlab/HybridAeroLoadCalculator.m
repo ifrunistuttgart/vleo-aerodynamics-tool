@@ -26,9 +26,15 @@ classdef HybridAeroLoadCalculator < handle
             %       shading_pipeline - A ShadingPipeline object for visibility analysis.
             %       gsi_model        - A GSI model object (e.g., Sentman) for load calculation.
             %
+            arguments
+                satellite RotatableMeshSatellite
+                shading_pipeline ShadingPipeline
+                gsi_model Sentman
+            end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             this.handle_ = int32(MexGateway("HybridAeroLoadCalculator.new", int32(satellite.handle_), int32(shading_pipeline.handle_), int32(gsi_model.handle_)));
         end
+
         function [force__N, torque__Nm] = calc_aero_load(this, v_rel__m_per_s,surface_temp__K, aero_conditions)
             % CALC_AERO_LOAD Calculates the total aerodynamic force and torque.
             %
@@ -45,13 +51,23 @@ classdef HybridAeroLoadCalculator < handle
             %       force__N         - Total aerodynamic force vector in body frame [N].
             %       torque__Nm       - Total aerodynamic torque vector about the origin [Nm].
             %
+            arguments
+                this (1,1) HybridAeroLoadCalculator
+                v_rel__m_per_s (1,3) double
+                surface_temp__K (1,1) double {mustBePositive}
+                aero_conditions (1,1) AeroConditions
+            end
             [force__N, torque__Nm] = MexGateway("HybridAeroLoadCalculator.calc_aero_load", int32(this.handle_), v_rel__m_per_s, surface_temp__K, int32(aero_conditions.handle_));
         end
+
         function delete(this)
             % DELETE Destructor for HybridAeroLoadCalculator.
             %
             %   Releases the underlying C++ resources.
             %
+            arguments
+                this (1,1) HybridAeroLoadCalculator
+            end
             if this.handle_ ~= int32(-1)
                 MexGateway("HybridAeroLoadCalculator.delete", int32(this.handle_));
                 this.handle_ = int32(-1);

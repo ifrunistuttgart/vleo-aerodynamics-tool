@@ -26,6 +26,9 @@ classdef RotatableMeshSatellite < handle
             %   Input Arguments:
             %       file_path - Path to the 3D model file (e.g., .obj or .stl).
             %
+            arguments
+                file_path (1,1) string
+            end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             this.handle_ = int32(MexGateway("Satellite.new", string(file_path)));
         end
@@ -77,6 +80,13 @@ classdef RotatableMeshSatellite < handle
             %       origin     - The 3D coordinates [x, y, z] of the rotation origin.
             %       axis       - The 3D vector [x, y, z] defining the axis of rotation.
             %
+            arguments
+                this (1,1) RotatableMeshSatellite
+                surface_id (1,1) {mustBeInteger, mustBeNonnegative}
+                angle__rad (1,1) double
+                origin (1,3) double
+                axis (1,3) double
+            end
             MexGateway("Satellite.turn_surface_around_axis", int32(this.handle_), int32(surface_id), angle__rad, origin, axis)
         end
     end
