@@ -32,7 +32,7 @@ protected:
         std::string s(msg.payload.data(), msg.payload.size());
         spdlog::level::level_enum level = msg.level;
         std::string filename_clean = std::filesystem::path(msg.source.filename).filename().string();
-        int maltab_level = map_spdlog_level(level);
+        int matlab_level = map_spdlog_level(level);
         matlab_logger_.log(maltab_level, s, filename_clean, msg.source.line);
     }
     void flush_() override {}
