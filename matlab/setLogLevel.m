@@ -3,7 +3,7 @@ function setLogLevel(level)
     arguments
         level (1,1) {mustBeMember(level, ["debug", "info", "warn", "error"])}
     end
-    level_id = 0;
+    level_id = 2
     if level == "debug"
         level_id = 0;
     elseif level == "info"
