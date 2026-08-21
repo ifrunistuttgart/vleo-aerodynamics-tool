@@ -22,7 +22,7 @@ public:
                 case LEVEL_WARN: warning(msg,file, line); break;
                 case LEVEL_ERROR: error(msg, file, line); break;
                 case LEVEL_DEBUG: debug(msg, file, line); break;
-                default: warning("Unknown log level: " + std::to_string(level), "matalb_logger.h", __LINE__); break;
+                default: warning("Unknown log level: " + std::to_string(level), "matlab_logger.h", __LINE__); break;
             }
         }
     }
