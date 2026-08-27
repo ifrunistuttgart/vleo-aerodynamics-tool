@@ -25,6 +25,9 @@ classdef Sentman < handle
             %           method used for calculating the temperature ratio 
             %           between the surface and the incoming flow.
             %
+            arguments
+                temperature_ratio_method (1,1) {mustBeMember(temperature_ratio_method, [1, 2, 3])} = 1
+            end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             this.handle_ = int32(MexGateway("Sentman.new", int32(temperature_ratio_method)));
         end
@@ -58,6 +61,15 @@ classdef Sentman < handle
             %       force__N       - Resulting aerodynamic force vector [N].
             %       torque__Nm     - Resulting aerodynamic torque vector [Nm].
             %
+            arguments
+                this (1,1) Sentman
+                area__m2 (1,1) double {mustBePositive}
+                normal (1,3) double
+                centroid_m (1,3) double
+                v_rel__m_per_s (1,3) double
+                surf_temp__K (1,1) double {mustBePositive}
+                aero_cond (1,1) AeroConditions
+            end
             [force__N, torque__Nm] = MexGateway("Sentman.calc_aero_force_torque", int32(this.handle_), area__m2, normal, centroid_m, v_rel__m_per_s, surf_temp__K, int32(aero_cond.handle_));
         end
     end

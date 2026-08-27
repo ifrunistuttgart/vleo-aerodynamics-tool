@@ -24,11 +24,16 @@ classdef ShadingPipeline < handle
             %   Input Arguments:
             %       satellite         - A RotatableMeshSatellite object.
             %       shading_algorithm - An integer specifying the algorithm:
-            %                           1 = Binary Shader (Simple on/off)
-            %                           2 = COP Shader (More complex)
+            %                           0 = Binary Shader (Simple on/off)
+            %                           1 = COP Shader (test visibility of centroid)
             %       num_pixel         - The resolution (number of pixels) 
             %                           used for the visibility analysis.
             %
+            arguments
+                satellite (1,1) RotatableMeshSatellite
+                shading_algorithm (1,1) {mustBeInteger, mustBeMember(shading_algorithm, [0, 1])} = 0
+                num_pixel (1,1) {mustBeInteger, mustBePositive} = 800
+            end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             try
                 this.handle_ = MexGateway("Shading.new", int32(satellite.handle_), int32(shading_algorithm), int32(num_pixel));
@@ -63,6 +68,10 @@ classdef ShadingPipeline < handle
             %       visibility - A vector of visibility factors (1.0 = exposed, 
             %                    0.0 = shaded).
             %
+            arguments
+                this (1,1) ShadingPipeline
+                velocity (1,3) double
+            end
             visibility = MexGateway("Shading.shade", int32(this.handle_), velocity);
         end
     end

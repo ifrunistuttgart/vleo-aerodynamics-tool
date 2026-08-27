@@ -2,9 +2,8 @@
 // Created by Jan_L on 08.06.2026.
 //
 #include "mex.hpp"
-#include "mexAdapter.hpp"
+#include "matlab_logger.h"
 
-#include <cstdlib>
 #include <exception>
 #include <memory>
 #include <stdexcept>
@@ -14,6 +13,7 @@
 #include <format>
 #include <array>
 #include <glm/glm.hpp>
+#include <spdlog/spdlog.h>
 
 #include "core.h"
 #include "sentman.h"
@@ -22,57 +22,36 @@
 #include "shading_algorithm_factory.h"
 #include "hybrid_aero_load_calculator.h"
 #include "show_mesh.h"
+#include "custom_spdlog_sink.h"
 
-#define LEVEL_ERROR 2
-#define LEVEL_WARN 1
-#define LEVEL_INFO 0
 
-// INFO logs route through the (slow) MATLAB Engine API on every call, so they're off
-// by default. Runtime (not compile-time) so a single build serves both cases: set
-// MEX_GATEWAY_LOG_LEVEL=INFO in the environment before starting MATLAB to enable them.
-int log_level() {
-    static const int level = []() {
-        const char* env = std::getenv("MEX_GATEWAY_LOG_LEVEL");
-        return (env && std::string(env) == "INFO") ? LEVEL_INFO : LEVEL_WARN;
-    }();
-    return level;
-}
-#define LOG(level, msg) do { if ((level) >= log_level()) { log((level), std::string(msg), __LINE__); } } while (0)
-
-class MatlabLogger : public matlab::mex::Function {
+class MexFunction : public matlab::mex::Function {
 public:
-    MatlabLogger() : matlab_ptr_(getEngine()) {}
-
-    void log(int level, const std::string& msg, int line) {
-        switch (level) {
-            case LEVEL_INFO: info(msg, line); break;
-            case LEVEL_WARN: warning(msg, line); break;
-            case LEVEL_ERROR: error(msg, line); break;
-            default: warning("Unknown log level: " + std::to_string(level), __LINE__); break;
+    MexFunction() {
+        matlab_logger = std::make_unique<MatlabLogger>(getEngine(),LEVEL_DEBUG);
+        auto sink = std::make_shared<MatlabSink<std::mutex>>(*matlab_logger);
+        auto logger = std::make_shared<spdlog::logger>("global", sink);
+        spdlog::set_default_logger(logger);
+        set_spdlog_level(LEVEL_DEBUG); // Default log level
+    };
+    void set_spdlog_level(int level) {
+        // Set spdlog level based on the LOG_LEVEL macro
+        if (level == LEVEL_DEBUG) {
+            spdlog::set_level(spdlog::level::debug);
+        }
+        else if (level == LEVEL_INFO) {
+            spdlog::set_level(spdlog::level::info);
+        }
+        else if (level == LEVEL_WARN) {
+            spdlog::set_level(spdlog::level::warn);
+        }
+        else if (level == LEVEL_ERROR) {
+            spdlog::set_level(spdlog::level::err);
+        }
+        else {
+            spdlog::set_level(spdlog::level::off);
         }
     }
-
-private:
-    void info(const std::string& msg, int line) {
-        matlab_ptr_->feval(u"disp", 0, std::vector<matlab::data::Array>({factory_.createScalar("[Info] [Line: " + std::to_string(line) + "] " + msg)}));
-    }
-
-    void warning(const std::string& msg, int line) {
-        matlab_ptr_->feval(u"disp", 0, std::vector<matlab::data::Array>({factory_.createScalar("[Warn] [Line: " + std::to_string(line) + "] " + msg)}));
-    }
-
-    void error(const std::string& msg, int line) {
-        matlab_ptr_->feval(u"disp", 0, std::vector<matlab::data::Array>({factory_.createScalar("[Error] [Line: " + std::to_string(line) + "] " + msg)}));
-    }
-
-    std::shared_ptr<matlab::engine::MATLABEngine> matlab_ptr_;
-    matlab::data::ArrayFactory factory_;
-};
-
-
-class MexFunction : public MatlabLogger {
-public:
-    MexFunction(): matlab_ptr(matlab::mex::Function::getEngine()) {}
 
     void operator()(matlab::mex::ArgumentList outputs, matlab::mex::ArgumentList inputs) {
         try {
@@ -83,10 +62,10 @@ public:
             size_t dot = cmd_string.find('.');
             std::string cls = cmd_string.substr(0, dot);
             std::string cmd = (dot != std::string::npos) ? cmd_string.substr(dot + 1) : "";
-            LOG(LEVEL_INFO,"Received command: " + cmd + " for class: " +cls);
+            matlab_logger->log(LEVEL_INFO,"Received command: " + cmd + " for class: " +cls,"mex_gateway.cpp",__LINE__);
             if (cls == "Sentman") {
                 if (cmd == "new") {
-                    LOG(LEVEL_INFO, "Creating new Sentman instance.");
+                    matlab_logger->log(LEVEL_INFO, "Creating new Sentman instance.","mex_gateway.cpp",__LINE__);
                     validate_input_size_min(inputs, 2);
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
@@ -148,7 +127,7 @@ public:
             }
             if (cls == "AeroCond") {
                 if (cmd == "new") {
-                    LOG(LEVEL_INFO, "Creating new AeroConditions instance.");
+                    matlab_logger->log(LEVEL_INFO, "Creating new AeroConditions instance.","mex_gateway.cpp",__LINE__);
                     validate_input_size_min(inputs, 5);
                     validate_argument(inputs, 1, "double", 1);
                     validate_argument(inputs, 2, "double", 1);
@@ -182,7 +161,7 @@ public:
             }
             if (cls=="Satellite") {
                 if (cmd == "new") {
-                    LOG(LEVEL_INFO, "Creating new Satellite instance.");
+                    matlab_logger->log(LEVEL_INFO, "Creating new Satellite instance.","mex_gateway.cpp",__LINE__);
                     validate_input_size(inputs, 2);
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "string", 1);
@@ -240,7 +219,7 @@ public:
             }
             if (cls == "Shading") {
                 if (cmd == "new") {
-                    LOG(LEVEL_INFO, "Creating new Shading instance.");
+                    matlab_logger->log(LEVEL_INFO, "Creating new Shading instance.","mex_gateway.cpp",__LINE__);
                     validate_input_size(inputs, 4);
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
@@ -252,14 +231,14 @@ public:
                     const int shading_key = inputs[2][0];
                     ShadingAlgorithmType algorithm_type;
                     switch (shading_key) {
-                        case 1:
+                        case 0:
                             algorithm_type = ShadingAlgorithmType::Binary;
                             break;
-                        case 2:
+                        case 1:
                             algorithm_type = ShadingAlgorithmType::CoP;
                             break;
                         default:
-                            LOG(LEVEL_ERROR, "Unknown shading algorithm type: " + std::to_string(shading_key));
+                            matlab_logger->log(LEVEL_ERROR, "Unknown shading algorithm type: " + std::to_string(shading_key),"mex_gateway.cpp",__LINE__);
                             throw std::invalid_argument(std::string("Unknown shading algorithm type: ") + std::to_string(shading_key));
                     };
                     shading_pipeline_map.insert({shading_pipeline_max_id,
@@ -367,11 +346,24 @@ public:
                     return;
                 }
             }
-            LOG(LEVEL_ERROR, "Unknown command: " + cmd + " for class: " + cls);
+            if (cls == "none") {
+                if (cmd == "setLogLevel")
+                {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 0);
+                    validate_argument(inputs, 1, "int", 1);
+                    int log_level = static_cast<int>(inputs[1][0]);
+                    matlab_logger->set_log_level(log_level);
+                    matlab_logger->log(LEVEL_DEBUG, "Setting log level to: " + std::to_string(log_level),"mex_gateway.cpp",__LINE__);
+                    set_spdlog_level(log_level);
+                    return;
+                }
+            }
+            matlab_logger->log(LEVEL_ERROR, "Unknown command: " + cmd + " for class: " + cls,"mex_gateway.cpp",__LINE__);
             throw std::invalid_argument("Unknown command: " + cmd + " for class: " + cls);
         } catch (const std::exception& e) {
-            // Log the error to MATLAB console and rethrow so MATLAB receives a proper error
-            LOG(LEVEL_ERROR, e.what());
+            // matlab_logger->log the error to MATLAB console and rethrow so MATLAB receives a proper error
+            matlab_logger->log(LEVEL_ERROR, e.what(),"mex_gateway.cpp",__LINE__);
             throw; // propagate the exception back to MATLAB instead of silently returning with no outputs
         }
     }
@@ -414,54 +406,54 @@ private:
                            const std::string& expected_type,
                            int expected_size) {
         if (expected_type == "int" && !is_int(inputs, idx)) {
-            LOG(LEVEL_ERROR, std::format("Expected argument at index {} to be an integer.", idx));
+            matlab_logger->log(LEVEL_ERROR, std::format("Expected argument at index {} to be an integer.", idx),"mex_gateway.cpp",__LINE__);
             throw std::invalid_argument("Argument type mismatch: expected integer.");
         }
         if (expected_type == "double" && !is_double(inputs, idx)) {
-            LOG(LEVEL_ERROR, std::format("Expected argument at index {} to be a double.", idx));
+            matlab_logger->log(LEVEL_ERROR, std::format("Expected argument at index {} to be a double.", idx),"mex_gateway.cpp", __LINE__);
             throw std::invalid_argument("Argument type mismatch: expected double.");
         }
         if (expected_type == "float" && !is_float(inputs, idx)) {
-            LOG(LEVEL_ERROR, std::format("Expected argument at index {} to be a float.", idx));
+            matlab_logger->log(LEVEL_ERROR, std::format("Expected argument at index {} to be a float.", idx),"mex_gateway.cpp",__LINE__);
             throw std::invalid_argument("Argument type mismatch: expected float.");
         }
         if (expected_type == "uint" && !is_uint(inputs, idx)) {
-            LOG(LEVEL_ERROR, std::format("Expected argument at index {} to be an unsigned integer.", idx));
+            matlab_logger->log(LEVEL_ERROR, std::format("Expected argument at index {} to be an unsigned integer.", idx),"mex_gateway.cpp",__LINE__);
             throw std::invalid_argument("Argument type mismatch: expected unsigned integer.");
         }
         if (expected_type == "string" && !is_string(inputs, idx)) {
-            LOG(LEVEL_ERROR, std::format("Expected argument at index {} to be a string.", idx));
+            matlab_logger->log(LEVEL_ERROR, std::format("Expected argument at index {} to be a string.", idx),"mex_gateway.cpp",__LINE__);
             throw std::invalid_argument("Argument type mismatch: expected string.");
         }
         if (expected_size != inputs[idx].getNumberOfElements()) {
-            LOG(LEVEL_ERROR, std::format("Expected argument at index {} to have size {}, but got size {}.", idx, expected_size, inputs[idx].getNumberOfElements()));
+            matlab_logger->log(LEVEL_ERROR, std::format("Expected argument at index {} to have size {}, but got size {}.", idx, expected_size, inputs[idx].getNumberOfElements()),"mex_gateway.cpp",__LINE__);
             throw std::invalid_argument("Argument size mismatch.");
         }
     };
 
     void validate_input_size(matlab::mex::ArgumentList& inputs, int expected_size) {
         if (inputs.size() != expected_size) {
-            LOG(LEVEL_ERROR, std::format("Expected {} input arguments, but got {}.", expected_size, inputs.size()));
+            matlab_logger->log(LEVEL_ERROR, std::format("Expected {} input arguments, but got {}.", expected_size, inputs.size()),"mex_gateway.cpp",__LINE__);
             throw std::invalid_argument("Input argument count mismatch.");
         }
     };
 
     void validate_output_size(matlab::mex::ArgumentList& outputs, int expected_size) {
         if (outputs.size() != expected_size) {
-            LOG(LEVEL_ERROR, std::format("Expected {} output arguments, but got {}.", expected_size, outputs.size()));
+            matlab_logger->log(LEVEL_ERROR, std::format("Expected {} output arguments, but got {}.", expected_size, outputs.size()),"mex_gateway.cpp",__LINE__);
             throw std::invalid_argument("Output argument count mismatch.");
         }
     };
 
     void validate_input_size_min(matlab::mex::ArgumentList& inputs, int min_size) {
         if (inputs.size() < min_size) {
-            LOG(LEVEL_ERROR, std::format("Expected at least {} input arguments, but got {}.", min_size, inputs.size()));
+            matlab_logger->log(LEVEL_ERROR, std::format("Expected at least {} input arguments, but got {}.", min_size, inputs.size()),"mex_gateway.cpp",__LINE__);
             throw std::invalid_argument("Not enough input arguments.");
         }
     };
 
-    std::shared_ptr<matlab::engine::MATLABEngine> matlab_ptr;
     matlab::data::ArrayFactory factory;
+    std::unique_ptr<MatlabLogger> matlab_logger;
     std::unordered_map<int, std::unique_ptr<Sentman>> sentman_map;
     std::unordered_map<int, std::unique_ptr<AeroConditions>> aero_conditions_map;
     std::unordered_map<int, std::unique_ptr<RotatableMeshSatellite>> satellite_map;
