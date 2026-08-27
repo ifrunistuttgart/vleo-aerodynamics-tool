@@ -8,6 +8,8 @@
 #include "Isatellite_manipulator.h"
 
 
+namespace vat {
+
 /**
 * A satellite class with a static mesh structure. It implements both the ISatelliteShadingData and ISatelliteManipulator interfaces. 
 * Altough it implements the ISatelliteManipulator interface, the turn_surface and turn_surface_around_axis functions do not actually change the satellite's configuration, since the mesh is static.
@@ -44,3 +46,5 @@ public:
     int turn_surface_around_axis(const int surface_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) override;
     int turn_surfaces() override;
 };
+
+} // namespace vat

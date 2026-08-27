@@ -6,6 +6,8 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
+namespace vat {
+
 /**
 * @param satellite
 */
@@ -73,3 +75,4 @@ int HybridForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__
 	return 0;
 }
 
+} // namespace vat

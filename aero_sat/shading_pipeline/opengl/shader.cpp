@@ -6,6 +6,8 @@
 
 #include "gl_helpers.h"
 
+namespace vat::gl {
+
 Shader::Shader(const std::string& vertexSource, const std::string& fragmentSource, bool fromSource)
     : m_FilePath(""), m_ShaderID(0)
 {
@@ -112,3 +114,4 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
     return id;
 }
 
+} // namespace vat::gl

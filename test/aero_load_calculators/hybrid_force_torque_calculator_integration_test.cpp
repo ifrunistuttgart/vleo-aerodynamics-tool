@@ -13,6 +13,8 @@
 #include "static_mesh_satellite.h"
 
 
+using namespace vat;
+
 // Get path relative to this source file
 std::string GetTestDataPath(const std::string& filename) {
     std::filesystem::path source_file(__FILE__);

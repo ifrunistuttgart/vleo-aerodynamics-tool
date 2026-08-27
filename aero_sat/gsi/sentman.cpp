@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include "sentman.h"
 
+namespace vat {
 
 const float BOLTZMANN_CONSTANT__J_PER_K = 1.380649e-23f; // Boltzmann constant in J/K
 
@@ -110,3 +111,4 @@ int Sentman::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal,
 
 }
 
+} // namespace vat

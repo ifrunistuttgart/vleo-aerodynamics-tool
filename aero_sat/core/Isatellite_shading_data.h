@@ -3,6 +3,8 @@
 #include <span>
 #include <glm/glm.hpp>
 
+namespace vat {
+
 /**
  * Interface for providing geometric and shading-related data of the satellite.
  *
@@ -83,3 +85,5 @@ public:
      */
     virtual float get_bounding_sphere_radius() = 0;
 };
+
+} // namespace vat

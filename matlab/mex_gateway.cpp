@@ -24,6 +24,17 @@
 #include "show_mesh.h"
 #include "custom_spdlog_sink.h"
 
+// MexFunction itself must stay in the global namespace -- MATLAB looks it up by
+// that exact name -- so pull in the toolbox types individually instead of
+// wrapping this translation unit.
+using vat::AeroConditions;
+using vat::HybridForceTorqueCalculator;
+using vat::RotatableMeshSatellite;
+using vat::Sentman;
+using vat::ShadingAlgorithmType;
+using vat::ShadingPipeline;
+using vat::ShowMeshWithShadingAndWind;
+
 
 class MexFunction : public matlab::mex::Function {
 public:

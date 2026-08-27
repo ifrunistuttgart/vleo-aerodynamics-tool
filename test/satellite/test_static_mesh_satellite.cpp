@@ -9,6 +9,8 @@
 
 
 
+using namespace vat;
+
 // Test class for StaticMeshSatellite
 class StaticMeshSatelliteTest : public ::testing::Test {
 protected:

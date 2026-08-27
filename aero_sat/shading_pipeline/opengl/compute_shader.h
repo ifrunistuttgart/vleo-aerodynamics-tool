@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include "glm/glm.hpp"
 
+namespace vat::gl {
+
 struct ComputeShaderProgramSource
 {
     std::string ComputeSource;
@@ -33,3 +35,5 @@ private:
     unsigned int CreateShader(const std::string& compuetShader);
     unsigned int CompileShader(unsigned int type, const std::string& source);
 };
+
+} // namespace vat::gl

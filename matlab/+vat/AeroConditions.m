@@ -5,7 +5,7 @@ classdef AeroConditions < handle
     % Interaction (GSI) models to calculate forces and torques. It includes
     % atmospheric density, temperature, and particle properties.
     %
-    % AeroConditions methods:
+    % vat.AeroConditions methods:
     %   AeroConditions - Constructor for the atmospheric conditions.
     %
     properties %(Access = private, Hidden = true)

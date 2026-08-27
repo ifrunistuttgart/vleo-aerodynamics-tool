@@ -4,6 +4,8 @@
 #include <vector>
 #include <glm/glm.hpp>
 
+namespace vat {
+
 /**
  * Interface for shading algorithms.
  *
@@ -46,3 +48,5 @@ public:
 											   std::span<const glm::mat4> model_matrices
 											   ) = 0;
 };
+
+} // namespace vat

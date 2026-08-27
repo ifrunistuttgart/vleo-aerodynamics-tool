@@ -6,7 +6,7 @@ disp("Starting aerodynamic and shading tests...");
 setLogLevel("debug");
 %% Initialize Aerodynamic Models
 % Initialize the Sentman aerodynamic model (ID: 1)
-sentman_model = Sentman(1);
+sentman_model = vat.Sentman(1);
 disp("Created Sentman model.");
 
 % Initialize atmospheric conditions
@@ -14,7 +14,7 @@ disp("Created Sentman model.");
 T_inf = 934.0;
 atomic_oxygen_mass = 16 * 1.6605390689252e-27;
 accommodation_coeff = 0.9;
-aero_conditions = AeroConditions(1.2482e-11, T_inf, atomic_oxygen_mass, accommodation_coeff);
+aero_conditions = vat.AeroConditions(1.2482e-11, T_inf, atomic_oxygen_mass, accommodation_coeff);
 disp("Created aerodynamic conditions.");
 
 % Run a single test calculation for the Sentman model
@@ -25,7 +25,7 @@ sentman_model.calc_aero_force_torque(1, [0; 0; 1], [0; 0; 0], [0; 0; 0], 288, ae
 current_folder = fileparts(mfilename('fullpath'));
 mesh_file_path = fullfile(current_folder, 'International Space Station.obj');
 
-iss_satellite = RotatableMeshSatellite(mesh_file_path);
+iss_satellite = vat.RotatableMeshSatellite(mesh_file_path);
 
 % Rotate a specific surface/panel of the satellite 90 degrees around the Y-axis
 % rotation_angle_rad = pi / 2;
@@ -37,7 +37,7 @@ satellite_vertices = iss_satellite.get_vertices();
 fprintf("loaded satellite geometry with %d triangles",iss_satellite.get_num_triangles())
 %% Benchmark Shading Pipeline
 % Initialize shading pipeline with a resolution/grid size of 800
-shading_pipeline = ShadingPipeline(iss_satellite,1, 800);
+shading_pipeline = vat.ShadingPipeline(iss_satellite,1, 800);
 num_iterations = 100;
 relative_velocity_m_s = [7800.0; 0.0; 0.0];
 
@@ -52,7 +52,7 @@ avg_shading_time = total_shading_time / num_iterations;
 fprintf('Average shading call duration: %.6f seconds.\n', avg_shading_time);
 
 %% Benchmark Hybrid Aerodynamic Load Calculator
-load_calculator = HybridAeroLoadCalculator(iss_satellite, shading_pipeline, sentman_model);
+load_calculator = vat.HybridAeroLoadCalculator(iss_satellite, shading_pipeline, sentman_model);
 surface_temp_k = 300.0;
 
 disp("Benchmarking aerodynamic load calculations...");
@@ -68,4 +68,4 @@ fprintf('Average load calculation call duration: %.6f seconds.\n', avg_load_calc
 disp("All tests completed successfully.");
 
 %% visualize last shading result
-show_mesh(iss_satellite, panel_visibility, relative_velocity_m_s);
+vat.show_mesh(iss_satellite, panel_visibility, relative_velocity_m_s);

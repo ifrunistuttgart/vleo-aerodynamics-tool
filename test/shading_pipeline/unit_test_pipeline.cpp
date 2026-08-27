@@ -9,6 +9,8 @@
 #include "geometries/tetraeder_vector.h"
 #include "shading_algorithm_factory.h"
 
+using namespace vat;
+
 
 class FakeSatelliteData final : public ISatelliteShadingData {
 private:

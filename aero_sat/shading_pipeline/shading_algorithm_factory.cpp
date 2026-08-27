@@ -6,6 +6,8 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
+namespace vat {
+
 std::unique_ptr<IShadingAlgorithm> create_shading_algorithm(
     ShadingAlgorithmType type,
     unsigned int num_pixel) {
@@ -20,3 +22,5 @@ std::unique_ptr<IShadingAlgorithm> create_shading_algorithm(
         throw std::runtime_error("Unknown ShadingAlgorithmType");
     }
 }
+
+} // namespace vat

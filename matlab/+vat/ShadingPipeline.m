@@ -6,7 +6,7 @@ classdef ShadingPipeline < handle
     % the satellite. It uses a specified shading algorithm (e.g., Binary or
     % COP) to calculate a visibility factor for each triangle.
     %
-    % ShadingPipeline methods:
+    % vat.ShadingPipeline methods:
     %   ShadingPipeline - Constructor to initialize the shading pipeline.
     %   shade           - Calculates visibility for all surfaces.
     %
@@ -22,7 +22,7 @@ classdef ShadingPipeline < handle
             %   initializes the pipeline for a specific satellite and algorithm.
             %
             %   Input Arguments:
-            %       satellite         - A RotatableMeshSatellite object.
+            %       satellite         - A vat.RotatableMeshSatellite object.
             %       shading_algorithm - An integer specifying the algorithm:
             %                           0 = Binary Shader (Simple on/off)
             %                           1 = COP Shader (test visibility of centroid)
@@ -30,7 +30,7 @@ classdef ShadingPipeline < handle
             %                           used for the visibility analysis.
             %
             arguments
-                satellite (1,1) RotatableMeshSatellite
+                satellite (1,1) vat.RotatableMeshSatellite
                 shading_algorithm (1,1) {mustBeInteger, mustBeMember(shading_algorithm, [0, 1])} = 0
                 num_pixel (1,1) {mustBeInteger, mustBePositive} = 800
             end
@@ -69,7 +69,7 @@ classdef ShadingPipeline < handle
             %                    0.0 = shaded).
             %
             arguments
-                this (1,1) ShadingPipeline
+                this (1,1) vat.ShadingPipeline
                 velocity (1,3) double
             end
             visibility = MexGateway("Shading.shade", int32(this.handle_), velocity);

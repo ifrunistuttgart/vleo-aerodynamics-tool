@@ -7,6 +7,7 @@
 
 #include "static_mesh_satellite.h"
 
+namespace vat {
 
 StaticMeshSatellite::StaticMeshSatellite(std::string file)
     : ISatelliteShadingData(), ISatelliteManipulator(), m_total_triangles(0), m_bounding_sphere_radius(0.0f) {
@@ -145,3 +146,5 @@ int StaticMeshSatellite::turn_surfaces() {
     // Not implemented for static mesh
     return -1;
 }
+
+} // namespace vat

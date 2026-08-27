@@ -1,5 +1,7 @@
 #pragma once
 
+namespace vat::gl {
+
 class FrameBuffer
 {
 private:
@@ -13,3 +15,5 @@ public:
 	void UnBind() const;
 	void Clear() const;
 };
+
+} // namespace vat::gl

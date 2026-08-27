@@ -87,8 +87,19 @@ addpath('<repo_root>\matlab\bin')
 test_sentman
 ```
 
-See `matlab/` for the example scripts (`Sentman.m`, `HybridAeroLoadCalculator.m`,
-`RotatableMeshSatellite.m`, `test_sentman.m`).
+The MATLAB classes live in the `vat` package (`matlab/+vat/`), so they are addressed as
+`vat.Sentman`, `vat.AeroConditions`, and so on. Only `matlab/` itself goes on the path —
+never `matlab/+vat/`; MATLAB finds a package through its parent folder.
+
+```matlab
+gsi_model = vat.Sentman(1);
+satellite = vat.RotatableMeshSatellite('my_satellite.obj');
+```
+
+Use `import vat.*` at the top of a script if you would rather drop the prefix.
+
+See `matlab/+vat/` for the classes, and `matlab/examples/` plus `matlab/test_sentman.m`
+for scripts using them.
 
 `MexGateway` only logs warnings/errors by default (per-call INFO logging goes through
 the MATLAB Engine API and is slow). Set `MEX_GATEWAY_LOG_LEVEL=INFO` in the
@@ -134,7 +145,8 @@ individual parts can be swapped or extended with minimal friction.
 - `aero_sat/visualization/` — optional VTK-based viewers used by the examples.
 - `examples/` — small standalone example programs (one per subfolder) demonstrating
   toolbox usage, e.g. `examples/import_and_visualize/`.
-- `matlab/` — MATLAB MEX gateway and example/test scripts.
+- `matlab/` — MATLAB MEX gateway plus the `vat` package (`matlab/+vat/`) and
+  example/test scripts.
 - `test/` — unit and integration tests (GoogleTest).
 
 Design notes:
@@ -153,6 +165,18 @@ Design notes:
 - Functions, variables, member variables: snake_case (`calculate_drag`, `drag_coefficient`)
 - Constants: UPPER_SNAKE_CASE (`PI`)
 - Folders and files: snake_case
+
+**Namespaces**: everything public lives in `vat` (`vat::Sentman`, `vat::AeroConditions`).
+One nested namespace holds internals that are not part of the public API:
+- `vat::gl` — the thin OpenGL wrapper layer under `aero_sat/shading_pipeline/opengl/`
+  (`vat::gl::Shader`, `vat::gl::VertexBuffer`, ...). Those names are generic enough that
+  they would otherwise collide with any other renderer linked into the same program.
+
+The embedded GLSL sources live in an anonymous namespace at the top of the `.cpp` that
+uses them (`binary_shader.cpp`, `cop_shader.cpp`), which keeps each backend's shaders
+private to that file. Each backend owns its own copy, so they can diverge freely.
+
+The MATLAB interface mirrors this with a `vat` package folder (`matlab/+vat/`).
 
 **Units in identifiers**:
 - `__` separates a variable name from its unit suffix

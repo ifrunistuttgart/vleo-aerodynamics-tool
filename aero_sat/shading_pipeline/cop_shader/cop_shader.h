@@ -8,14 +8,16 @@
 #include "opengl/compute_shader.h"
 #include "opengl/vertex_array.h"
 
+namespace vat {
+
 class CoPShader : public IShadingAlgorithm {
 private:
-    std::unique_ptr<FrameBuffer> m_frame_buffer;
-    std::unique_ptr<Shader> m_shader;
-    std::unique_ptr<Shader> m_point_shader;
-    std::unique_ptr<ComputeShader> m_compute_shader;
-    std::unique_ptr<VertexArray> m_triangle_vao;
-    std::unique_ptr<VertexArray> m_cop_vao;
+    std::unique_ptr<gl::FrameBuffer> m_frame_buffer;
+    std::unique_ptr<gl::Shader> m_shader;
+    std::unique_ptr<gl::Shader> m_point_shader;
+    std::unique_ptr<gl::ComputeShader> m_compute_shader;
+    std::unique_ptr<gl::VertexArray> m_triangle_vao;
+    std::unique_ptr<gl::VertexArray> m_cop_vao;
     const unsigned int MAX_TRIANGLES = (2u << 28) - 1; //limit histogrambuffer size to about 1GB
     size_t m_lenVertices = 0;
     unsigned int m_numTriangles = 0;
@@ -32,3 +34,5 @@ public:
                                        std::span<const glm::mat4> model_matrices
                                        ) override;
 };
+
+} // namespace vat

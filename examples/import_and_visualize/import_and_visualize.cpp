@@ -20,7 +20,7 @@ int main() {
 	SPDLOG_INFO("Loading satellite model...");
 	std::string obj_path = get_path("../geometry_files/shuttlecock_15k.obj").string();
 
-	std::unique_ptr<RotatableMeshSatellite> satellite = std::make_unique<RotatableMeshSatellite>(obj_path);
+	std::unique_ptr<vat::RotatableMeshSatellite> satellite = std::make_unique<vat::RotatableMeshSatellite>(obj_path);
 
 	// 2. Dummy vector for visibility (all triangles visible)
 	std::vector<float> dummy_visibility(satellite->get_num_triangles(), 1.0f);
@@ -28,7 +28,7 @@ int main() {
 	// 3. Visualize the satellite with dummy visibility
 	SPDLOG_INFO("Visualizing satellite model...");
 	glm::vec3 velocity__m_per_s(7800.0f, 0.0f, 0.0f);  // ~7.8 km/s orbital velocity
-	ShowMeshWithShadingAndWind(*satellite, dummy_visibility, velocity__m_per_s);
+	vat::ShowMeshWithShadingAndWind(*satellite, dummy_visibility, velocity__m_per_s);
 
 	return 0;
 }

@@ -4,6 +4,8 @@
 #include "core.h"
 
 
+using namespace vat;
+
 // Test Fixture
 class SentmanTest : public ::testing::Test {
 protected:

@@ -8,9 +8,11 @@
 #include "shading_algorithm_factory.h"
 #include "opengl/glfw_opengl_context.h"
 
+namespace vat {
+
 class ShadingPipeline : public IShadingPipeline {
 private:
-    std::unique_ptr<GlfwOpenGLContext> m_context;
+    std::unique_ptr<gl::GlfwOpenGLContext> m_context;
     std::unique_ptr<IShadingAlgorithm> m_algorithm;
     ISatelliteShadingData& m_satellite;
 
@@ -24,3 +26,5 @@ public:
     ~ShadingPipeline() override;
     std::vector<float> shade(const glm::vec3& v_rel_hat) override;
 };
+
+} // namespace vat

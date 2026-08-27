@@ -6,7 +6,7 @@ classdef HybridAeroLoadCalculator < handle
     % satellite model, a shading pipeline to handle self-shadowing, and a 
     % Gas-Surface Interaction (GSI) model for surface-level physics.
     %
-    % HybridAeroLoadCalculator methods:
+    % vat.HybridAeroLoadCalculator methods:
     %   HybridAeroLoadCalculator - Constructor for the calculator.
     %   calc_aero_load           - Calculates total force and torque.
     %
@@ -22,14 +22,14 @@ classdef HybridAeroLoadCalculator < handle
             %   initializes the calculator with the necessary components.
             %
             %   Input Arguments:
-            %       satellite        - A RotatableMeshSatellite object representing the geometry.
-            %       shading_pipeline - A ShadingPipeline object for visibility analysis.
+            %       satellite        - A vat.RotatableMeshSatellite object representing the geometry.
+            %       shading_pipeline - A vat.ShadingPipeline object for visibility analysis.
             %       gsi_model        - A GSI model object (e.g., Sentman) for load calculation.
             %
             arguments
-                satellite RotatableMeshSatellite
-                shading_pipeline ShadingPipeline
-                gsi_model Sentman
+                satellite vat.RotatableMeshSatellite
+                shading_pipeline vat.ShadingPipeline
+                gsi_model vat.Sentman
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             this.handle_ = int32(MexGateway("HybridAeroLoadCalculator.new", int32(satellite.handle_), int32(shading_pipeline.handle_), int32(gsi_model.handle_)));
@@ -45,17 +45,17 @@ classdef HybridAeroLoadCalculator < handle
             %   Input Arguments:
             %       v_rel__m_per_s   - Relative velocity vector in satellite body frame [m/s].
             %       surface_temp__K  - Uniform surface temperature of the satellite [K].
-            %       aero_conditions  - An AeroConditions object containing atmospheric properties.
+            %       aero_conditions  - A vat.AeroConditions object containing atmospheric properties.
             %
             %   Output Arguments:
             %       force__N         - Total aerodynamic force vector in body frame [N].
             %       torque__Nm       - Total aerodynamic torque vector about the origin [Nm].
             %
             arguments
-                this (1,1) HybridAeroLoadCalculator
+                this (1,1) vat.HybridAeroLoadCalculator
                 v_rel__m_per_s (1,3) double
                 surface_temp__K (1,1) double {mustBePositive}
-                aero_conditions (1,1) AeroConditions
+                aero_conditions (1,1) vat.AeroConditions
             end
             [force__N, torque__Nm] = MexGateway("HybridAeroLoadCalculator.calc_aero_load", int32(this.handle_), v_rel__m_per_s, surface_temp__K, int32(aero_conditions.handle_));
         end
@@ -66,7 +66,7 @@ classdef HybridAeroLoadCalculator < handle
             %   Releases the underlying C++ resources.
             %
             arguments
-                this (1,1) HybridAeroLoadCalculator
+                this (1,1) vat.HybridAeroLoadCalculator
             end
             if this.handle_ ~= int32(-1)
                 MexGateway("HybridAeroLoadCalculator.delete", int32(this.handle_));

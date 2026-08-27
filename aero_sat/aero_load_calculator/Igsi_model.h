@@ -3,6 +3,8 @@
 #include "core.h"
 
 
+namespace vat {
+
 /**
  * Interface for Gas-Surface Interaction (GSI) models.
  *
@@ -33,3 +35,5 @@ public:
 
     virtual ~IGSIModel() = default;
 };
+
+} // namespace vat

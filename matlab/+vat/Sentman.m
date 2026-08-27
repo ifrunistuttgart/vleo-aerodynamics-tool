@@ -6,7 +6,7 @@ classdef Sentman < handle
     % reflection of particles and the energy accommodation between the flow 
     % and the satellite surface.
     %
-    % Sentman methods:
+    % vat.Sentman methods:
     %   Sentman                - Constructor for the Sentman model.
     %   calc_aero_force_torque - Calculates loads for a single surface element.
     %
@@ -55,20 +55,20 @@ classdef Sentman < handle
             %       centroid_m     - 3D centroid position of the element [m].
             %       v_rel__m_per_s - Relative velocity vector of the flow [m/s].
             %       surf_temp__K   - Temperature of the satellite surface [K].
-            %       aero_cond      - An AeroConditions object with atmospheric data.
+            %       aero_cond      - A vat.AeroConditions object with atmospheric data.
             %
             %   Output Arguments:
             %       force__N       - Resulting aerodynamic force vector [N].
             %       torque__Nm     - Resulting aerodynamic torque vector [Nm].
             %
             arguments
-                this (1,1) Sentman
+                this (1,1) vat.Sentman
                 area__m2 (1,1) double {mustBePositive}
                 normal (1,3) double
                 centroid_m (1,3) double
                 v_rel__m_per_s (1,3) double
                 surf_temp__K (1,1) double {mustBePositive}
-                aero_cond (1,1) AeroConditions
+                aero_cond (1,1) vat.AeroConditions
             end
             [force__N, torque__Nm] = MexGateway("Sentman.calc_aero_force_torque", int32(this.handle_), area__m2, normal, centroid_m, v_rel__m_per_s, surf_temp__K, int32(aero_cond.handle_));
         end

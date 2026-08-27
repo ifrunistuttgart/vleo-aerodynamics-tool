@@ -11,9 +11,47 @@
 #include "opengl/vertex_buffer.h"
 #include "opengl/gl_helpers.h"
 
-// embedded shader headers
-#include "binary_shader/shaders/id_shader.h"
 #include "opengl/vertex_buffer_layout.h"
+
+namespace vat {
+
+using namespace gl;
+
+// GLSL sources. These are compiled at runtime by the graphics driver, not by the
+// C++ compiler, so they have to reach glShaderSource() as plain text. They live in
+// an anonymous namespace because this file is their only user -- that keeps them
+// invisible to every other translation unit.
+namespace {
+
+constexpr const char* ID_vertex_shader = R"GLSL(
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in uint aColor;
+
+flat out uint vColor;
+
+uniform mat4 u_MVP;
+
+void main()
+{
+    vColor = aColor;
+    gl_Position = u_MVP * vec4(aPos, 1.0);
+}
+)GLSL";
+
+constexpr const char* ID_fragment_shader = R"GLSL(
+#version 330 core
+flat in uint vColor;
+out uvec4 FragColor;
+
+void main()
+{
+    FragColor = uvec4(vColor, 0u, 0u, 255u);
+}
+)GLSL";
+
+} // namespace
+
 
 BinaryShader::BinaryShader(unsigned int num_pixel)
     : NUM_PIXEL(num_pixel)
@@ -149,3 +187,5 @@ std::vector<float> BinaryShader::shade_satellite(glm::vec3 v_rel_hat, float boun
 	m_vao->Unbind();
     return triangle_visibility;
 };
+
+} // namespace vat

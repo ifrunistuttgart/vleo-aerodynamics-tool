@@ -7,6 +7,8 @@
 #include "rotatable_mesh_satellite.h"
 #include "test_helpers.h"
 
+using namespace vat;
+
 // Test class for StaticMeshSatellite
 class RotatableMeshSatelliteTest : public ::testing::Test {
 protected:

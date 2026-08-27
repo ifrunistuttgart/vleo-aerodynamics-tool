@@ -1,6 +1,7 @@
 #pragma once
 #include "Igsi_model.h"
 
+namespace vat {
 
 class Sentman: public IGSIModel {
 public:
@@ -25,3 +26,5 @@ public:
 private:
     int temperature_ratio_method;
 };
+
+} // namespace vat

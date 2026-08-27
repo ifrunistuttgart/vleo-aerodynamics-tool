@@ -4,6 +4,8 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 #include <format>
+
+namespace vat::gl {
 bool GlfwOpenGLContext::s_glewInitialized = false;
 
 GlfwOpenGLContext::GlfwOpenGLContext(int width, int height, const char* title, bool visible) {
@@ -53,3 +55,5 @@ GlfwOpenGLContext::~GlfwOpenGLContext() {
 void GlfwOpenGLContext::make_current() const {
     glfwMakeContextCurrent(m_window);
 }
+
+} // namespace vat::gl

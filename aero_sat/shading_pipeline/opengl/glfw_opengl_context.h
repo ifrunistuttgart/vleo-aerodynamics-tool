@@ -2,6 +2,8 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+namespace vat::gl {
+
 class GlfwOpenGLContext {
 private:
     GLFWwindow* m_window = nullptr;
@@ -14,3 +16,5 @@ public:
     void make_current() const;
     GLFWwindow* window() const { return m_window; }
 };
+
+} // namespace vat::gl

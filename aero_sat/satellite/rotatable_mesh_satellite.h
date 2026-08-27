@@ -5,6 +5,8 @@
 #include <glm/glm.hpp>
 #include "static_mesh_satellite.h"
 
+namespace vat {
+
 /*
  * A satellite class that allows for rotation of its surfaces. It inherits from StaticMeshSatellite and implements the ISatelliteManipulator interface.
  * This class maintains transformed vertices, normals, and centroids to reflect the changes in the satellite's configuration after rotations.
@@ -31,3 +33,5 @@ public:
 private:
 	std::vector<float> apply_transform(std::span<float> coordinates, int num_entries_per_triangle);
 };
+
+} // namespace vat

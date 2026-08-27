@@ -5,6 +5,8 @@
 #include "Igsi_model.h"
 #include "core.h"
 
+namespace vat {
+
 class HybridForceTorqueCalculator : public IAeroLoadCalculator {
 public:
     /**
@@ -22,3 +24,5 @@ private:
     ISatelliteShadingData& m_satellite;
     IGSIModel& m_gsi_model;
 };
+
+} // namespace vat

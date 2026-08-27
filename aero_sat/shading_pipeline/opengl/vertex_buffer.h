@@ -1,5 +1,7 @@
 #pragma once
 
+namespace vat::gl {
+
 class VertexBuffer
 {
 private:
@@ -11,3 +13,5 @@ public:
 	void Bind() const;
 	void Unbind() const;
 };
+
+} // namespace vat::gl

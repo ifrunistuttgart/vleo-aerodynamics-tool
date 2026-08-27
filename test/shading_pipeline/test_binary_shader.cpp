@@ -12,6 +12,8 @@
 #include "binary_shader/binary_shader.h"
 #include "geometries/tetraeder_vector.h"
 
+using namespace vat;
+
 
 class BinaryShaderTest : public ::testing::Test {
 protected:

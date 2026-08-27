@@ -6,7 +6,7 @@ classdef RotatableMeshSatellite < handle
     % axes. It is used as the base geometry for shading and aerodynamic load 
     % calculations.
     %
-    % RotatableMeshSatellite methods:
+    % vat.RotatableMeshSatellite methods:
     %   RotatableMeshSatellite   - Constructor to load a satellite model.
     %   get_vertices             - Retrieves the vertex data of the satellite.
     %   get_num_triangles        - Retrieves the total number of triangles.
@@ -81,7 +81,7 @@ classdef RotatableMeshSatellite < handle
             %       axis       - The 3D vector [x, y, z] defining the axis of rotation.
             %
             arguments
-                this (1,1) RotatableMeshSatellite
+                this (1,1) vat.RotatableMeshSatellite
                 surface_id (1,1) {mustBeInteger, mustBeNonnegative}
                 angle__rad (1,1) double
                 origin (1,3) double

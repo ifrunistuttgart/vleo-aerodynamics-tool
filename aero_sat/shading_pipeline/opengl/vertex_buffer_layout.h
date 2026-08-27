@@ -4,6 +4,7 @@
 #include <GL/glew.h>
 #include "opengl/gl_helpers.h"
 
+namespace vat::gl {
 
 struct VertexBufferElement {
 	unsigned int type;
@@ -53,3 +54,5 @@ public:
 	inline const std::vector<VertexBufferElement> GetElements() const& { return m_Elements; };
 	inline unsigned int GetStride() const { return m_Stride; }
 };
+
+} // namespace vat::gl

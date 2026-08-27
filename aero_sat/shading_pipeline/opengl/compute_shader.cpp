@@ -5,6 +5,8 @@
 #include "gl_helpers.h"
 #include "compute_shader.h"
 
+namespace vat::gl {
+
 // Constructor: create compute shader directly from provided source string
 ComputeShader::ComputeShader(const std::string& computeSource, bool fromSource)
     : m_FilePath(""), m_ComputeShaderID(0)
@@ -109,3 +111,4 @@ unsigned int ComputeShader::CompileShader(unsigned int type, const std::string& 
     return id;
 }
 
+} // namespace vat::gl

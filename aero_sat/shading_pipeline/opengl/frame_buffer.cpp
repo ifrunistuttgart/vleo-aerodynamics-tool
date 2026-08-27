@@ -4,6 +4,7 @@
 #include "opengl/frame_buffer.h"
 #include "opengl/gl_helpers.h"
 
+namespace vat::gl {
 
 FrameBuffer::FrameBuffer(unsigned int texture2D, unsigned int width, unsigned int heigth)
 {
@@ -48,3 +49,5 @@ void FrameBuffer::Clear() const
 	GLCall(glClearBufferuiv(GL_COLOR, 0, clearColor));
 	GLCall(glClear(GL_DEPTH_BUFFER_BIT));
 }
+
+} // namespace vat::gl

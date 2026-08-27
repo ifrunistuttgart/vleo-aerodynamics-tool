@@ -4,6 +4,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/vec3.hpp>
 
+namespace vat {
+
 /**
  * Displays a satellite with triangles colored according to their visibility to the surrounding gas, based on the shading data and relative velocity.
  * @param satellite - Reference to the satellite shading data.
@@ -15,3 +17,5 @@ void ShowMeshWithShadingAndWind(
     const std::vector<float>& triangle_visibility,
     const glm::vec3& v_rel__m_per_s
 );
+
+} // namespace vat

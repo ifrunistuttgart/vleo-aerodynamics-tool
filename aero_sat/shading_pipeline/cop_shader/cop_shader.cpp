@@ -10,9 +10,89 @@
 #include "opengl/gl_helpers.h"
 #include "opengl/vertex_buffer_layout.h"
 
-// embedded shader headers
-#include "cop_shader/shaders/id_shader.h"
-#include "cop_shader/shaders/compute_shader.h"
+
+namespace vat {
+
+using namespace gl;
+
+// GLSL sources. These are compiled at runtime by the graphics driver, not by the
+// C++ compiler, so they have to reach glShaderSource() as plain text. They live in
+// an anonymous namespace because this file is their only user -- that keeps them
+// invisible to every other translation unit.
+namespace {
+
+constexpr const char* ID_vertex_shader = R"GLSL(
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in uint aColor;
+
+flat out uint vColor;
+
+uniform mat4 u_MVP;
+
+void main()
+{
+    vColor = aColor;
+    gl_Position = u_MVP * vec4(aPos, 1.0);
+}
+)GLSL";
+
+constexpr const char* ID_point_shader = R"GLSL(
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in uint aColor;
+
+flat out uint vColor;
+
+uniform mat4 u_MVP;
+
+void main()
+{
+    vColor = aColor;
+    vec4 pos = u_MVP * vec4(aPos, 1.0);
+    pos.z -= 0.005 * pos.w;
+    gl_Position = pos;
+}
+)GLSL";
+
+constexpr const char* ID_fragment_shader = R"GLSL(
+#version 330 core
+flat in uint vColor;
+out uvec4 FragColor;
+
+void main()
+{
+    FragColor = uvec4(vColor, 0u, 0u, 255u);
+}
+)GLSL";
+
+constexpr const char* Compute_shader = R"GLSL(
+#version 430
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(r32ui, binding = 0) uniform uimage2D framebuffer_texture;
+
+layout(std430, binding = 1) buffer HistogramBuffer 
+{
+    uint histogram[];
+};
+
+void main() 
+{
+    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 fb_size = imageSize(framebuffer_texture);
+    if (coord.x >= fb_size.x || coord.y >= fb_size.y) return;
+    uint triangle_id = imageLoad(framebuffer_texture, coord).r;
+    if (triangle_id > 0 && triangle_id < histogram.length()) 
+    {
+        atomicAdd(histogram[triangle_id], 1u);
+    }
+}
+)GLSL";
+
+} // namespace
+
 
 
 CoPShader::CoPShader(unsigned int num_pixel)
@@ -196,3 +276,5 @@ std::vector<float> CoPShader::shade_satellite(glm::vec3 v_rel_hat, float boundin
 
     return triangle_visibility;
 };
+
+} // namespace vat

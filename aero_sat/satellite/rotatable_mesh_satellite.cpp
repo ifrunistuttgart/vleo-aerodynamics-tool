@@ -5,6 +5,8 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
+namespace vat {
+
 RotatableMeshSatellite::RotatableMeshSatellite(std::string file)
 	: StaticMeshSatellite(file) {
 }
@@ -73,3 +75,5 @@ std::vector<float> RotatableMeshSatellite::apply_transform(std::span<float> coor
 	}
 	return transformed;
 }
+
+} // namespace vat

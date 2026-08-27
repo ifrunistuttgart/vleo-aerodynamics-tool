@@ -4,4 +4,3 @@ target_sources(shading_pipeline PRIVATE
         ../opengl/frame_buffer.h
         ../opengl/frame_buffer.cpp
 )
-add_subdirectory(shaders)
