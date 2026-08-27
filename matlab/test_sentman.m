@@ -21,17 +21,17 @@ disp("Created aerodynamic conditions.");
 % Arguments: panel_area, normal_vec, center_vec, velocity_vec, temp, conditions
 sentman_model.calc_aero_force_torque(1, [0; 0; 1], [0; 0; 0], [0; 0; 0], 288, aero_conditions);
 
-%% Load Satellite Geometry
+%% Load Geometry
 current_folder = fileparts(mfilename('fullpath'));
 mesh_file_path = fullfile(current_folder, 'International Space Station.obj');
 
-iss_satellite = vat.RotatableMeshSatellite(mesh_file_path);
+iss_satellite = vat.RotatableMeshGeometry(mesh_file_path);
 
 % Rotate a specific surface/panel of the satellite 90 degrees around the Y-axis
 % rotation_angle_rad = pi / 2;
 % rotation_center = [0, 0, 0];
 % rotation_axis = [0, 1, 0];
-% iss_satellite.turn_surface_around_axis(1, rotation_angle_rad, rotation_center, rotation_axis);
+% iss_satellite.turn_mesh_around_axis(1, rotation_angle_rad, rotation_center, rotation_axis);
 
 satellite_vertices = iss_satellite.get_vertices();
 fprintf("loaded satellite geometry with %d triangles",iss_satellite.get_num_triangles())

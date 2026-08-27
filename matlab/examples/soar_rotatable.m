@@ -17,19 +17,19 @@ alpha_e = 0.95;
 
 aero.conditions = vat.AeroConditions(rho, T_env, ao_mass, alpha_e);
 
-%% Load Satellite Geometry
+%% Load Geometry
 fp.current_folder = fileparts(mfilename('fullpath'));
 fp.obj_file       = fullfile(fp.current_folder, ...
     "geometries/soar_satellite.obj");
 
-satellite.geometry = vat.RotatableMeshSatellite(fp.obj_file);
+satellite.geometry = vat.RotatableMeshGeometry(fp.obj_file);
 satellite.verts    = satellite.geometry.get_vertices;
 
 % Rotate the upper panel
 p1.angle  = deg2rad(45);
 p1.center = [-0.15; 0.00; 0.05];
 p1.axis   = [0; 0; -1];
-satellite.geometry.turn_surface_around_axis( ...
+satellite.geometry.turn_mesh_around_axis( ...
     0, p1.angle, p1.center, p1.axis);
 
 %% Setup Shading Pipeline
@@ -57,7 +57,7 @@ vat.show_mesh(satellite.geometry, panel_visibility, v_rel);
 % covering the full sphere. The satellite's left-right symmetry means
 % alpha in [0, 90] deg combined with beta in [0, 180] deg is sufficient
 % to cover every distinct relative-wind direction.
-flat.geometry         = vat.RotatableMeshSatellite(fp.obj_file);
+flat.geometry         = vat.RotatableMeshGeometry(fp.obj_file);
 flat.shader           = vat.ShadingPipeline(flat.geometry, 1, 1000);
 flat.load_calculator  = vat.HybridAeroLoadCalculator(flat.geometry, flat.shader, aero.model);
 

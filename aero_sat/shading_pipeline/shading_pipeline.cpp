@@ -11,16 +11,16 @@ using namespace gl;
 
 
 ShadingPipeline::ShadingPipeline(
-	ISatelliteShadingData& satellite,
+	IGeometryShadingData& geometry,
 	ShadingAlgorithmType algorithm_type,
 	unsigned int num_pixel)
 	: m_context(std::make_unique<GlfwOpenGLContext>(num_pixel, num_pixel, "Triangle Renderer", false)),
 	  m_algorithm(create_shading_algorithm(algorithm_type, num_pixel)),
-	  m_satellite(satellite) {
+	  m_geometry(geometry) {
 	m_context->make_current();
 
-	std::span<const float> vertices = m_satellite.get_vertices();
-	std::span<const std::uint32_t> triangleIDs = m_satellite.get_triangle_ids();
+	std::span<const float> vertices = m_geometry.get_vertices();
+	std::span<const std::uint32_t> triangleIDs = m_geometry.get_triangle_ids();
 	const int set_vertices_result = m_algorithm->set_vertices(vertices, triangleIDs);
 	if (set_vertices_result != 0) {
 		SPDLOG_ERROR("ShadingPipeline initialization failed in set_vertices (code={}, vertices={}, ids={})",
@@ -38,10 +38,10 @@ ShadingPipeline::~ShadingPipeline() {
 std::vector<float> ShadingPipeline::shade( const glm::vec3& v_rel_hat) {
 	m_context->make_current();
 
-	float bsr = m_satellite.get_bounding_sphere_radius();
-	std::span<const glm::mat4> model_matrices = m_satellite.get_model_matrices();
-	std::span<const unsigned int> num_triangles_per_mesh = m_satellite.get_num_triangles_per_mesh();
-	std::vector<float> triangle_visibility = m_algorithm->shade_satellite(v_rel_hat, bsr, num_triangles_per_mesh, model_matrices);
+	float bsr = m_geometry.get_bounding_sphere_radius();
+	std::span<const glm::mat4> model_matrices = m_geometry.get_model_matrices();
+	std::span<const unsigned int> num_triangles_per_mesh = m_geometry.get_num_triangles_per_mesh();
+	std::vector<float> triangle_visibility = m_algorithm->shade_geometry(v_rel_hat, bsr, num_triangles_per_mesh, model_matrices);
 	return triangle_visibility;
 }
 

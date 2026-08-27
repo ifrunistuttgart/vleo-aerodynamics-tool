@@ -3,7 +3,7 @@ classdef HybridAeroLoadCalculator < handle
     %
     % This class provides a high-level interface for calculating the total 
     % aerodynamic force and torque acting on a satellite. It combines a 
-    % satellite model, a shading pipeline to handle self-shadowing, and a 
+    % geometry, a shading pipeline to handle self-shadowing, and a 
     % Gas-Surface Interaction (GSI) model for surface-level physics.
     %
     % vat.HybridAeroLoadCalculator methods:
@@ -15,24 +15,24 @@ classdef HybridAeroLoadCalculator < handle
     end
 
     methods
-        function this = HybridAeroLoadCalculator(satellite, shading_pipeline, gsi_model)
+        function this = HybridAeroLoadCalculator(geometry, shading_pipeline, gsi_model)
             % HYBRIDAEROLOADCALCULATOR Constructor for HybridAeroLoadCalculator.
             %
-            %   obj = HybridAeroLoadCalculator(satellite, shading_pipeline, gsi_model)
+            %   obj = HybridAeroLoadCalculator(geometry, shading_pipeline, gsi_model)
             %   initializes the calculator with the necessary components.
             %
             %   Input Arguments:
-            %       satellite        - A vat.RotatableMeshSatellite object representing the geometry.
+            %       geometry         - A vat.RotatableMeshGeometry object.
             %       shading_pipeline - A vat.ShadingPipeline object for visibility analysis.
             %       gsi_model        - A GSI model object (e.g., Sentman) for load calculation.
             %
             arguments
-                satellite vat.RotatableMeshSatellite
+                geometry vat.RotatableMeshGeometry
                 shading_pipeline vat.ShadingPipeline
                 gsi_model vat.Sentman
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
-            this.handle_ = int32(MexGateway("HybridAeroLoadCalculator.new", int32(satellite.handle_), int32(shading_pipeline.handle_), int32(gsi_model.handle_)));
+            this.handle_ = int32(MexGateway("HybridAeroLoadCalculator.new", int32(geometry.handle_), int32(shading_pipeline.handle_), int32(gsi_model.handle_)));
         end
 
         function [force__N, torque__Nm] = calc_aero_load(this, v_rel__m_per_s,surface_temp__K, aero_conditions)

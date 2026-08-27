@@ -22,12 +22,12 @@ fp.current_folder  = fileparts(mfilename('fullpath'));
 fp.obj_file        = fullfile(fp.current_folder, ...
     "geometries/shuttlecock_15k.obj");
 
-satellite.geometry = vat.RotatableMeshSatellite(fp.obj_file);
+satellite.geometry = vat.RotatableMeshGeometry(fp.obj_file);
 satellite.verts    = satellite.geometry.get_vertices;
 
 n_tri = satellite.geometry.get_num_triangles;
 
-satellite.geometry.turn_surface_around_axis(2, deg2rad(20), [0;0;0], [1;0;0])
+satellite.geometry.turn_mesh_around_axis(2, deg2rad(20), [0;0;0], [1;0;0])
 
 vat.show_mesh(satellite.geometry, zeros(n_tri,1), [1;0;0])
 

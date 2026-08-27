@@ -2,13 +2,13 @@ classdef Sentman < handle
     % SENTMAN Sentman's Gas-Surface Interaction (GSI) model.
     %
     % This class implements the Sentman model for calculating aerodynamic 
-    % forces and torques on surface elements. It considers the diffuse 
+    % forces and torques on individual triangles. It considers the diffuse 
     % reflection of particles and the energy accommodation between the flow 
     % and the satellite surface.
     %
     % vat.Sentman methods:
     %   Sentman                - Constructor for the Sentman model.
-    %   calc_aero_force_torque - Calculates loads for a single surface element.
+    %   calc_aero_force_torque - Calculates loads for a single triangle.
     %
     properties %(Access = private, Hidden = true)
         handle_ = int32(-1);
@@ -43,16 +43,16 @@ classdef Sentman < handle
         end
         
         function [force__N, torque__Nm] = calc_aero_force_torque(this, area__m2, normal, centroid_m, v_rel__m_per_s, surf_temp__K, aero_cond)
-            % CALC_AERO_FORCE_TORQUE Calculates aerodynamic loads for a surface element.
+            % CALC_AERO_FORCE_TORQUE Calculates aerodynamic loads for a single triangle.
             %
             %   [force__N, torque__Nm] = calc_aero_force_torque(this, area, 
             %   normal, centroid, v_rel, surf_temp, aero_cond) computes the 
             %   local force and torque vectors based on Sentman's equations.
             %
             %   Input Arguments:
-            %       area__m2       - Surface area of the element [m^2].
-            %       normal         - Unit normal vector of the surface element.
-            %       centroid_m     - 3D centroid position of the element [m].
+            %       area__m2       - Area of the triangle [m^2].
+            %       normal         - Unit normal vector of the triangle.
+            %       centroid_m     - 3D centroid position of the triangle [m].
             %       v_rel__m_per_s - Relative velocity vector of the flow [m/s].
             %       surf_temp__K   - Temperature of the satellite surface [K].
             %       aero_cond      - A vat.AeroConditions object with atmospheric data.

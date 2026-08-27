@@ -16,7 +16,7 @@ target_link_libraries(shading_pipeline_test PRIVATE
 	glm::glm
 	shading_pipeline
 	core
-	satellite)
+	geometry)
 
 include(GoogleTest)
 gtest_discover_tests(shading_pipeline_test)

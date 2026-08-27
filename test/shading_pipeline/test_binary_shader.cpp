@@ -77,7 +77,7 @@ TEST_F(BinaryShaderTest, ShadeTetrahedron) {
     std::vector<glm::mat4> modelMatrices{ glm::mat4(1.0f) };
     glm::vec3 windDir(1.0f, 0.0f, 0.0f);
     float bounding_sphere_radius = 1.0f;
-    std::vector<float> isTriangleVisible = shader.shade_satellite(
+    std::vector<float> isTriangleVisible = shader.shade_geometry(
         windDir,
         bounding_sphere_radius,
         std::span<const unsigned int>(numTrianglesPerMesh),
@@ -91,7 +91,7 @@ TEST_F(BinaryShaderTest, ShadeTetrahedron) {
     windDir = glm::vec3(0.0f, 0.0f, 1.0f);
     std::fill(isTriangleVisible.begin(), isTriangleVisible.end(), 0.0f);
     bounding_sphere_radius = 1.0f;
-    isTriangleVisible = shader.shade_satellite(
+    isTriangleVisible = shader.shade_geometry(
         windDir,
         bounding_sphere_radius,
         std::span<const unsigned int>(numTrianglesPerMesh),

@@ -9,8 +9,8 @@ namespace vat {
 /**
  * Interface for shading algorithms.
  *
- * Shading algorithms calculate the visibility of satellite surface elements 
- * based on their geometry and the direction of the incoming flow (relative velocity).
+ * Shading algorithms calculate the visibility of the triangles of a geometry
+ * based on their orientation and the direction of the incoming flow (relative velocity).
  * Implementations may use different techniques such as Z-buffering,
  * or other GPU-accelerated methods.
  */
@@ -22,7 +22,7 @@ public:
 	 * Sets the geometric data for the shading algorithm.
 	 *
 	 * This method initializes the algorithm with the vertex positions and triangle
-	 * definitions of the satellite model.
+	 * definitions of the geometry.
 	 *
 	 * @param vertices A span containing the vertex positions (x, y, z triplets).
 	 * @param triangleIDs A span containing the triangle IDs (indices).
@@ -31,18 +31,18 @@ public:
 	virtual int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) = 0;
 
 	/**
-	 * Calculates the visibility of satellite triangles from a specific direction.
+	 * Calculates the visibility of the geometry's triangles from a specific direction.
 	 *
-	 * This method performs the actual shading calculation, considering the satellite's
+	 * This method performs the actual shading calculation, considering the geometry's
 	 * bounding volume and the current transformation of its individual meshes.
 	 *
 	 * @param v_rel_hat The normalized relative velocity vector in the satellite's body frame.
-	 * @param bounding_sphere_radius The radius of the satellite's bounding sphere.
-	 * @param num_triangles_per_mesh A span containing the triangle count for each mesh component.
-	 * @param model_matrices A span containing the transformation matrices for each mesh component.
+	 * @param bounding_sphere_radius The radius of the geometry's bounding sphere.
+	 * @param num_triangles_per_mesh A span containing the triangle count for each mesh.
+	 * @param model_matrices A span containing the transformation matrices for each mesh.
 	 * @return A vector of visibility factors (one per triangle).
 	 */
-	virtual std::vector<float> shade_satellite(glm::vec3 v_rel_hat,
+	virtual std::vector<float> shade_geometry(glm::vec3 v_rel_hat,
 											   float bounding_sphere_radius,
 											   std::span<const unsigned int> num_triangles_per_mesh,
 											   std::span<const glm::mat4> model_matrices

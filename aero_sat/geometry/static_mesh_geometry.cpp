@@ -5,12 +5,12 @@
 #include <assimp/scene.h>
 #include <cmath>
 
-#include "static_mesh_satellite.h"
+#include "static_mesh_geometry.h"
 
 namespace vat {
 
-StaticMeshSatellite::StaticMeshSatellite(std::string file)
-    : ISatelliteShadingData(), ISatelliteManipulator(), m_total_triangles(0), m_bounding_sphere_radius(0.0f) {
+StaticMeshGeometry::StaticMeshGeometry(std::string file)
+    : IGeometryShadingData(), IGeometryManipulator(), m_total_triangles(0), m_bounding_sphere_radius(0.0f) {
     
     SPDLOG_INFO("Loading file {}", file);
     Assimp::Importer importer;
@@ -98,51 +98,51 @@ StaticMeshSatellite::StaticMeshSatellite(std::string file)
 	SPDLOG_INFO("Finished loading model. Total triangles: {}", m_total_triangles);
 }
 
-std::span<const float> StaticMeshSatellite::get_vertices() {
+std::span<const float> StaticMeshGeometry::get_vertices() {
     return std::span<const float>(m_vertices.data(), m_vertices.size());
 }
 
-std::span<const std::uint32_t> StaticMeshSatellite::get_triangle_ids() {
+std::span<const std::uint32_t> StaticMeshGeometry::get_triangle_ids() {
     return std::span<const std::uint32_t>(m_triangle_ids.data(), m_triangle_ids.size());
 }
 
-std::span<const float> StaticMeshSatellite::get_normals() {
+std::span<const float> StaticMeshGeometry::get_normals() {
     return std::span<const float>(m_normals.data(), m_normals.size());
 }
 
-std::span<const float> StaticMeshSatellite::get_areas() {
+std::span<const float> StaticMeshGeometry::get_areas() {
     return std::span<const float>(m_areas.data(), m_areas.size());
 }
 
-std::span<const float> StaticMeshSatellite::get_centroids() {
+std::span<const float> StaticMeshGeometry::get_centroids() {
     return std::span<const float>(m_centroids.data(), m_centroids.size());
 }
 
-std::span<const glm::mat4> StaticMeshSatellite::get_model_matrices() {
+std::span<const glm::mat4> StaticMeshGeometry::get_model_matrices() {
     return std::span<const glm::mat4>(m_model_matrices.data(), m_model_matrices.size());
 }
 
-std::span<const unsigned int> StaticMeshSatellite::get_num_triangles_per_mesh() {
+std::span<const unsigned int> StaticMeshGeometry::get_num_triangles_per_mesh() {
     return std::span<const unsigned int>(m_num_triangles_per_mesh.data(), m_num_triangles_per_mesh.size());
 }
 
-const unsigned int StaticMeshSatellite::get_num_triangles() {
+const unsigned int StaticMeshGeometry::get_num_triangles() {
     return m_total_triangles;
 }
 
-float StaticMeshSatellite::get_bounding_sphere_radius() {
+float StaticMeshGeometry::get_bounding_sphere_radius() {
     return m_bounding_sphere_radius;
 }
 
-int StaticMeshSatellite::turn_surface(int surface_id, float angle__rad) {
+int StaticMeshGeometry::turn_mesh(int mesh_id, float angle__rad) {
     // Not implemented for static mesh
     return -1;
 }
-int StaticMeshSatellite::turn_surface_around_axis(const int surface_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) {
+int StaticMeshGeometry::turn_mesh_around_axis(const int mesh_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) {
     // Not implemented for static mesh
     return -1;
 }
-int StaticMeshSatellite::turn_surfaces() {
+int StaticMeshGeometry::turn_meshes() {
     // Not implemented for static mesh
     return -1;
 }

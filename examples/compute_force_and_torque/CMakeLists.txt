@@ -4,7 +4,7 @@ add_executable(compute_force_and_torque compute_force_and_torque.cpp)
 
 target_link_libraries(compute_force_and_torque PRIVATE
 	gsi
-	satellite
+	geometry
 	shading_pipeline
 	spdlog::spdlog
 	visualization

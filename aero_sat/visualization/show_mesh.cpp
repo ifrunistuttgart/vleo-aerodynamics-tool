@@ -35,13 +35,13 @@ VTK_MODULE_INIT(vtkRenderingFreeType);
 namespace vat {
 
 void ShowMeshWithShadingAndWind(
-     ISatelliteShadingData& satellite,
+     IGeometryShadingData& geometry,
      const std::vector<float>& triangle_visibility,
      const glm::vec3& v_rel__m_per_s) {
-    const glm::vec3 kVisibleSurfaceColor(0.0f, 1.0f, 0.0f);
-    const glm::vec3 kNonVisibleSurfaceColor(0.15f, 0.2f, 0.8f);
+    const glm::vec3 kVisibleTriangleColor(0.0f, 1.0f, 0.0f);
+    const glm::vec3 kNonVisibleTriangleColor(0.15f, 0.2f, 0.8f);
 
-    const unsigned int num_triangles = satellite.get_num_triangles();
+    const unsigned int num_triangles = geometry.get_num_triangles();
     if (triangle_visibility.size() != num_triangles) {
         SPDLOG_ERROR("ShowMeshWithShadingAndWind: visibility size mismatch (visibility={}, triangles={})",
             triangle_visibility.size(), num_triangles);
@@ -51,7 +51,7 @@ void ShowMeshWithShadingAndWind(
     SPDLOG_DEBUG("ShowMeshWithShadingAndWind start (triangles={}, |v_rel|={})",
         num_triangles, glm::length(v_rel__m_per_s));
 
-    std::span<const float> vertices = satellite.get_vertices();
+    std::span<const float> vertices = geometry.get_vertices();
 
     auto points = vtkSmartPointer<vtkPoints>::New();
     points->SetNumberOfPoints(static_cast<vtkIdType>(3 * num_triangles));
@@ -78,7 +78,7 @@ void ShowMeshWithShadingAndWind(
 
         const float vis = std::clamp(triangle_visibility[static_cast<size_t>(tri)], 0.0f, 1.0f);
         const glm::vec3 color =
-            kNonVisibleSurfaceColor + vis * (kVisibleSurfaceColor - kNonVisibleSurfaceColor);
+            kNonVisibleTriangleColor + vis * (kVisibleTriangleColor - kNonVisibleTriangleColor);
 
         unsigned char rgb[3] = {
             static_cast<unsigned char>(std::clamp(color.x * 255.0f, 0.0f, 255.0f)),
@@ -101,7 +101,7 @@ void ShowMeshWithShadingAndWind(
     auto mesh_actor = vtkSmartPointer<vtkActor>::New();
     mesh_actor->SetMapper(mesh_mapper);
 
-    const float bsr = satellite.get_bounding_sphere_radius();
+    const float bsr = geometry.get_bounding_sphere_radius();
     const float wind_length = bsr > 0.0f ? bsr * 1.3f : 1.0f;
     const glm::vec3 wind_hat = glm::length(v_rel__m_per_s) > 0.0f
         ? glm::normalize(v_rel__m_per_s)
@@ -193,7 +193,7 @@ void ShowMeshWithShadingAndWind(
 
     interactor->Initialize();
     interactor->Start();
-    std::cout << "ShowMeshWithShadingAndWind: (triangles=" << satellite.get_num_triangles()
+    std::cout << "ShowMeshWithShadingAndWind: (triangles=" << geometry.get_num_triangles()
     << ", |v_rel|=" << glm::length(v_rel__m_per_s) << ")\n";
 
 }

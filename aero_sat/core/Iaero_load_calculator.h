@@ -16,8 +16,8 @@ public:
     /**
      * Calculates the aerodynamic torque and force acting on the satellite.
      *
-     * This method evaluates the impact of gas-surface interactions across all relevant
-     * surfaces of the satellite, considering atmospheric density, temperature, and
+     * This method evaluates the impact of gas-surface interactions across all
+     * triangles of the geometry, considering atmospheric density, temperature, and
      * the relative velocity vector.
      *
      * @param v_rel__m_per_s The relative velocity vector of the incoming flow in the satellite's body frame [m/s].

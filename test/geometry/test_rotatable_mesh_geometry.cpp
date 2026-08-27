@@ -4,57 +4,57 @@
 #include <algorithm>
 
 #include "geometries/tetraeder_vector.h"
-#include "rotatable_mesh_satellite.h"
+#include "rotatable_mesh_geometry.h"
 #include "test_helpers.h"
 
 using namespace vat;
 
-// Test class for StaticMeshSatellite
-class RotatableMeshSatelliteTest : public ::testing::Test {
+// Test class for StaticMeshGeometry
+class RotatableMeshGeometryTest : public ::testing::Test {
 protected:
-    RotatableMeshSatellite* satellite = nullptr;
+    RotatableMeshGeometry* geometry = nullptr;
 
     void SetUp() override {
         std::string obj_path = GetTestDataPath(__FILE__, "geometries/tetraeder.obj");
 		SPDLOG_INFO("[TEST] Loading OBJ from: {}", obj_path);
-        satellite = new RotatableMeshSatellite(obj_path);
-		SPDLOG_INFO("[TEST] Loaded {} triangles", satellite->get_num_triangles());
+        geometry = new RotatableMeshGeometry(obj_path);
+		SPDLOG_INFO("[TEST] Loaded {} triangles", geometry->get_num_triangles());
     }
 
     void TearDown() override {
-        delete satellite;
+        delete geometry;
     }
 };
 
 // Test: Load the OBJ file successfully
-TEST_F(RotatableMeshSatelliteTest, LoadOBJFileSuccessfully) {
-    ASSERT_NE(satellite, nullptr);
-    EXPECT_GT(satellite->get_num_triangles(), 0);
+TEST_F(RotatableMeshGeometryTest, LoadOBJFileSuccessfully) {
+    ASSERT_NE(geometry, nullptr);
+    EXPECT_GT(geometry->get_num_triangles(), 0);
 }
 
 // Test: Verify vertex count
-TEST_F(RotatableMeshSatelliteTest, VerifyVertexCount) {
-    auto vertices = satellite->get_vertices();
+TEST_F(RotatableMeshGeometryTest, VerifyVertexCount) {
+    auto vertices = geometry->get_vertices();
     // Tetrahedron has 4 unique faces, with 3 vertices per face and 3 floats per vertex
     // we expect to have 36 values in the vertex array
     EXPECT_EQ(vertices.size(), 36);
 }
 
 // Test: Verify triangle count
-TEST_F(RotatableMeshSatelliteTest, VerifyTriangleCount) {
-    EXPECT_EQ(satellite->get_num_triangles(), 4);
+TEST_F(RotatableMeshGeometryTest, VerifyTriangleCount) {
+    EXPECT_EQ(geometry->get_num_triangles(), 4);
 }
 
 // Test: Verify triangle indices
-TEST_F(RotatableMeshSatelliteTest, VerifyTriangleIndices) {
-    auto triangle_ids = satellite->get_triangle_ids();
+TEST_F(RotatableMeshGeometryTest, VerifyTriangleIndices) {
+    auto triangle_ids = geometry->get_triangle_ids();
     // 4 triangles * 3 indices per triangle = 12 indices
     EXPECT_EQ(triangle_ids.size(), 12);
 }
 
 // Test: Verify normals are computed
-TEST_F(RotatableMeshSatelliteTest, VerifyNormals) {
-    auto normals = satellite->get_normals();
+TEST_F(RotatableMeshGeometryTest, VerifyNormals) {
+    auto normals = geometry->get_normals();
     // 4 triangles * 3 values per normal = 12 values
     EXPECT_EQ(normals.size(), 12);
     float expected_normals[12] = { 0.0f,    0.0f,   -1.0f,
@@ -69,8 +69,8 @@ TEST_F(RotatableMeshSatelliteTest, VerifyNormals) {
 }
 
 // Test: Verify centroids are computed
-TEST_F(RotatableMeshSatelliteTest, VerifyCentroids) {
-    auto centroids = satellite->get_centroids();
+TEST_F(RotatableMeshGeometryTest, VerifyCentroids) {
+    auto centroids = geometry->get_centroids();
     // 4 triangles * 3 values per centroid = 12 values
     EXPECT_EQ(centroids.size(), 12);
     float cntroids[12] = { -0.1667f,    0.0f,    0.0f,
@@ -85,8 +85,8 @@ TEST_F(RotatableMeshSatelliteTest, VerifyCentroids) {
 }
 
 // Test: Verify areas are computed
-TEST_F(RotatableMeshSatelliteTest, VerifyAreas) {
-    auto areas = satellite->get_areas();
+TEST_F(RotatableMeshGeometryTest, VerifyAreas) {
+    auto areas = geometry->get_areas();
     // 4 triangles = 4 area values
     EXPECT_EQ(areas.size(), 4);
 
@@ -101,15 +101,15 @@ TEST_F(RotatableMeshSatelliteTest, VerifyAreas) {
 }
 
 // Test: Verify triangles per mesh
-TEST_F(RotatableMeshSatelliteTest, VerifyTrianglesPerMesh) {
-    auto tri_per_mesh = satellite->get_num_triangles_per_mesh();
+TEST_F(RotatableMeshGeometryTest, VerifyTrianglesPerMesh) {
+    auto tri_per_mesh = geometry->get_num_triangles_per_mesh();
     EXPECT_EQ(tri_per_mesh.size(), 1); // Single mesh
     EXPECT_EQ(tri_per_mesh[0], 4); // 4 triangles
 }
 
 // Test: Verify bounding sphere radius
-TEST_F(RotatableMeshSatelliteTest, VerifyBoundingSphereRadius) {
-    float radius = satellite->get_bounding_sphere_radius();
+TEST_F(RotatableMeshGeometryTest, VerifyBoundingSphereRadius) {
+    float radius = geometry->get_bounding_sphere_radius();
 
     // The maximum distance from origin should be around 0.707 (sqrt(0.5^2 + 0.5^2))
     // but could be different depending on vertex ordering
@@ -120,8 +120,8 @@ TEST_F(RotatableMeshSatelliteTest, VerifyBoundingSphereRadius) {
 }
 
 // Test: Verify vertices match ground truth (approximately)
-TEST_F(RotatableMeshSatelliteTest, VerifyVerticesMatchGroundTruth) {
-    auto vertices = satellite->get_vertices();
+TEST_F(RotatableMeshGeometryTest, VerifyVerticesMatchGroundTruth) {
+    auto vertices = geometry->get_vertices();
 
     // Collect unique vertices from loaded data
     std::vector<float> loaded_vertices(vertices.begin(), vertices.end());

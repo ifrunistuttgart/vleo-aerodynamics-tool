@@ -8,7 +8,7 @@
 #include <spdlog/spdlog.h>
 
 #include "sentman.h"
-#include "rotatable_mesh_satellite.h"
+#include "rotatable_mesh_geometry.h"
 #include "shading_pipeline.h"
 #include "hybrid_aero_load_calculator.h"
 #include "show_mesh.h"
@@ -20,11 +20,11 @@ std::filesystem::path get_path(const std::string& filename) {
 }
 
 int main() {
-	// 1. Load satellite geometry
-	SPDLOG_INFO("Loading satellite model...");
+	// 1. Load the geometry
+	SPDLOG_INFO("Loading geometry...");
 	std::string obj_path = get_path("../geometry_files/shuttlecock_15k.obj").string();
-	std::unique_ptr<vat::RotatableMeshSatellite> satellite = std::make_unique<vat::RotatableMeshSatellite>(obj_path);
-	SPDLOG_INFO("Loaded {} triangles", satellite->get_num_triangles());
+	std::unique_ptr<vat::RotatableMeshGeometry> geometry = std::make_unique<vat::RotatableMeshGeometry>(obj_path);
+	SPDLOG_INFO("Loaded {} triangles", geometry->get_num_triangles());
 
 	// 2. Gas-surface interaction model
 	std::unique_ptr<vat::Sentman> gsi_model = std::make_unique<vat::Sentman>(1);
@@ -33,12 +33,12 @@ int main() {
 	// 3. Shading pipeline: determines which triangles face the incoming flow
 	const int num_pixels = 4000; // number of pixels: affects computation time and accuracy of shading
 	std::unique_ptr<vat::ShadingPipeline> pipeline =
-		std::make_unique<vat::ShadingPipeline>(*satellite, vat::ShadingAlgorithmType::CoP, num_pixels);
+		std::make_unique<vat::ShadingPipeline>(*geometry, vat::ShadingAlgorithmType::CoP, num_pixels);
 	SPDLOG_INFO("Created shading pipeline (algorithm=CoP, pixels={})", num_pixels);
 
 	// 4. Aero load calculator: combines geometry, shading, and the GSI model
 	std::unique_ptr<vat::HybridForceTorqueCalculator> aero_calculator =
-		std::make_unique<vat::HybridForceTorqueCalculator>(*satellite, *pipeline, *gsi_model);
+		std::make_unique<vat::HybridForceTorqueCalculator>(*geometry, *pipeline, *gsi_model);
 	SPDLOG_INFO("Created hybrid aero load calculator");
 
 	// 5. Atmospheric/environment conditions
@@ -63,6 +63,6 @@ int main() {
 	SPDLOG_INFO("Torque: {}, {}, {} Nm", torque__Nm.x, torque__Nm.y, torque__Nm.z);
 
 	// 7. Visualize the shaded mesh together with the wind direction
-	vat::ShowMeshWithShadingAndWind(*satellite, triangle_visibility, velocity__m_per_s);
+	vat::ShowMeshWithShadingAndWind(*geometry, triangle_visibility, velocity__m_per_s);
 	return 0;
 }

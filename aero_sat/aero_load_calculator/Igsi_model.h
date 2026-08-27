@@ -9,21 +9,21 @@ namespace vat {
  * Interface for Gas-Surface Interaction (GSI) models.
  *
  * This interface defines the contract for models that calculate aerodynamic
- * forces and torques acting on individual surface elements based on physical
+ * forces and torques acting on individual triangles based on physical
  * interaction theories (e.g., Sentman, Maxwell, etc.).
  */
 class IGSIModel {
 public:
     /**
-     * Calculates the aerodynamic force and torque for a single surface element.
+     * Calculates the aerodynamic force and torque for a single triangle.
      *
-     * The calculation considers the element's geometry (area, normal, centroid),
+     * The calculation considers the triangle's area, normal and centroid,
      * the gas properties (velocity, temperature, density), and the specific
      * interaction model's parameters (e.g., energy accommodation coefficients).
      *
-     * @param area__m2 The area of the surface element [m^2].
-     * @param normal The unit normal vector of the surface element.
-     * @param centroid__m The 3D centroid position of the surface element [m].
+     * @param area__m2 The area of the triangle [m^2].
+     * @param normal The unit normal vector of the triangle.
+     * @param centroid__m The 3D centroid position of the triangle [m].
      * @param v_rel__m_per_s The relative velocity vector of the gas flow [m/s].
      * @param surf_temp__K The temperature of the surface [K].
      * @param aero A structure containing atmospheric and interaction conditions.

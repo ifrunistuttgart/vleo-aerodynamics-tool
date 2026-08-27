@@ -9,14 +9,14 @@
 namespace vat {
 
 /**
-* @param satellite
+* @param geometry
 */
 HybridForceTorqueCalculator::HybridForceTorqueCalculator(
-	ISatelliteShadingData& satellite,
+	IGeometryShadingData& geometry,
 	IShadingPipeline& shading_pipeline,
 	IGSIModel& gsi_model)
 	: m_shading_pipeline(shading_pipeline),
-	m_satellite(satellite),
+	m_geometry(geometry),
 	m_gsi_model(gsi_model)
 {
 
@@ -39,12 +39,12 @@ int HybridForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__
 	force__N = glm::vec3(0.0f);
 
 	std::vector<float> triangle_visibility = m_shading_pipeline.shade(glm::normalize(v_rel__m_per_s));
-	std::span<const float> areas = m_satellite.get_areas();
-	std::span<const float> normals = m_satellite.get_normals();
-	std::span<const float> centroids = m_satellite.get_centroids();
+	std::span<const float> areas = m_geometry.get_areas();
+	std::span<const float> normals = m_geometry.get_normals();
+	std::span<const float> centroids = m_geometry.get_centroids();
 
 	//loop over triangles
-	for (unsigned int i = 0; i < m_satellite.get_num_triangles(); i++){
+	for (unsigned int i = 0; i < m_geometry.get_num_triangles(); i++){
 		glm::vec3 normal{normals[3*i], normals[3*i+1], normals[3*i+2]};
 		glm::vec3 centroid{ centroids[3 * i], centroids[3 * i + 1], centroids[3 * i + 2] };
 		float area = areas[i];

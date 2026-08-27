@@ -93,7 +93,7 @@ never `matlab/+vat/`; MATLAB finds a package through its parent folder.
 
 ```matlab
 gsi_model = vat.Sentman(1);
-satellite = vat.RotatableMeshSatellite('my_satellite.obj');
+geometry = vat.RotatableMeshGeometry('my_satellite.obj');
 ```
 
 Use `import vat.*` at the top of a script if you would rather drop the prefix.
@@ -138,8 +138,8 @@ individual parts can be swapped or extended with minimal friction.
   models into a final aerodynamic result.
 - `aero_sat/gsi/` — gas–surface interaction models (Sentman, Schuette scaffolding, and
   any future models).
-- `aero_sat/satellite/` — mesh/geometry loaders and satellite abstractions (rotatable
-  meshes).
+- `aero_sat/geometry/` — mesh/geometry loaders and geometry abstractions (static and
+  rotatable meshes).
 - `aero_sat/shading_pipeline/` — occlusion/shading implementations, including an OpenGL
   backend under `opengl/`.
 - `aero_sat/visualization/` — optional VTK-based viewers used by the examples.
@@ -157,11 +157,23 @@ Design notes:
 
 ## Conventions
 
+**Terminology**: the geometric vocabulary is strictly hierarchical, and the toolbox
+uses these three words and no synonyms for them:
+
+| Term | Meaning |
+| --- | --- |
+| `triangle` | The smallest unit: a single triangular face. |
+| `mesh` | A group of triangles that moves as one rigid body (e.g. one solar panel). A mesh is the unit of rotation; its index is the `mesh_id` passed to `turn_mesh_around_axis`. |
+| `geometry` | The complete model, made up of one or more meshes. |
+
+The word *surface* is reserved for its aerodynamic meaning only — surface temperature,
+gas–surface interaction — and never refers to a mesh or a triangle.
+
 **Logging**: `spdlog` is used across the project.
 
 **Naming** (PEP 8-inspired, adapted for C++):
-- Classes: PascalCase (`Satellite`)
-- Interfaces: PascalCase with `I` prefix (`ISatellite`)
+- Classes: PascalCase (`StaticMeshGeometry`)
+- Interfaces: PascalCase with `I` prefix (`IGeometryShadingData`)
 - Functions, variables, member variables: snake_case (`calculate_drag`, `drag_coefficient`)
 - Constants: UPPER_SNAKE_CASE (`PI`)
 - Folders and files: snake_case

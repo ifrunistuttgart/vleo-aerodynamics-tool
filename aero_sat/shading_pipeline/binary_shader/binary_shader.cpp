@@ -112,7 +112,7 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
     return 0;
 }
 
-std::vector<float> BinaryShader::shade_satellite(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) {
+std::vector<float> BinaryShader::shade_geometry(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) {
     std::vector<float> triangle_visibility(m_numTriangles,0);
 
     //projection matrices

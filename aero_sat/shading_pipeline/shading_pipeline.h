@@ -3,7 +3,7 @@
 #include <span>
 #include <glm/glm.hpp>
 #include "Ishading_pipeline.h"
-#include "Isatellite_shading_data.h"
+#include "Igeometry_shading_data.h"
 #include "Ishading_algorithm.h"
 #include "shading_algorithm_factory.h"
 #include "opengl/glfw_opengl_context.h"
@@ -14,11 +14,11 @@ class ShadingPipeline : public IShadingPipeline {
 private:
     std::unique_ptr<gl::GlfwOpenGLContext> m_context;
     std::unique_ptr<IShadingAlgorithm> m_algorithm;
-    ISatelliteShadingData& m_satellite;
+    IGeometryShadingData& m_geometry;
 
 public:
     ShadingPipeline(
-        ISatelliteShadingData& satellite,
+        IGeometryShadingData& geometry,
         ShadingAlgorithmType algorithm_type,
         unsigned int num_pixel
     );

@@ -25,7 +25,7 @@ public:
 	BinaryShader(unsigned int num_pixel);
 	~BinaryShader();
 	int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) override;
-	std::vector<float> shade_satellite(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) override;
+	std::vector<float> shade_geometry(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) override;
 };
 
 } // namespace vat
