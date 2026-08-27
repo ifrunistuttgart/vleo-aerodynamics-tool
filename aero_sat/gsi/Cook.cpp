@@ -3,7 +3,8 @@
 #include <cmath>
 #include "Cook.h"
 
-Cook::Cook() {
+Cook::Cook(float alpha_e) {
+    set_alpha_e(alpha_e);
 }
 
 int Cook::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, const glm::vec3 &centroid__m,
@@ -17,7 +18,6 @@ int Cook::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, co
     const float density__kg_per_m3 = aero.density__kg_per_m3;
     const float temperature_i__K = aero.T_atmospheric__K;
     const float temperature_w__K = surf_temp__K;
-    const float alpha = aero.alpha_e;
     glm::vec3 v_rel_inv__m_per_s = -v_rel__m_per_s; // Invert velocity to match GSIMs convention (velocity of gas relative to surface)
     
     const float v_rel_magnitude__m_per_s = glm::length(v_rel_inv__m_per_s);
@@ -37,7 +37,7 @@ int Cook::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, co
     }
     const float sin_delta = std::sqrt(std::max(0.0f, 1.0f - cos_delta * cos_delta));
     
-    const float temp_ratio_term = std::sqrt(1.0f + alpha * (temperature_w__K / temperature_i__K - 1.0f));
+    const float temp_ratio_term = std::sqrt(1.0f + m_alpha_e * (temperature_w__K / temperature_i__K - 1.0f));
     const float cd = 2.0f * cos_delta * (1.0f + (2.0f / 3.0f) * cos_delta * temp_ratio_term);
     const float cl = (4.0f / 3.0f) * sin_delta * cos_delta * temp_ratio_term;
     
@@ -49,4 +49,34 @@ int Cook::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, co
     aero_torque__Nm = glm::cross(centroid__m, aero_force__N);
     
     return 0;
+}
+
+void Cook::set_gsi_parameter(std::string name, float value) {
+    if (name == "alpha_e") {
+        set_alpha_e(value);
+    } else {
+        SPDLOG_WARN("Unknown GSI parameter for gsi model Cook: {}, ignoring.", name);
+    }
+}
+
+[[nodiscard]] float Cook::get_gsi_parameter(std::string name) const {
+    if (name == "alpha_e") {
+        return this->get_alpha_e();
+    }
+    SPDLOG_WARN("Unknown GSI parameter for gsi model Cook: {}, ignoring.", name);
+    return 0.0f;
+}
+
+void Cook::set_alpha_e(float alpha_e) {
+    if (alpha_e < 0.0f) {
+        SPDLOG_WARN("alpha_e must be positive, setting to 0.0");
+        m_alpha_e = 0.0f;
+    }
+    else if (alpha_e > 1.0f) {
+        SPDLOG_WARN("alpha_e must be less than 1.0, setting to 1.0");
+        m_alpha_e = 1.0f;
+    }
+    else {
+        m_alpha_e = alpha_e;
+    }
 }

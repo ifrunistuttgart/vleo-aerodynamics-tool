@@ -109,7 +109,6 @@ public:
 
                 const int handle = inputs[1][0];
                 const int aero_cond_handle = inputs[7][0];
-                IGSIModel* gsi = gsi_map.at(handle).get();
                 AeroConditions&  aero_conditions = *aero_conditions_map.at(aero_cond_handle);
 
                 const float area__m2 = inputs[2][0];
@@ -121,7 +120,7 @@ public:
                 glm::vec3 aero_force__N(0.0f, 0.0f, 0.0f);
                 glm::vec3 aero_torque__Nm(0.0f, 0.0f, 0.0f);
 
-                gsi->calc_aero_force_and_torque(
+                gsi_map.at(handle).get()->calc_aero_force_and_torque(
                     area__m2,
                     normal,
                     centroid__m,
@@ -135,6 +134,24 @@ public:
                 outputs[0] = factory.createArray({3}, {aero_force__N.x, aero_force__N.y, aero_force__N.z});
                 outputs[1] = factory.createArray({3}, {aero_torque__Nm.x, aero_torque__Nm.y, aero_torque__Nm.z});
                 return;
+            }
+            if ((cls == "Newton" || cls == "Sentman" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "get_gsi_parameter") {
+                validate_input_size_min(inputs, 4);
+                validate_argument(inputs, 1, "int", 1);
+                validate_argument(inputs, 2, "string", 1);
+                float value = gsi_map.at(inputs[1][0]).get()->get_gsi_parameter(inputs[2][0]);
+                outputs[0] = factory.createScalar<float>(value);
+                return;
+
+            }
+            if ((cls == "Newton" || cls == "Sentman" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "set_gsi_parameter") {
+                validate_input_size_min(inputs, 4);
+                validate_argument(inputs, 1, "int", 1);
+                validate_argument(inputs, 2, "string", 1);
+                validate_argument(inputs, 3, "float", 1);
+                gsi_map.at(inputs[1][0]).get()->set_gsi_parameter(inputs[2][0], inputs[3][0]);
+                return;
+
             }
             if (cls == "Newton") {
                 if (cmd == "new") {
@@ -150,9 +167,11 @@ public:
             if (cls == "Maxwell") {
                 if (cmd == "new") {
                     LOG(LEVEL_INFO, "Creating new Maxwell instance.");
-                    validate_input_size_min(inputs, 1);
+                    validate_input_size_min(inputs, 2);
                     validate_output_size(outputs, 1);
-                    gsi_map.insert({gsi_max_id, std::make_unique<Maxwell>()});
+                    validate_argument(inputs, 1, "float", 1);
+                    float alpha_e = inputs[1][0];
+                    gsi_map.insert({gsi_max_id, std::make_unique<Maxwell>(alpha_e)});
                     outputs[0] = factory.createScalar<int>(gsi_max_id);
                     gsi_max_id++;
                     return;
@@ -161,9 +180,11 @@ public:
             if (cls == "Cook") {
                 if (cmd == "new") {
                     LOG(LEVEL_INFO, "Creating new Cook instance.");
-                    validate_input_size_min(inputs, 1);
+                    validate_input_size_min(inputs, 2);
                     validate_output_size(outputs, 1);
-                    gsi_map.insert({gsi_max_id, std::make_unique<Cook>()});
+                    validate_argument(inputs, 1, "float", 1);
+                    float alpha_e = inputs[1][0];
+                    gsi_map.insert({gsi_max_id, std::make_unique<Cook>(alpha_e)});
                     outputs[0] = factory.createScalar<int>(gsi_max_id);
                     gsi_max_id++;
                     return;
@@ -172,9 +193,13 @@ public:
             if (cls == "SchaafChambre") {
                 if (cmd == "new") {
                     LOG(LEVEL_INFO, "Creating new Schaaf-Chambre instance.");
-                    validate_input_size_min(inputs, 1);
+                    validate_input_size_min(inputs, 3);
                     validate_output_size(outputs, 1);
-                    gsi_map.insert({gsi_max_id, std::make_unique<SchaafChambre>()});
+                    validate_argument(inputs, 1, "float", 1);
+                    validate_argument(inputs, 2, "float", 1);
+                    float sigma_n = inputs[1][0];
+                    float sigma_t = inputs[2][0];
+                    gsi_map.insert({gsi_max_id, std::make_unique<SchaafChambre>(sigma_n, sigma_t)});
                     outputs[0] = factory.createScalar<int>(gsi_max_id);
                     gsi_max_id++;
                     return;
@@ -183,12 +208,14 @@ public:
             if (cls == "Sentman") {
                 if (cmd == "new") {
                     LOG(LEVEL_INFO, "Creating new Sentman instance.");
-                    validate_input_size_min(inputs, 2);
+                    validate_input_size_min(inputs, 3);
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 2, "float", 1);
 
                     const int temperature_ratio_method = inputs[1][0];
-                    gsi_map.insert({gsi_max_id, std::make_unique<Sentman>(temperature_ratio_method)});
+                    float alpha_e = inputs[2][0];
+                    gsi_map.insert({gsi_max_id, std::make_unique<Sentman>(temperature_ratio_method, alpha_e)});
                     outputs[0] = factory.createScalar<int>(gsi_max_id);
                     gsi_max_id++;
                     return;
@@ -197,23 +224,20 @@ public:
             if (cls == "AeroCond") {
                 if (cmd == "new") {
                     LOG(LEVEL_INFO, "Creating new AeroConditions instance.");
-                    validate_input_size_min(inputs, 5);
+                    validate_input_size_min(inputs, 4);
                     validate_argument(inputs, 1, "double", 1);
                     validate_argument(inputs, 2, "double", 1);
                     validate_argument(inputs, 3, "double", 1);
-                    validate_argument(inputs, 4, "double", 1);
 
                     float density__kg_per_m3 = inputs[1][0];
                     float temperature__K = inputs[2][0];
                     float particle_mass__kg = inputs[3][0];
-                    float alpha_e = inputs[4][0];
 
                     aero_conditions_map.insert(
                         {aero_conditions_max_id, std::make_unique<AeroConditions>(
                             density__kg_per_m3,
                             temperature__K,
-                            particle_mass__kg,
-                            alpha_e)}
+                            particle_mass__kg)}
                         );
                     outputs[0] = factory.createScalar<int>(aero_conditions_max_id);
                     aero_conditions_max_id++;
@@ -241,30 +265,6 @@ public:
                     validate_argument(inputs, 2, "float", 1);
                     const int id = inputs[1][0];
                     aero_conditions_map.at(id)->particle_mass__kg = inputs[2][0];
-                    return;
-                }
-                if (cmd == "set_alpha_e") {
-                    validate_input_size(inputs, 3);
-                    validate_argument(inputs, 1, "int", 1);
-                    validate_argument(inputs, 2, "float", 1);
-                    const int id = inputs[1][0];
-                    aero_conditions_map.at(id)->alpha_e = inputs[2][0];
-                    return;
-                }
-                if (cmd == "set_sigma_n") {
-                    validate_input_size(inputs, 3);
-                    validate_argument(inputs, 1, "int", 1);
-                    validate_argument(inputs, 2, "float", 1);
-                    const int id = inputs[1][0];
-                    aero_conditions_map.at(id)->sigma_N = inputs[2][0];
-                    return;
-                }
-                if (cmd == "set_sigma_t") {
-                    validate_input_size(inputs, 3);
-                    validate_argument(inputs, 1, "int", 1);
-                    validate_argument(inputs, 2, "float", 1);
-                    const int id = inputs[1][0];
-                    aero_conditions_map.at(id)->sigma_T = inputs[2][0];
                     return;
                 }
                 if (cmd == "delete") {

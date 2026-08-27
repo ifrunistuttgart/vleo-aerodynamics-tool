@@ -13,13 +13,13 @@ classdef Cook < handle
     end
     
     methods
-        function this = Cook()
+        function this = Cook(alpha_e)
             % COOK Constructor for the cook model.
             %
             %   obj = cook() initializes the model.
             %
             assert(this.handle_ == int32(-1), "This object is already constructed.");
-            this.handle_ = int32(MexGateway("Cook.new"));
+            this.handle_ = int32(MexGateway("Cook.new", alpha_e));
         end
         function delete(this)
             % DELETE Destructor for cook model.
@@ -52,6 +52,22 @@ classdef Cook < handle
             %       torque__Nm     - Resulting aerodynamic torque vector [Nm].
             %
             [force__N, torque__Nm] = MexGateway("Cook.calc_aero_force_torque", int32(this.handle_), area__m2, normal, centroid_m, v_rel__m_per_s, surf_temp__K, int32(aero_cond.handle_));
+        end
+        function alpha_e = get_alpha_e(this)
+            % GET_ALPHA_E Returns the value of alpha_e.
+            %
+            %   alpha_e = get_alpha_e(this) retrieves the alpha_e parameter from
+            %   the underlying cook model.
+            %
+            alpha_e = MexGateway("Cook.get_gsi_parameter", int32(this.handle_), "alpha_e");
+        end
+        function set_alpha_e(this, alpha_e)
+            % SET_ALPHA_E Sets the value of alpha_e.
+            %
+            %   set_alpha_e(this, alpha_e) sets the alpha_e parameter in
+            %   the underlying cook model.
+            %
+            MexGateway("Cook.set_gsi_parameter", int32(this.handle_), "alpha_e", alpha_e);
         end
     end
 end

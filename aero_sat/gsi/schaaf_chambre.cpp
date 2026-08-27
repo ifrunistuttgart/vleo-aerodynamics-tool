@@ -6,7 +6,9 @@
 
 const float BOLTZMANN_CONSTANT__J_PER_K = 1.380649e-23f; // Boltzmann constant in J/K
 
-SchaafChambre::SchaafChambre() {
+SchaafChambre::SchaafChambre(float sigma_n, float sigma_t) {
+    set_sigma_n(sigma_n);
+    set_sigma_t(sigma_t);
 }
 
 int SchaafChambre::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, const glm::vec3 &centroid__m,
@@ -20,8 +22,6 @@ int SchaafChambre::calc_aero_force_and_torque(float area__m2, const glm::vec3 &n
     const float density__kg_per_m3 = aero.density__kg_per_m3;
     const float temperature_i__K = aero.T_atmospheric__K;
     const float temperature_w__K = surf_temp__K;
-    const float sigma_N = aero.sigma_N;
-    const float sigma_T = aero.sigma_T;
     const float particle_mass__kg = aero.particle_mass__kg;
 
     glm::vec3 v_rel_inv__m_per_s = -v_rel__m_per_s; // Invert velocity to match GSIMs convention (velocity of gas relative to surface)
@@ -58,12 +58,12 @@ int SchaafChambre::calc_aero_force_and_torque(float area__m2, const glm::vec3 &n
     const float sqrt_temp_ratio = std::sqrt(temperature_w__K / temperature_i__K);
 
     // --- Cp Calculation ---
-    const float cp_term1 = (((2.0f - sigma_N) / sqrt_pi) * s_cos_d + (sigma_N / 2.0f) * sqrt_temp_ratio) * exp_term;
-    const float cp_term2 = ((2.0f - sigma_N) * (s2_cos2_d + 0.5f) + (sigma_N / 2.0f) * sqrt_pi * s_cos_d * sqrt_temp_ratio) * erf_term;
+    const float cp_term1 = (((2.0f - m_sigma_n) / sqrt_pi) * s_cos_d + (m_sigma_n / 2.0f) * sqrt_temp_ratio) * exp_term;
+    const float cp_term2 = ((2.0f - m_sigma_n) * (s2_cos2_d + 0.5f) + (m_sigma_n / 2.0f) * sqrt_pi * s_cos_d * sqrt_temp_ratio) * erf_term;
     const float cp = (1.0f / s2) * (cp_term1 + cp_term2);
 
     // --- Ctau Calculation ---
-    const float ctau = ((sigma_T * sin_d) / (s * sqrt_pi)) * (exp_term + s * sqrt_pi * cos_d * erf_term);
+    const float ctau = ((m_sigma_t * sin_d) / (s * sqrt_pi)) * (exp_term + s * sqrt_pi * cos_d * erf_term);
 
     const float cd = cp * cos_d + ctau * sin_d;
     const float cl = cp * sin_d + ctau * cos_d;
@@ -77,4 +77,52 @@ int SchaafChambre::calc_aero_force_and_torque(float area__m2, const glm::vec3 &n
     aero_torque__Nm = glm::cross(centroid__m, aero_force__N);
 
     return 0;
+}
+
+void SchaafChambre::set_gsi_parameter(std::string name, float value) {
+    if (name == "sigma_n") {
+        set_sigma_n(value);
+    } else if (name == "sigma_t") {
+        set_sigma_t(value);
+    } else {
+        SPDLOG_WARN("Unknown GSI parameter for gsi model SchaafChambre: {}, ignoring.", name);
+    }
+}
+
+[[nodiscard]] float SchaafChambre::get_gsi_parameter(std::string name) const {
+    if (name == "sigma_n") {
+        return get_sigma_n();
+    } else if (name == "sigma_t") {
+        return get_sigma_t();
+    }
+    SPDLOG_WARN("Unknown GSI parameter for gsi model SchaafChambre: {}, ignoring.", name);
+    return 0.0f;
+}
+
+void SchaafChambre::set_sigma_n(float sigma_n) {
+    if (sigma_n < 0.0f) {
+        SPDLOG_WARN("sigma_n must be positive, setting to 0.0");
+        m_sigma_n = 0.0f;
+    }
+    else if (sigma_n > 1.0f) {
+        SPDLOG_WARN("sigma_n must be less than 1.0, setting to 1.0");
+        m_sigma_n = 1.0f;
+    }
+    else {
+        m_sigma_n = sigma_n;
+    }
+}
+
+void SchaafChambre::set_sigma_t(float sigma_t) {
+    if (sigma_t < 0.0f) {
+        SPDLOG_WARN("sigma_t must be positive, setting to 0.0");
+        m_sigma_t = 0.0f;
+    }
+    else if (sigma_t > 1.0f) {
+        SPDLOG_WARN("sigma_t must be less than 1.0, setting to 1.0");
+        m_sigma_t = 1.0f;
+    }
+    else {
+        m_sigma_t = sigma_t;
+    }
 }

@@ -13,13 +13,13 @@ classdef Maxwell < handle
     end
     
     methods
-        function this = Maxwell()
+        function this = Maxwell(alpha_e)
             % MAXWELL Constructor for the maxwell model.
             %
-            %   obj = maxwell() initializes the model.
+            %   obj = maxwell(alpha_e) initializes the model.
             %
             assert(this.handle_ == int32(-1), "This object is already constructed.");
-            this.handle_ = int32(MexGateway("Maxwell.new"));
+            this.handle_ = int32(MexGateway("Maxwell.new", alpha_e));
         end
         function delete(this)
             % DELETE Destructor for maxwell model.
@@ -52,6 +52,22 @@ classdef Maxwell < handle
             %       torque__Nm     - Resulting aerodynamic torque vector [Nm].
             %
             [force__N, torque__Nm] = MexGateway("Maxwell.calc_aero_force_torque", int32(this.handle_), area__m2, normal, centroid_m, v_rel__m_per_s, surf_temp__K, int32(aero_cond.handle_));
+        end
+        function alpha_e = get_alpha_e(this)
+            % GET_ALPHA_E Returns the value of alpha_e.
+            %
+            %   alpha_e = get_alpha_e(this) retrieves the alpha_e parameter from
+            %   the underlying maxwell model.
+            %
+            alpha_e = MexGateway("Maxwell.get_gsi_parameter", int32(this.handle_), "alpha_e");
+        end
+        function set_alpha_e(this, alpha_e)
+            % SET_ALPHA_E Sets the value of alpha_e.
+            %
+            %   set_alpha_e(this, alpha_e) sets the alpha_e parameter in
+            %   the underlying maxwell model.
+            %
+            MexGateway("Maxwell.set_gsi_parameter", int32(this.handle_), "alpha_e", alpha_e);
         end
     end
 end

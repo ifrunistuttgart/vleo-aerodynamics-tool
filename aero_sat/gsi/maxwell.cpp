@@ -6,7 +6,8 @@
 
 const float BOLTZMANN_CONSTANT__J_PER_K = 1.380649e-23f; // Boltzmann constant in J/K
 
-Maxwell::Maxwell() {
+Maxwell::Maxwell(float alpha_e){
+    set_alpha_e(alpha_e);
 }
 
 int Maxwell::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, const glm::vec3 &centroid__m,
@@ -20,7 +21,7 @@ int Maxwell::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal,
     const float density__kg_per_m3 = aero.density__kg_per_m3;
     const float temperature_i__K = aero.T_atmospheric__K;
     const float temperature_w__K = surf_temp__K;
-    const float epsilon = 1 - aero.alpha_e;
+    const float epsilon = 1 - m_alpha_e;
     const float particle_mass__kg = aero.particle_mass__kg;
 
     glm::vec3 v_rel_inv__m_per_s = -v_rel__m_per_s; // Invert velocity to match GSIMs convention (velocity of gas relative to surface)
@@ -78,4 +79,34 @@ int Maxwell::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal,
     aero_torque__Nm = glm::cross(centroid__m, aero_force__N);
 
     return 0;
+}
+
+void Maxwell::set_gsi_parameter(std::string name, float value) {
+    if (name == "alpha_e") {
+        set_alpha_e(value);
+    } else {
+        SPDLOG_WARN("Unknown GSI parameter for gsi model Maxwell: {}, ignoring.", name);
+    }
+}
+
+[[nodiscard]] float Maxwell::get_gsi_parameter(std::string name) const {
+    if (name == "alpha_e") {
+        return this->get_alpha_e();
+    }
+    SPDLOG_WARN("Unknown GSI parameter for gsi model Maxwell: {}, ignoring.", name);
+    return 0.0f;
+}
+
+void Maxwell::set_alpha_e(float alpha_e) {
+    if (alpha_e < 0.0f) {
+        SPDLOG_WARN("alpha_e must be positive, setting to 0.0");
+        m_alpha_e = 0.0f;
+    }
+    else if (alpha_e > 1.0f) {
+        SPDLOG_WARN("alpha_e must be less than 1.0, setting to 1.0");
+        m_alpha_e = 1.0f;
+    }
+    else {
+        m_alpha_e = alpha_e;
+    }
 }

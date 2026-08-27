@@ -15,7 +15,7 @@ classdef Sentman < handle
     end
     
     methods
-        function this = Sentman(temperature_ratio_method)
+        function this = Sentman(temperature_ratio_method,alpha_e)
             % SENTMAN Constructor for the Sentman model.
             %
             %   obj = Sentman(temperature_ratio_method) initializes the model.
@@ -24,9 +24,10 @@ classdef Sentman < handle
             %       temperature_ratio_method - An integer flag specifying the 
             %           method used for calculating the temperature ratio 
             %           between the surface and the incoming flow.
+            %       alpha_e - The accommodation coefficient for energy exchange.
             %
             assert(this.handle_ == int32(-1), "This object is already constructed.");
-            this.handle_ = int32(MexGateway("Sentman.new", int32(temperature_ratio_method)));
+            this.handle_ = int32(MexGateway("Sentman.new", int32(temperature_ratio_method), alpha_e));
         end
         function delete(this)
             % DELETE Destructor for Sentman model.
@@ -59,6 +60,22 @@ classdef Sentman < handle
             %       torque__Nm     - Resulting aerodynamic torque vector [Nm].
             %
             [force__N, torque__Nm] = MexGateway("Sentman.calc_aero_force_torque", int32(this.handle_), area__m2, normal, centroid_m, v_rel__m_per_s, surf_temp__K, int32(aero_cond.handle_));
+        end
+        function alpha_e = get_alpha_e(this)
+            % GET_ALPHA_E Returns the value of alpha_e.
+            %
+            %   alpha_e = get_alpha_e(this) retrieves the alpha_e parameter from
+            %   the underlying sentman model.
+            %
+            alpha_e = MexGateway("Sentman.get_gsi_parameter", int32(this.handle_), "alpha_e");
+        end
+        function set_alpha_e(this, alpha_e)
+            % SET_ALPHA_E Sets the value of alpha_e.
+            %
+            %   set_alpha_e(this, alpha_e) sets the alpha_e parameter in
+            %   the underlying sentman model.
+            %
+            MexGateway("Sentman.set_gsi_parameter", int32(this.handle_), "alpha_e", alpha_e);
         end
     end
 end

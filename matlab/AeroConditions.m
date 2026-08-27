@@ -15,10 +15,7 @@ classdef AeroConditions < handle
     methods
         function this = AeroConditions(density__kg_per_m3,...
                             T_atmospheric__K,...
-                            particle_mass__kg,...
-                            alpha_e,...
-                            sigma_N,...
-                            sigma_T)
+                            particle_mass__kg)
             % AEROCONDITIONS Constructor for AeroConditions.
             %
             %   obj = AeroConditions(density, temperature, mass, alpha_e) creates an
@@ -35,26 +32,23 @@ classdef AeroConditions < handle
                 density__kg_per_m3 (1,1) double
                 T_atmospheric__K (1,1) double
                 particle_mass__kg (1,1) double
-                alpha_e (1,1) double = 0
-                sigma_N (1,1) double = 0
-                sigma_T (1,1) double = 0
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
-            this.handle_ = int32(MexGateway("AeroCond.new", density__kg_per_m3, T_atmospheric__K, particle_mass__kg, alpha_e, sigma_N, sigma_T));
+            this.handle_ = int32(MexGateway("AeroCond.new", density__kg_per_m3, T_atmospheric__K, particle_mass__kg));
         end
         function this = setDensity(density__kg_per_m3)
             % SETDENSITY Sets the atmospheric density.
             %
             %   obj.setDensity(density) sets the atmospheric density [kg/m^3].
             %
-            MexGateway("AeroCond.set_density", int32(this.handle_), density__kg_per_m3);
+            MexGateway("AeroCond.set_", int32(this.handle_), density__kg_per_m3);
         end
         function this = setTatmospheric(this, T_atmospheric__K)
             % SETTATMOSPHERIC Sets the atmospheric temperature.
             %
             %   obj.setTatmospheric(temperature) sets the atmospheric temperature [K].
             %
-            MexGateway("AeroCond.set_T_atmospheric", int32(this.handle_), temperature__K);
+            MexGateway("AeroCond.set_T_atmospheric", int32(this.handle_), T_atmospheric__K);
         end
         function this = setParticleMass(this, particle_mass__kg)
             % SETPARTICLEMASS Sets the mean particle mass of the atmosphere.
@@ -62,27 +56,6 @@ classdef AeroConditions < handle
             %   obj.setParticleMass(mass) sets the mean particle mass [kg].
             %
             MexGateway("AeroCond.set_particle_mass", int32(this.handle_), particle_mass__kg);
-        end
-        function this = setAlphaE(this, alpha_e)
-            % SETALPHAE Sets the energy accommodation coefficient.
-            %
-            %   obj.setAlphaE(alpha) sets the energy accommodation coefficient (usually 0.0 to 1.0).
-            %
-            MexGateway("AeroCond.set_alpha_e", int32(this.handle_), alpha_e);
-        end
-        function this = setSigmaN(this, sigma_N)
-            % SETSIGMAN Sets the normal accommodation coefficient.
-            %
-            %   obj.setSigmaN(sigma_N) sets the normal accommodation coefficient (usually 0.0 to 1.0).
-            %
-            MexGateway("AeroCond.set_sigma_n", int32(this.handle_), sigma_N);
-        end
-        function this = setSigmaT(this, sigma_T)
-            % SETSIGMAT Sets the tangential accommodation coefficient.
-            %
-            %   obj.setSigmaT(sigma_T) sets the tangential accommodation coefficient (usually 0.0 to 1.0).
-            %
-            MexGateway("AeroCond.set_sigma_t", int32(this.handle_), sigma_T);
         end
         function delete(this)
             % DELETE Destructor for AeroConditions.
