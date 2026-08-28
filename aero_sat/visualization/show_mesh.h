@@ -32,7 +32,7 @@ struct Hinge {
  * @param triangle_visibility - Vector containing the visibility values for each triangle.
  * @param v_rel__m_per_s - relative velocity vector of the geometry with respect to the surrounding gas, in the satellite's body frame.
  */
-void ShowMeshWithShadingAndWind(
+void ShowShading(
     IGeometryShadingData& geometry,
     const std::vector<float>& triangle_visibility,
     const glm::vec3& v_rel__m_per_s

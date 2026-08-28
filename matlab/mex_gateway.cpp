@@ -33,7 +33,10 @@ using vat::RotatableMeshGeometry;
 using vat::Sentman;
 using vat::ShadingAlgorithmType;
 using vat::ShadingPipeline;
-using vat::ShowMeshWithShadingAndWind;
+using vat::Hinge;
+using vat::ShowHinges;
+using vat::ShowMeshes;
+using vat::ShowShading;
 
 
 class MexFunction : public matlab::mex::Function {
@@ -339,7 +342,7 @@ public:
                 }
             }
             if (cls == "Visualization") {
-                if (cmd == "show_mesh") {
+                if (cmd == "show_shading") {
                     validate_input_size(inputs, 4);
                     validate_output_size(outputs, 0);
                     validate_argument(inputs, 1, "int", 1);
@@ -353,7 +356,60 @@ public:
                     std::vector<float> triangle_visibility(typed_array.begin(), typed_array.end());
                     glm::vec3 velocity__m_per_s(inputs[3][0], inputs[3][1], inputs[3][2]);
 
-                    ShowMeshWithShadingAndWind(geometry, triangle_visibility, velocity__m_per_s);
+                    ShowShading(geometry, triangle_visibility, velocity__m_per_s);
+                    return;
+                }
+                if (cmd == "show_meshes") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 0);
+                    validate_argument(inputs, 1, "int", 1);
+
+                    const int geometry_id = inputs[1][0];
+                    RotatableMeshGeometry& geometry = *geometry_map.at(geometry_id);
+
+                    ShowMeshes(geometry);
+                    return;
+                }
+                if (cmd == "show_hinges") {
+                    validate_input_size(inputs, 5);
+                    validate_output_size(outputs, 0);
+                    validate_argument(inputs, 1, "int", 1);
+
+                    const int geometry_id = inputs[1][0];
+                    RotatableMeshGeometry& geometry = *geometry_map.at(geometry_id);
+
+                    // The MATLAB wrapper flattens its struct array into three parallel
+                    // arguments: mesh ids (1xN), origins (3xN) and axes (3xN). MATLAB is
+                    // column-major, so iterating a 3xN yields x,y,z per hinge in order.
+                    const int num_hinges = static_cast<int>(inputs[2].getNumberOfElements());
+                    validate_argument(inputs, 2, "int", num_hinges);
+                    validate_argument(inputs, 3, "double", 3 * num_hinges);
+                    validate_argument(inputs, 4, "double", 3 * num_hinges);
+
+                    matlab::data::TypedArray<int> const mesh_id_array = inputs[2];
+                    matlab::data::TypedArray<double> const origin_array = inputs[3];
+                    matlab::data::TypedArray<double> const axis_array = inputs[4];
+                    const std::vector<int> mesh_ids(mesh_id_array.begin(), mesh_id_array.end());
+                    const std::vector<double> origins(origin_array.begin(), origin_array.end());
+                    const std::vector<double> axes(axis_array.begin(), axis_array.end());
+
+                    std::vector<Hinge> hinges;
+                    hinges.reserve(static_cast<std::size_t>(num_hinges));
+                    for (std::size_t i = 0; i < static_cast<std::size_t>(num_hinges); ++i) {
+                        Hinge hinge;
+                        hinge.mesh_id = mesh_ids[i];
+                        hinge.origin__m = glm::vec3(
+                            static_cast<float>(origins[3 * i + 0]),
+                            static_cast<float>(origins[3 * i + 1]),
+                            static_cast<float>(origins[3 * i + 2]));
+                        hinge.axis = glm::vec3(
+                            static_cast<float>(axes[3 * i + 0]),
+                            static_cast<float>(axes[3 * i + 1]),
+                            static_cast<float>(axes[3 * i + 2]));
+                        hinges.push_back(hinge);
+                    }
+
+                    ShowHinges(geometry, hinges);
                     return;
                 }
             }

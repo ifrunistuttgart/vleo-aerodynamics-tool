@@ -405,7 +405,7 @@ void AddLegend(vtkRenderer* renderer,
 
 } // namespace
 
-void ShowMeshWithShadingAndWind(
+void ShowShading(
      IGeometryShadingData& geometry,
      const std::vector<float>& triangle_visibility,
      const glm::vec3& v_rel__m_per_s) {
@@ -414,12 +414,12 @@ void ShowMeshWithShadingAndWind(
 
     const unsigned int num_triangles = geometry.get_num_triangles();
     if (triangle_visibility.size() != num_triangles) {
-        SPDLOG_ERROR("ShowMeshWithShadingAndWind: visibility size mismatch (visibility={}, triangles={})",
+        SPDLOG_ERROR("ShowShading: visibility size mismatch (visibility={}, triangles={})",
             triangle_visibility.size(), num_triangles);
         throw std::invalid_argument("triangle_visibility size does not match number of triangles");
     }
 
-    SPDLOG_DEBUG("ShowMeshWithShadingAndWind start (triangles={}, |v_rel|={})",
+    SPDLOG_DEBUG("ShowShading start (triangles={}, |v_rel|={})",
         num_triangles, glm::length(v_rel__m_per_s));
 
     std::span<const float> vertices = geometry.get_vertices();
