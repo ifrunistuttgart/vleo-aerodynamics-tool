@@ -96,6 +96,25 @@ gsi_model = vat.Sentman(1);
 geometry = vat.RotatableMeshGeometry('my_satellite.obj');
 ```
 
+Three viewers are available, each opening a window that blocks until it is closed:
+
+```matlab
+vat.show_meshes(geometry)                       % which mesh_id is which part
+vat.show_hinges(geometry, hinges)               % check hinge points and axes
+vat.show_shading(geometry, visibility, v_rel)   % triangles coloured by shading
+```
+
+`vat.show_meshes` labels every mesh `[mesh_id] name`, taking the name from the model
+file — that id is what `turn_mesh_around_axis` expects. `vat.show_hinges` takes a struct
+array whose fields are exactly that method's arguments, so a hinge can be checked before
+it is used:
+
+```matlab
+h(1).mesh_id = 0; h(1).origin = [0.5 0 0]; h(1).axis = [0 1 0];
+vat.show_hinges(geometry, h)
+geometry.turn_mesh_around_axis(h(1).mesh_id, deg2rad(20), h(1).origin, h(1).axis)
+```
+
 Use `import vat.*` at the top of a script if you would rather drop the prefix.
 
 See `matlab/+vat/` for the classes, and `matlab/examples/` plus `matlab/test_sentman.m`
@@ -142,7 +161,10 @@ individual parts can be swapped or extended with minimal friction.
   rotatable meshes).
 - `aero_sat/shading_pipeline/` — occlusion/shading implementations, including an OpenGL
   backend under `opengl/`.
-- `aero_sat/visualization/` — optional VTK-based viewers used by the examples.
+- `aero_sat/visualization/` — optional VTK-based viewers used by the examples. Three
+  views: `ShowShading` (triangles coloured by visibility, plus the wind
+  vector), `ShowMeshes` (each mesh in its own colour with a naming legend), and
+  `ShowHinges` (hinge points and rotation axes drawn over a translucent model).
 - `examples/` — small standalone example programs (one per subfolder) demonstrating
   toolbox usage, e.g. `examples/import_and_visualize/`.
 - `matlab/` — MATLAB MEX gateway plus the `vat` package (`matlab/+vat/`) and
@@ -168,6 +190,17 @@ uses these three words and no synonyms for them:
 
 The word *surface* is reserved for its aerodynamic meaning only — surface temperature,
 gas–surface interaction — and never refers to a mesh or a triangle.
+
+**Separating meshes in a model file**: export each mesh as an **object** (`o wing_left`
+in an `.obj`). One object becomes one mesh, and that is the unit `turn_mesh_around_axis`
+rotates. An `.stl` carries no structure at all and becomes a single mesh.
+
+Do **not** use `.obj` groups (`g wing_left`) to separate parts. Groups are a second,
+parallel way of dividing an `.obj`, and they are not merged with objects: a file whose
+five parts are groups, each holding the six faces of a box, loads as thirty meshes -- one
+per face -- so every `mesh_id` addresses a fragment and rotating one tears a single face
+off a part. The importer detects this and warns, but it cannot repair it; fix the export.
+`vat.show_meshes` shows how a file actually ended up divided.
 
 **Logging**: `spdlog` is used across the project.
 
