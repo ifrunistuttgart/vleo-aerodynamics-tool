@@ -24,6 +24,7 @@ protected:
     std::vector<float> m_centroids;
 	std::vector<glm::mat4> m_model_matrices;
     std::vector<unsigned int> m_num_triangles_per_mesh;
+    std::vector<std::string> m_mesh_names;
     unsigned int m_total_triangles;
     float m_bounding_sphere_radius;
 
@@ -37,6 +38,7 @@ public:
     std::span<const float> get_areas() override;
     std::span<const float> get_centroids() override;
     std::span<const glm::mat4> get_model_matrices() override;
+    std::span<const std::string> get_mesh_names() override;
     std::span<const unsigned int> get_num_triangles_per_mesh() override;
     const unsigned int get_num_triangles() override;
     float get_bounding_sphere_radius() override;

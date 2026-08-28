@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <span>
+#include <string>
 #include <glm/glm.hpp>
 
 namespace vat {
@@ -68,6 +69,18 @@ public:
      * @return A span containing the model matrices.
      */
     virtual std::span<const glm::mat4> get_model_matrices() = 0;
+
+    /**
+     * Retrieves the name of each mesh of the geometry, as stored in the model file.
+     *
+     * Meshes without a name in the file fall back to "Mesh <index>", so the returned
+     * span always has one non-empty entry per mesh, in the same order as
+     * get_num_triangles_per_mesh() and get_model_matrices(). The index into this span
+     * is the mesh_id accepted by IGeometryManipulator::turn_mesh_around_axis().
+     *
+     * @return A span containing the name of each mesh.
+     */
+    virtual std::span<const std::string> get_mesh_names() = 0;
 
     /**
      * Retrieves the number of triangles in each individual mesh of the geometry.
