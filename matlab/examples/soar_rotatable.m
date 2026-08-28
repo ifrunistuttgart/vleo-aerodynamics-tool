@@ -49,7 +49,7 @@ v_rel   = rot_mat * [v_orbital__m_per_s; 0; 0];
 panel_visibility = shader.shade(v_rel);
 
 %% Visualize Panel Visibility Result
-vat.show_mesh(satellite.geometry, panel_visibility, v_rel);
+vat.show_shading(satellite.geometry, panel_visibility, v_rel);
 
 %% Torque Sweep Over Full Sphere (Unrotated Panel)
 % Demonstrates why a fast per-direction shading pipeline matters: the

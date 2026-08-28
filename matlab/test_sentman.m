@@ -68,4 +68,4 @@ fprintf('Average load calculation call duration: %.6f seconds.\n', avg_load_calc
 disp("All tests completed successfully.");
 
 %% visualize last shading result
-vat.show_mesh(iss_satellite, panel_visibility, relative_velocity_m_s);
+vat.show_shading(iss_satellite, panel_visibility, relative_velocity_m_s);
