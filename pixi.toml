@@ -2,6 +2,7 @@
 name = "vleo-aerodynamics-tool"
 channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+requires-pixi = ">=0.74"
 
 # Native compiler per platform; on Windows still needs system VS 2022 Build Tools.
 [dependencies]
