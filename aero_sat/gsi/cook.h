@@ -5,6 +5,13 @@ class Cook: public IGSIModel {
 private:
     float m_alpha_e;
 public:
+    /**
+    * Constructor for the Cook GSI model.
+    *
+    * References:
+    *    [1] G. E. Cook. Satellite drag coefficients. Planetary and Space Science, 13(10):929–946, October 1965
+    * @param alpha_e: Scalar value of the energy accommodation coefficient, between 0 and 1
+    */
     Cook(float alpha_e);
     ~Cook() override = default;
 

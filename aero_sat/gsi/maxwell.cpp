@@ -4,9 +4,7 @@
 #include "maxwell.h"
 
 
-const float BOLTZMANN_CONSTANT__J_PER_K = 1.380649e-23f; // Boltzmann constant in J/K
-
-Maxwell::Maxwell(float alpha_e){
+Maxwell::Maxwell(const float alpha_e){
     set_alpha_e(alpha_e);
 }
 

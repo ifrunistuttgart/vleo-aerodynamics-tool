@@ -11,7 +11,9 @@ add_library(gsi
         schaaf_chambre.cpp
         schaaf_chambre.h
 		newton.cpp
-		newton.h)
+		newton.h
+		storch.cpp
+		storch.h)
 
 target_compile_features(gsi PRIVATE cxx_std_20)
 target_include_directories(gsi

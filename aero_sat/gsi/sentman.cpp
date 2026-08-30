@@ -7,8 +7,6 @@
 #include "sentman.h"
 
 
-const float BOLTZMANN_CONSTANT__J_PER_K = 1.380649e-23f; // Boltzmann constant in J/K
-
 Sentman::Sentman(int temperature_ratio_method,float alpha_e){
     if (temperature_ratio_method < 1 || temperature_ratio_method > 3) {
         SPDLOG_ERROR("Invalid temperature_ratio_method: must be 1, 2, or 3 (value={})", temperature_ratio_method);
@@ -90,10 +88,7 @@ int Sentman::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal,
     const float pressure_coeff = density__kg_per_m3 / 2.0f * thermal_velocity__m_per_s * thermal_velocity__m_per_s;
     const float sqrt_pi_half = std::sqrt(std::numbers::pi_v<float>) / 2.0f;
 
-    // First term: -(g1 + sqrt(pi)/2 * sqrt(temperature_ratio) * g2) * normal
     const float term_1 = -(g1 + sqrt_pi_half * sqrt_temperature_ratio * g2);
-
-    // Second term: s * g2 * (v_rel/V + cos_delta * normal)
     const float term_2 = molecular_speed_ratio * g2;
 
     // Normalized velocity

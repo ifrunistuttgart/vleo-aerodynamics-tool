@@ -1,9 +1,9 @@
 #define FMT_UNICODE 0
 #include <spdlog/spdlog.h>
 #include <cmath>
-#include "Cook.h"
+#include "cook.h"
 
-Cook::Cook(float alpha_e) {
+Cook::Cook(const float alpha_e) {
     set_alpha_e(alpha_e);
 }
 

@@ -5,6 +5,13 @@ class Maxwell: public IGSIModel {
 private:
     float m_alpha_e;
 public:
+    /**
+    * Constructor for the Maxwell GSI model.
+    *
+    * References:
+    *    [1] G A Bird. Molecular Gas Dynamics And The Direct Simulation Of Gas Flows. Oxford University Press, May 1994.
+    * @param alpha_e: Scalar value of the energy accommodation coefficient, between 0 and 1
+    */
     Maxwell(float alpha_e);
     ~Maxwell() override = default;
 
@@ -12,7 +19,7 @@ public:
     void set_gsi_parameter(std::string name, float value) override;
     [[nodiscard]] float get_gsi_parameter(std::string name) const override;
 
-    float get_alpha_e() const { return m_alpha_e; }
+    [[nodiscard]] float get_alpha_e() const {return m_alpha_e;};
     void set_alpha_e(float alpha_e);
 
 };

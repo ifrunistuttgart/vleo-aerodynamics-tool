@@ -4,11 +4,6 @@
 #include <cmath>
 
 
-const float BOLTZMANN_CONSTANT__J_PER_K = 1.380649e-23f; // Boltzmann constant in J/K
-
-Newton::Newton() {
-}
-
 int Newton::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, const glm::vec3 &centroid__m,
                                      const glm::vec3 &v_rel__m_per_s, float surf_temp__K, AeroConditions &aero, glm::vec3 &aero_force__N,
                                      glm::vec3 &aero_torque__Nm) {
@@ -36,12 +31,9 @@ int Newton::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, 
     // --- Cp Calculation ---
     const float cp = 2.0f * cos_d*cos_d;
 
-    // --- Ctau Calculation ---
-    const float ctau = 0;
-
     // --- conversion to Cd and Cl ---
-    const float cd = cp * cos_d + ctau * sin_d;
-    const float cl = cp * sin_d + ctau * cos_d;
+    const float cd = cp * cos_d;
+    const float cl = cp * sin_d;
 
     const float q = 0.5f * density__kg_per_m3 * v_rel_magnitude__m_per_s * v_rel_magnitude__m_per_s;
 

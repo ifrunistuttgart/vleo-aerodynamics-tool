@@ -17,6 +17,7 @@
 
 #include "core.h"
 #include "sentman.h"
+#include "storch.h"
 #include "newton.h"
 #include "cook.h"
 #include "maxwell.h"
@@ -88,7 +89,7 @@ public:
             std::string cls = cmd_string.substr(0, dot);
             std::string cmd = (dot != std::string::npos) ? cmd_string.substr(dot + 1) : "";
             LOG(LEVEL_INFO,"Received command: " + cmd + " for class: " +cls);
-            if ((cls == "Newton" || cls == "Sentman" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "delete") {
+            if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "delete") {
                 validate_input_size(inputs, 2);
                 validate_output_size(outputs, 0);
                 validate_argument(inputs, 1, "int", 1);
@@ -96,7 +97,7 @@ public:
                 gsi_map.erase(id);
                 return;
             }
-            if ((cls == "Newton" || cls == "Sentman" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "calc_aero_force_torque") {
+            if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "calc_aero_force_torque") {
                 validate_input_size(inputs, 8);
                 validate_output_size(outputs, 2);
                 validate_argument(inputs, 1, "int", 1);
@@ -135,7 +136,7 @@ public:
                 outputs[1] = factory.createArray({3}, {aero_torque__Nm.x, aero_torque__Nm.y, aero_torque__Nm.z});
                 return;
             }
-            if ((cls == "Newton" || cls == "Sentman" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "get_gsi_parameter") {
+            if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "get_gsi_parameter") {
                 validate_input_size_min(inputs, 4);
                 validate_argument(inputs, 1, "int", 1);
                 validate_argument(inputs, 2, "string", 1);
@@ -144,7 +145,7 @@ public:
                 return;
 
             }
-            if ((cls == "Newton" || cls == "Sentman" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "set_gsi_parameter") {
+            if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "set_gsi_parameter") {
                 validate_input_size_min(inputs, 4);
                 validate_argument(inputs, 1, "int", 1);
                 validate_argument(inputs, 2, "string", 1);
@@ -216,6 +217,24 @@ public:
                     const int temperature_ratio_method = inputs[1][0];
                     float alpha_e = inputs[2][0];
                     gsi_map.insert({gsi_max_id, std::make_unique<Sentman>(temperature_ratio_method, alpha_e)});
+                    outputs[0] = factory.createScalar<int>(gsi_max_id);
+                    gsi_max_id++;
+                    return;
+                }
+            }
+            if (cls == "Storch") {
+                if (cmd == "new") {
+                    LOG(LEVEL_INFO, "Creating new Storch instance.");
+                    validate_input_size_min(inputs, 4);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "float", 1);
+                    validate_argument(inputs, 2, "float", 1);
+                    validate_argument(inputs, 3, "float", 1);
+
+                    const float V_w = inputs[1][0];
+                    const float sigma_n = inputs[2][0];
+                    const float sigma_t = inputs[3][0];
+                    gsi_map.insert({gsi_max_id, std::make_unique<Storch>(V_w, sigma_n, sigma_t)});
                     outputs[0] = factory.createScalar<int>(gsi_max_id);
                     gsi_max_id++;
                     return;
