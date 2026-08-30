@@ -6,57 +6,72 @@
 #include "compute_shader.h"
 
 // Constructor: create compute shader directly from provided source string
-ComputeShader::ComputeShader(const std::string& computeSource, bool fromSource)
-    : m_FilePath(""), m_ComputeShaderID(0)
+ComputeShader::ComputeShader(const std::string& compute_source, bool from_source)
+    : m_file_path(""), m_compute_shader_id(0)
 {
-    if (computeSource.empty()) {
+    if (compute_source.empty()) {
 		SPDLOG_ERROR("Computeshader source is empty");
         return;
     }
-    m_ComputeShaderID = CreateShader(computeSource);
+    m_compute_shader_id = create_shader(compute_source);
 }
 
 ComputeShader::~ComputeShader()
 {
-    GLCall(glDeleteProgram(m_ComputeShaderID));
+    GLCall(glDeleteProgram(m_compute_shader_id));
 }
 
-void ComputeShader::Bind() const
+void ComputeShader::bind() const
 {
-    GLCall(glUseProgram(m_ComputeShaderID));
+    GLCall(glUseProgram(m_compute_shader_id));
 }
 
-void ComputeShader::Unbind() const
+void ComputeShader::unbind() const
 {
     GLCall(glUseProgram(0));
 }
 
-void ComputeShader::SetUniform4f(const std::string& name, float v0, float v1, float v2, float v3)
+void ComputeShader::set_uniform_4f(const std::string& name, const glm::vec4& vector)
 {
-    GLCall(glUniform4f(GetUniformLocation(name), v0, v1, v2, v3));
+    GLCall(glUniform4f(get_uniform_location(name), vector.x, vector.y, vector.z, vector.w));
 }
 
-void ComputeShader::setUniformMat4f(const std::string& name, const glm::mat4& matrix)
+void ComputeShader::set_uniform_3f(const std::string& name, const glm::vec3& vector)
 {
-    GLCall(glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &matrix[0][0]));
+    GLCall(glUniform3f(get_uniform_location(name), vector.x, vector.y, vector.z));
 }
 
-int ComputeShader::GetUniformLocation(const std::string& name)
+void ComputeShader::set_uniform_2f(const std::string& name, const glm::vec2& vector)
 {
-    if (m_UniformLocationCache.find(name) != m_UniformLocationCache.end())
-        return m_UniformLocationCache[name];
+    GLCall(glUniform2f(get_uniform_location(name), vector.x, vector.y));
+}
 
-    GLCall(int location = glGetUniformLocation(m_ComputeShaderID, name.c_str()));
+void ComputeShader::set_uniform_1f(const std::string& name, float value)
+{
+    GLCall(glUniform1f(get_uniform_location(name), value));
+}
+
+void ComputeShader::set_uniform_mat4f(const std::string& name, const glm::mat4& matrix)
+{
+    GLCall(glUniformMatrix4fv(get_uniform_location(name), 1, GL_FALSE, &matrix[0][0]));
+}
+
+int ComputeShader::get_uniform_location(const std::string& name)
+{
+    if (m_uniform_location_cache.find(name) != m_uniform_location_cache.end())
+        return m_uniform_location_cache[name];
+
+    GLCall(int location = glGetUniformLocation(m_compute_shader_id, name.c_str()));
     if (location == -1)
         SPDLOG_WARN("Uniform {} doesn't exist!", name);
-    m_UniformLocationCache[name] = location;
+    m_uniform_location_cache[name] = location;
     return location;
 }
 
-unsigned int ComputeShader::CreateShader(const std::string& source)
+unsigned int ComputeShader::create_shader(const std::string& source)
 {
     unsigned int program = glCreateProgram();
-    unsigned int cs = CompileShader(GL_COMPUTE_SHADER, source);
+    unsigned int cs = compile_shader(GL_COMPUTE_SHADER, source);
 
     if (cs == 0) {
 		SPDLOG_ERROR("Compute shader compilation failed, aborting shader program creation.");
@@ -72,7 +87,7 @@ unsigned int ComputeShader::CreateShader(const std::string& source)
     return program;
 }
 
-unsigned int ComputeShader::CompileShader(unsigned int type, const std::string& source)
+unsigned int ComputeShader::compile_shader(unsigned int type, const std::string& source)
 {
     if (source.empty()) {
 		SPDLOG_ERROR("Compute shader source is empty, cannot compile shader.");

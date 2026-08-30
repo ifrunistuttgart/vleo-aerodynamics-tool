@@ -1,4 +1,5 @@
 ﻿add_subdirectory(core)
+add_subdirectory(opengl_abstractions)
 add_subdirectory(aero_load_calculator)
 add_subdirectory(gsi)
 add_subdirectory(satellite)

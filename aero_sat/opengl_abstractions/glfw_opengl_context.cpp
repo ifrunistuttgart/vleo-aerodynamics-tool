@@ -4,7 +4,7 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 #include <format>
-bool GlfwOpenGLContext::s_glewInitialized = false;
+bool GlfwOpenGLContext::s_glew_initialized = false;
 
 GlfwOpenGLContext::GlfwOpenGLContext(int width, int height, const char* title, bool visible) {
     if (!glfwInit()) {
@@ -29,7 +29,7 @@ GlfwOpenGLContext::GlfwOpenGLContext(int width, int height, const char* title, b
 
     glfwMakeContextCurrent(m_window);
 
-    if (!s_glewInitialized) {
+    if (!s_glew_initialized) {
         const GLenum glew_result = glewInit();
         if (glew_result != GLEW_OK) {
             SPDLOG_ERROR("glewInit failed (code={})", static_cast<unsigned int>(glew_result));
@@ -38,7 +38,7 @@ GlfwOpenGLContext::GlfwOpenGLContext(int width, int height, const char* title, b
             glfwTerminate();
             throw std::runtime_error("glewInit failed");
         }
-        s_glewInitialized = true;
+        s_glew_initialized = true;
     }
 }
 
