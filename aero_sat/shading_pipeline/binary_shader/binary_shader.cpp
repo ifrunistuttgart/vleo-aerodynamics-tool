@@ -8,47 +8,26 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 //custom abstractions
-#include "opengl/vertex_buffer.h"
-#include "opengl/gl_helpers.h"
+#include "vertex_buffer.h"
+#include "gl_helpers.h"
 
 // embedded shader headers
 #include "binary_shader/shaders/id_shader.h"
-#include "opengl/vertex_buffer_layout.h"
+#include "vertex_buffer_layout.h"
 
 BinaryShader::BinaryShader(unsigned int num_pixel)
     : NUM_PIXEL(num_pixel)
 {
-
-}
-
-BinaryShader::~BinaryShader() {
-    m_shader.reset();
-    m_frame_buffer.reset();
-    m_vao.reset();
-
-    if (m_ID_texture != 0) {
-        GLCall(glDeleteTextures(1, &m_ID_texture));
-    }
-}
-
-int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) {
-	m_numTriangles = static_cast<unsigned int>(triangleIDs.size() / 3); //assume 3 vertices per triangle
-    if (m_numTriangles > MAX_TRIANGLES) {
-		SPDLOG_ERROR("Number of triangles ({}) exceeds the maximum supported ({}).", m_numTriangles, MAX_TRIANGLES);
-        return -1;
-	}
     // framebuffer for counting ids
     SPDLOG_DEBUG("create framebuffer with ID texture of size {}x{}", NUM_PIXEL, NUM_PIXEL);
-    GLCall(glGenTextures(1, &m_ID_texture));
-    GLCall(glBindTexture(GL_TEXTURE_2D, m_ID_texture));
-    GLCall(glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, NUM_PIXEL, NUM_PIXEL, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr));
+    m_texture.reset(new Texture2D(num_pixel, num_pixel, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT));
 
-    m_frame_buffer.reset(new FrameBuffer(m_ID_texture, NUM_PIXEL, NUM_PIXEL));
-    m_frame_buffer->UnBind();
+    m_frame_buffer.reset(new FrameBuffer(NUM_PIXEL, NUM_PIXEL,m_texture.get()));
+    m_frame_buffer->unbind();
 
     // Create shader program from embedded sources
     m_shader.reset(new Shader(ID_vertex_shader, ID_fragment_shader, true));
-    m_shader->Unbind();
+    m_shader->unbind();
 
     // Enable depth testing for proper occlusion
     GLCall(glEnable(GL_DEPTH_TEST));
@@ -60,17 +39,33 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
     GLCall(glCullFace(GL_BACK));
     GLCall(glFrontFace(GL_CCW)); // Counter-clockwise is front-facing
 
+}
+
+BinaryShader::~BinaryShader() {
+    m_shader.reset();
+    m_frame_buffer.reset();
+    m_vao.reset();
+    m_texture.reset();
+}
+
+int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) {
+	m_numTriangles = static_cast<unsigned int>(triangleIDs.size() / 3); //assume 3 vertices per triangle
+    if (m_numTriangles > MAX_TRIANGLES) {
+		SPDLOG_ERROR("Number of triangles ({}) exceeds the maximum supported ({}).", m_numTriangles, MAX_TRIANGLES);
+        return -1;
+	}
+
     m_lenVertices = vertices.size();
 	m_vao.reset(new VertexArray());
     VertexBufferLayout layoutVertices;
-    layoutVertices.Push<float>(3);           // vec3 position
+    layoutVertices.push<float>(3);           // vec3 position
     VertexBuffer vb(vertices.data(), static_cast<unsigned int>(sizeof(float) * vertices.size()));
-    m_vao->AddBuffer(vb, layoutVertices);
+    m_vao->add_buffer(vb, layoutVertices);
 
     VertexBufferLayout layoutIDs;
-    layoutIDs.Push<unsigned int>(1);         // triangle ID
+    layoutIDs.push<unsigned int>(1);         // triangle ID
     VertexBuffer vbID(triangleIDs.data(), static_cast<unsigned int>(sizeof(std::uint32_t) * triangleIDs.size()));
-    m_vao->AddBuffer(vbID, layoutIDs);
+    m_vao->add_buffer(vbID, layoutIDs);
     return 0;
 }
 
@@ -104,18 +99,18 @@ std::vector<float> BinaryShader::shade_satellite(glm::vec3 v_rel_hat, float boun
         up
     );
 
-    m_frame_buffer->Bind();
-    m_frame_buffer->Clear();
+    m_frame_buffer->bind();
+    m_frame_buffer->clear();
 
 	//render to framebuffer with ID shader
-    m_shader->Bind();
-	m_vao->Bind();
+    m_shader->bind();
+	m_vao->bind();
 	unsigned int offset = 0;
     for (int i = 0; i < num_triangles_per_mesh.size(); i++) {
 		glm::mat4 model = model_matrices[i];
         glm::mat4 u_MVP = orthoProj * view * model;
 
-        m_shader->setUniformMat4f("u_MVP", u_MVP);
+        m_shader->set_uniform_mat4f("u_MVP", u_MVP);
         glDrawArrays(GL_TRIANGLES, offset, static_cast<GLsizei>(num_triangles_per_mesh[i] * 3));
         offset += num_triangles_per_mesh[i] * 3;
     }
@@ -132,7 +127,7 @@ std::vector<float> BinaryShader::shade_satellite(glm::vec3 v_rel_hat, float boun
     GLCall(glReadBuffer(GL_COLOR_ATTACHMENT0));
     std::vector<GLuint> pixel_ids(NUM_PIXEL * NUM_PIXEL, 0);
     GLCall(glReadPixels(0, 0, NUM_PIXEL, NUM_PIXEL, GL_RED_INTEGER, GL_UNSIGNED_INT, pixel_ids.data()));
-    m_frame_buffer->UnBind();
+    m_frame_buffer->unbind();
 
     // Count visible triangles on CPU
     const size_t count = std::min(triangle_visibility.size(), static_cast<size_t>(m_numTriangles));
@@ -146,6 +141,6 @@ std::vector<float> BinaryShader::shade_satellite(glm::vec3 v_rel_hat, float boun
     }
     SPDLOG_INFO("BinaryShader: {}/{} panels visible", visible, m_numTriangles);
 
-	m_vao->Unbind();
+	m_vao->unbind();
     return triangle_visibility;
 };
