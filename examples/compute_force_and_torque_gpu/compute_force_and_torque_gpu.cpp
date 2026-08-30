@@ -2,8 +2,6 @@
 #include <filesystem>
 #include <source_location>
 #include <string>
-#include <vector>
-
 #define FMT_UNICODE 0 // avoid error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 #include "rotatable_mesh_satellite.h"
@@ -17,6 +15,8 @@ std::filesystem::path get_path(const std::string& filename) {
 }
 
 int main() {
+	//set spdlog to trace
+	spdlog::set_level(spdlog::level::info);
 	// 1. Load satellite geometry
 	SPDLOG_INFO("Loading satellite model...");
 	std::string obj_path = get_path("../geometry_files/tetraeder.obj").string();

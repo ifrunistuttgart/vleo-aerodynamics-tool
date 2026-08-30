@@ -6,11 +6,12 @@
 #include "shader.h"
 #include "compute_shader.h"
 #include "glfw_opengl_context.h"
+#include "shader_storage_buffer.h"
 #include <memory>
 class GPUAeroLoadCalculator: public IAeroLoadCalculator {
 public:
     GPUAeroLoadCalculator(ISatelliteShadingData& satellite, int num_pixel);
-    ~GPUAeroLoadCalculator() override = default;
+    ~GPUAeroLoadCalculator() override;
     int calc_aero_torque_force(const glm::vec3 &v_rel__m_per_s, float surface_temp__K, AeroConditions &aero, glm::vec3 &torque__Nm, glm::vec3 &force__N) override;
 
 private:
@@ -25,5 +26,4 @@ private:
     std::unique_ptr<ComputeShader> m_compute_shader;
     ISatelliteShadingData& m_satellite;
     std::unique_ptr<GlfwOpenGLContext> m_context;
-
 };

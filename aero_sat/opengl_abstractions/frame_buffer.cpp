@@ -9,9 +9,9 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int heigth, Texture2D *tex
 {
 	//initialize Framebuffer
 	GLCall(glGenFramebuffers(1, &m_frame_buffer_id));
-	GLCall(glBindFramebuffer(GL_FRAMEBUFFER, m_frame_buffer_id));
+	bind();
 
-	this->attach_texture_2d(texture_2d);
+	attach_texture_2d(texture_2d);
 
 	//attach Depthbuffer
 	GLCall(glGenRenderbuffers(1, &m_depth_buffer_id));
@@ -82,15 +82,26 @@ void FrameBuffer::clear() const
 	GLCall(glClear(GL_DEPTH_BUFFER_BIT));
 }
 
-void FrameBuffer::attach_texture_2d(Texture2D *texture2D) {
-	this->bind();
-	if (m_color_attachment_counter >= 15) {
-		SPDLOG_WARN("Max number of color attachments reached, texture will not be attached");
+void FrameBuffer::attach_texture_2d(Texture2D *texture2D)
+{
+	if (m_textures.size() >= 16) {
+		SPDLOG_WARN("Max number of color attachments reached");
 		return;
 	}
-	GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + m_color_attachment_counter, GL_TEXTURE_2D, texture2D->get_texture_id(), 0));
+
+	bind();
+
+	// Attach texture to current slot index
+	GLenum attachment_slot = static_cast<GLenum>(GL_COLOR_ATTACHMENT0 + m_textures.size());
+	GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER, attachment_slot, GL_TEXTURE_2D, texture2D->get_texture_id(), 0));
 	m_textures.push_back(texture2D);
-	++m_color_attachment_counter;
+
+	// Automatically update active draw buffers for MRT
+	std::vector<GLenum> attachments(m_textures.size());
+	for (std::size_t i = 0; i < m_textures.size(); ++i) {
+		attachments[i] = static_cast<GLenum>(GL_COLOR_ATTACHMENT0 + i);
+	}
+	GLCall(glDrawBuffers(static_cast<GLsizei>(attachments.size()), attachments.data()));
 }
 
 const Texture2D* FrameBuffer::get_texture(std::size_t index) const

@@ -32,6 +32,8 @@ add_library(opengl_abstractions
         vertex_buffer_layout.h
         frame_buffer.h
         texture_2d.h
+        shader_storage_buffer.cpp
+        shader_storage_buffer.h
 )
 
 target_compile_features(opengl_abstractions PRIVATE cxx_std_20)

@@ -13,6 +13,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(BUILD_MATLAB_BINDINGS "Build MATLAB bindings for Sentman" OFF)
 
+add_compile_definitions(
+        $<$<CONFIG:RelWithDebInfo>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>
+        $<$<CONFIG:Release>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO>
+)
+
 add_subdirectory("aero_sat")
 add_subdirectory("examples")
 
