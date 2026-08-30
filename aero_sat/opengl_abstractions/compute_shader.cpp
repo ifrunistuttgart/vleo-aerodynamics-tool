@@ -31,6 +31,11 @@ void ComputeShader::unbind() const
     GLCall(glUseProgram(0));
 }
 
+void ComputeShader::run(unsigned int num_groups_x, unsigned int num_groups_y, unsigned int num_groups_z) {
+    GLCall(glDispatchCompute(num_groups_x, num_groups_y, num_groups_z));
+    GLCall(glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT));
+}
+
 void ComputeShader::set_uniform_4f(const std::string& name, const glm::vec4& vector)
 {
     GLCall(glUniform4f(get_uniform_location(name), vector.x, vector.y, vector.z, vector.w));
@@ -54,6 +59,14 @@ void ComputeShader::set_uniform_1f(const std::string& name, float value)
 void ComputeShader::set_uniform_mat4f(const std::string& name, const glm::mat4& matrix)
 {
     GLCall(glUniformMatrix4fv(get_uniform_location(name), 1, GL_FALSE, &matrix[0][0]));
+}
+
+void ComputeShader::set_texture(unsigned int binding_number, const Texture2D &texture)
+{
+    SPDLOG_DEBUG("Setting texture at location {} to texture ID {}", binding_number, texture.get_texture_id());
+    GLCall(
+        glBindImageTexture(binding_number, texture.get_texture_id(), 0, GL_FALSE, 0, GL_READ_ONLY,
+            texture.get_internal_format()));
 }
 
 int ComputeShader::get_uniform_location(const std::string& name)

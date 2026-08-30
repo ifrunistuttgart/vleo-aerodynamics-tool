@@ -40,16 +40,6 @@ GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, i
     m_frame_buffer = std::make_unique<FrameBuffer>(m_num_pixel, m_num_pixel, m_position_texture.get());
     m_frame_buffer->attach_texture_2d(m_normal_texture.get());
     m_frame_buffer->attach_texture_2d(m_float_texture.get());
-
-    // 5. Specify which color attachments the shader will write into
-
-    m_frame_buffer->bind();
-    GLenum attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-    GLCall(glDrawBuffers(3, attachments));
-    const GLenum framebuffer_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (framebuffer_status != GL_FRAMEBUFFER_COMPLETE) {
-        SPDLOG_ERROR("GPU framebuffer is incomplete after attaching textures (status={})", framebuffer_status);
-    }
     m_frame_buffer->unbind();
 
     std::span<const float> vertices = m_satellite.get_vertices();
@@ -67,7 +57,7 @@ GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, i
 
     //print the first 10 normals for debugging
     for (int i = 0; i < std::min(10, static_cast<int>(vertex_normals.size() / 3)); ++i) {
-        SPDLOG_INFO("Vertex normal {}: ({}, {}, {})", i, vertex_normals[i * 3], vertex_normals[i * 3 + 1], vertex_normals[i * 3 + 2]);
+        SPDLOG_TRACE("Vertex normal {}: ({}, {}, {})", i, vertex_normals[i * 3], vertex_normals[i * 3 + 1], vertex_normals[i * 3 + 2]);
     }
 
 	m_vertex_array.reset(new VertexArray());
@@ -82,8 +72,21 @@ GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, i
     m_vertex_array->add_buffer(vbNormals, layoutNormals);
 }
 
+GPUAeroLoadCalculator::~GPUAeroLoadCalculator() {
+    m_context->make_current();
+    m_shader.reset();
+    m_compute_shader.reset();
+    m_frame_buffer.reset();
+    m_vertex_array.reset();
+    m_position_texture.reset();
+    m_normal_texture.reset();
+    m_float_texture.reset();
+    m_context.reset();
+}
+
 int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_s, float surface_temp__K, AeroConditions &aero, glm::vec3 &torque__Nm, glm::vec3 &force__N) {
     m_context->make_current();
+
     //projection matrices
     glm::vec3 v_rel_hat = normalize(v_rel__m_per_s);
     float bounding_sphere_radius = m_satellite.get_bounding_sphere_radius();
@@ -118,8 +121,6 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
 
     m_frame_buffer->bind();
     m_frame_buffer->clear();
-    GLenum attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-    GLCall(glDrawBuffers(3, attachments));
 
 	//render triangles and cops to Framebuffer
     m_shader->bind();
@@ -145,10 +146,6 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
     m_vertex_array->unbind();
     m_shader->unbind();
 
-    m_normal_texture->plot_texture("Normal Texture");
-    m_float_texture->plot_texture("Float Texture");
-    m_position_texture->plot_texture("Position Texture");
-
     SPDLOG_INFO("Dispatching compute shader with {}x{} groups.", (m_num_pixel + 15u) / 16u, (m_num_pixel + 15u) / 16u);
     const GLuint groups_x = (m_num_pixel + 15u) / 16u;
     const GLuint groups_y = (m_num_pixel + 15u) / 16u;
@@ -159,28 +156,20 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
     };
 
     ForceTorqueData force_torque_data{ glm::ivec3(0), glm::ivec3(0) };
-    GLuint force_torque_buffer = 0;
-    GLCall(glGenBuffers(1, &force_torque_buffer));
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, force_torque_buffer));
-    GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ForceTorqueData), &force_torque_data, GL_DYNAMIC_DRAW));
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
+    ShaderStorageBuffer ssbo = ShaderStorageBuffer(&force_torque_data, sizeof(ForceTorqueData));
 
     m_compute_shader->bind();
     m_compute_shader->set_uniform_1f("pixelArea", pixel_area);
     m_compute_shader->set_uniform_1f("density", aero.density__kg_per_m3);
     m_compute_shader->set_uniform_1f("velocity_mag", glm::length(v_rel__m_per_s));
-    GLCall(glBindImageTexture(0, m_position_texture->get_texture_id(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F));
-    GLCall(glBindImageTexture(1, m_normal_texture->get_texture_id(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F));
-    GLCall(glBindImageTexture(2, m_float_texture->get_texture_id(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F));
-    GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, force_torque_buffer));
-    GLCall(glDispatchCompute(groups_x, groups_y, 1u));
-    GLCall(glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT));
+    m_compute_shader->set_texture(0, *m_position_texture);
+    m_compute_shader->set_texture(1, *m_normal_texture);
+    m_compute_shader->set_texture(2, *m_float_texture);
+    ssbo.bind_base(3);
+    m_compute_shader->run(groups_x, groups_y, 1);
     m_compute_shader->unbind();
 
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, force_torque_buffer));
-    GLCall(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(ForceTorqueData), &force_torque_data));
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
-    GLCall(glDeleteBuffers(1, &force_torque_buffer));
+    ssbo.get_data(&force_torque_data, sizeof(ForceTorqueData));
 
     force__N = glm::vec1(1.0e-9)* glm::vec3(force_torque_data.force);
     torque__Nm =  glm::vec1(1.0e-9)* glm::vec3(force_torque_data.torque);

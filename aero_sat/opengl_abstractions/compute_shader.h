@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include "glm/glm.hpp"
+#include "texture_2d.h"
 
 struct ComputeShaderProgramSource
 {
@@ -24,12 +25,17 @@ public:
     void bind() const;
     void unbind() const;
 
+    void run(unsigned int num_groups_x, unsigned int num_groups_y, unsigned int num_groups_z);
+
     // set uniforms
     void set_uniform_4f(const std::string& name, const glm::vec4& vector);
     void set_uniform_3f(const std::string& name, const glm::vec3& vector);
     void set_uniform_2f(const std::string& name, const glm::vec2& vector);
     void set_uniform_1f(const std::string& name, float value);
     void set_uniform_mat4f(const std::string& name, const glm::mat4& matrix);
+
+    // set textures
+    void set_texture(unsigned int binding_number, const Texture2D& texture);
 
 private:
     int get_uniform_location(const std::string& name);

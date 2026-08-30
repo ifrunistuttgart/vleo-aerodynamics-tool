@@ -16,6 +16,11 @@ option(BUILD_MATLAB_BINDINGS "Build MATLAB bindings" OFF)
 # Keep SPDLOG_DEBUG active in all build configurations (including Release)
 add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
 
+add_compile_definitions(
+        $<$<CONFIG:RelWithDebInfo>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>
+        $<$<CONFIG:Release>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO>
+)
+
 add_subdirectory("aero_sat")
 add_subdirectory("examples")
 

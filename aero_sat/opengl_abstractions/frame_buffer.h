@@ -16,6 +16,7 @@ public:
 	void unbind() const;
 	void clear() const;
 	void attach_texture_2d(Texture2D* texture2D);
+	void set_render_targets();
 	[[nodiscard]] const Texture2D* get_texture(std::size_t index) const;
 	[[nodiscard]] std::size_t get_color_attachment_count() const;
 };
