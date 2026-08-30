@@ -6,7 +6,7 @@
 #include "Isatellite_shading_data.h"
 #include "Ishading_algorithm.h"
 #include "shading_algorithm_factory.h"
-#include "opengl/glfw_opengl_context.h"
+#include "glfw_opengl_context.h"
 
 class ShadingPipeline : public IShadingPipeline {
 private:

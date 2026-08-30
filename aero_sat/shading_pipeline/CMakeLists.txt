@@ -8,9 +8,8 @@ target_include_directories(shading_pipeline
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 		$<INSTALL_INTERFACE:include>
 )
-target_link_libraries(shading_pipeline PUBLIC core glm::glm aero_load_calculator)
+target_link_libraries(shading_pipeline PUBLIC core glm::glm aero_load_calculator opengl_abstractions)
 
-add_subdirectory(opengl)
 add_subdirectory(binary_shader)
 add_subdirectory(cop_shader)
 
