@@ -11,6 +11,7 @@ c-compiler = "*"
 cxx-compiler = "*"
 
 vtk = "*"
+vtk-base = "*"
 assimp = "*"
 glew = "*"
 glfw = "*"

@@ -12,16 +12,16 @@ VertexArray::VertexArray()
 
 VertexArray::~VertexArray()
 {
-	Unbind();
+	unbind();
 }
 
-void VertexArray::AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout)
+void VertexArray::add_buffer(const VertexBuffer& vb, const VertexBufferLayout& layout)
 {
-	Bind();
-	vb.Bind();
-	const auto& elements = layout.GetElements();
+	bind();
+	vb.bind();
+	const auto& elements = layout.get_elements();
 	if (elements.empty()) {
-		SPDLOG_WARN("VertexArray::AddBuffer called with empty layout");
+		SPDLOG_WARN("VertexArray::add_buffer called with empty layout");
 	}
 	unsigned int offset = 0;
 	for (unsigned int i = 0; i < elements.size(); i++)
@@ -32,26 +32,26 @@ void VertexArray::AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& la
 
 		if (element.type == GL_UNSIGNED_INT || element.type == GL_INT)
 		{
-			GLCall(glVertexAttribIPointer(attribIndex, element.count, element.type, layout.GetStride(), (const void*)offset));
+			GLCall(glVertexAttribIPointer(attribIndex, element.count, element.type, layout.get_stride(), (const void*)offset));
 		}
 		else
 		{
-			GLCall(glVertexAttribPointer(attribIndex, element.count, element.type, element.normalized, layout.GetStride(), (const void*)offset));
+			GLCall(glVertexAttribPointer(attribIndex, element.count, element.type, element.normalized, layout.get_stride(), (const void*)offset));
 		}
 
-		offset += element.count * VertexBufferElement::GetSizeOfType(element.type);
+		offset += element.count * VertexBufferElement::get_size_of_type(element.type);
 	}
 	m_attrib_index += elements.size();
-	vb.Unbind();
-	Unbind();
+	vb.unbind();
+	unbind();
 }
 
-void VertexArray::Bind() const
+void VertexArray::bind() const
 {
 	GLCall(glBindVertexArray(m_vertex_array_id));
 }
 
-void VertexArray::Unbind() const
+void VertexArray::unbind() const
 {
 	GLCall(glBindVertexArray(0));
 }

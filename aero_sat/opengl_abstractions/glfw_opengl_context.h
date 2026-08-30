@@ -5,7 +5,7 @@
 class GlfwOpenGLContext {
 private:
     GLFWwindow* m_window = nullptr;
-    static bool s_glewInitialized;
+    static bool s_glew_initialized;
 
 public:
     GlfwOpenGLContext(int width, int height, const char* title, bool visible);

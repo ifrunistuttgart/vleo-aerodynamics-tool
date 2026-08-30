@@ -6,54 +6,64 @@
 
 #include "gl_helpers.h"
 
-Shader::Shader(const std::string& vertexSource, const std::string& fragmentSource, bool fromSource)
-    : m_FilePath(""), m_ShaderID(0)
+Shader::Shader(const std::string& vertex_source, const std::string& fragment_source, bool fromSource)
+    : m_file_path(""), m_shader_id(0)
 {
-    m_ShaderID = CreateShader(vertexSource, fragmentSource);
+    m_shader_id = create_shader(vertex_source, fragment_source);
 }
 
 Shader::~Shader()
 {
-    GLCall(glDeleteProgram(m_ShaderID));
+    GLCall(glDeleteProgram(m_shader_id));
 }
 
-void Shader::Bind() const
+void Shader::bind() const
 {
-    GLCall(glUseProgram(m_ShaderID));
+    GLCall(glUseProgram(m_shader_id));
 }
 
-void Shader::Unbind() const
+void Shader::unbind() const
 {
     GLCall(glUseProgram(0));
 }
 
-void Shader::SetUniform4f(const std::string& name, float v0, float v1, float v2, float v3)
+void Shader::set_uniform_4f(const std::string& name, const glm::vec4& vector)
 {
-    GLCall(glUniform4f(GetUniformLocation(name), v0, v1, v2, v3));
+    GLCall(glUniform4f(get_uniform_location(name), vector.x, vector.y, vector.z, vector.w));
 }
 
-void Shader::setUniformMat4f(const std::string& name, const glm::mat4& matrix)
+void Shader::set_uniform_3f(const std::string& name, const glm::vec3& vector)
 {
-    GLCall(glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &matrix[0][0]));
+    GLCall(glUniform3f(get_uniform_location(name), vector.x, vector.y, vector.z));
 }
 
-int Shader::GetUniformLocation(const std::string& name)
+void Shader::set_uniform_mat4f(const std::string& name, const glm::mat4& matrix)
 {
-    if (m_UniformLocationCache.find(name) != m_UniformLocationCache.end())
-        return m_UniformLocationCache[name];
+    GLCall(glUniformMatrix4fv(get_uniform_location(name), 1, GL_FALSE, &matrix[0][0]));
+}
 
-    GLCall(int location = glGetUniformLocation(m_ShaderID, name.c_str()));
+void Shader::set_uniform_mat3f(const std::string& name, const glm::mat3& matrix)
+{
+    GLCall(glUniformMatrix3fv(get_uniform_location(name), 1, GL_FALSE, &matrix[0][0]));
+}
+
+int Shader::get_uniform_location(const std::string& name)
+{
+    if (m_uniform_location_cache.find(name) != m_uniform_location_cache.end())
+        return m_uniform_location_cache[name];
+
+    GLCall(int location = glGetUniformLocation(m_shader_id, name.c_str()));
     if (location == -1)
         SPDLOG_WARN("Uniform '{}' doesn't exist!", name);
-    m_UniformLocationCache[name] = location;
+    m_uniform_location_cache[name] = location;
     return location;
 }
 
-unsigned int Shader::CreateShader(const std::string& vertexShader, const std::string& fragmentShader)
+unsigned int Shader::create_shader(const std::string& vertex_shader, const std::string& fragment_shader)
 {
     unsigned int program = glCreateProgram();
-    unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
-    unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
+    unsigned int vs = compile_shader(GL_VERTEX_SHADER, vertex_shader);
+    unsigned int fs = compile_shader(GL_FRAGMENT_SHADER, fragment_shader);
 
     if (vs == 0 || fs == 0) {
         SPDLOG_ERROR("Shader compilation failed, abort linking");
@@ -74,7 +84,7 @@ unsigned int Shader::CreateShader(const std::string& vertexShader, const std::st
     return program;
 }
 
-unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
+unsigned int Shader::compile_shader(unsigned int type, const std::string& source)
 {
     if (source.empty()) {
 		SPDLOG_ERROR("empty shader source provided for type {}", (type == GL_VERTEX_SHADER ? "vertex" : "fragment"));
