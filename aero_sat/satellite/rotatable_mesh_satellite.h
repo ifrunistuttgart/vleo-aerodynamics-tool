@@ -14,6 +14,7 @@ protected:
 	std::vector<float> m_transformed_vertices;
 	std::vector<float> m_transformed_normals;
 	std::vector<float> m_transformed_centroids;
+	bool m_transforms_outdated = true;
 public:
     RotatableMeshSatellite(std::string file);
     ~RotatableMeshSatellite() = default;
@@ -29,6 +30,14 @@ public:
     int turn_surface_around_axis(const int surface_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) override;
 
 private:
+	/**
+	 * Recomputes the transformed geometry if a surface has been turned since the last call.
+	 *
+	 * All three arrays and the bounding sphere are refreshed together: a force/torque
+	 * evaluation needs all of them, and they share the same model matrices.
+	 */
+	void refresh_transforms();
+
 	/**
 	 * Applies each mesh's model matrix to position data (vertices, centroids).
 	 *

@@ -15,22 +15,32 @@ RotatableMeshSatellite::RotatableMeshSatellite(std::string file)
 }
 
 std::span<const float> RotatableMeshSatellite::get_vertices() {
-	transform_positions(m_vertices, 9, m_transformed_vertices);
+	refresh_transforms();
 	return m_transformed_vertices;
 }
 
 std::span<const float> RotatableMeshSatellite::get_normals() {
-	transform_directions(m_normals, m_transformed_normals);
+	refresh_transforms();
 	return m_transformed_normals;
 }
 
 std::span<const float> RotatableMeshSatellite::get_centroids() {
-	transform_positions(m_centroids, 3, m_transformed_centroids);
+	refresh_transforms();
 	return m_transformed_centroids;
 }
 
 float RotatableMeshSatellite::get_bounding_sphere_radius() {
+	refresh_transforms();
+	return m_bounding_sphere_radius;
+}
+
+void RotatableMeshSatellite::refresh_transforms() {
+	if (!m_transforms_outdated) {
+		return;
+	}
 	transform_positions(m_vertices, 9, m_transformed_vertices);
+	transform_positions(m_centroids, 3, m_transformed_centroids);
+	transform_directions(m_normals, m_transformed_normals);
 
 	float max_distance_squared = 0.0f;
 	for (size_t i = 0; i < m_transformed_vertices.size(); i += 3) {
@@ -38,7 +48,8 @@ float RotatableMeshSatellite::get_bounding_sphere_radius() {
 		max_distance_squared = std::max(max_distance_squared, glm::dot(vertex, vertex));
 	}
 	m_bounding_sphere_radius = std::sqrt(max_distance_squared);
-	return m_bounding_sphere_radius;
+
+	m_transforms_outdated = false;
 }
 
 //TODO meshid statt surface id
@@ -53,8 +64,9 @@ int RotatableMeshSatellite::turn_surface_around_axis(const int surface_id, float
 	glm::mat4 translation_back = glm::translate(glm::mat4(1.0f), glm::vec3(origin[0], origin[1], origin[2]));
 	glm::mat4 transform = translation_back * rotation * translation_to_origin;
 
-	// Applied to the pristine geometry on every getter call, so this is absolute, not incremental.
+	// Applied to the pristine geometry, so this is absolute, not incremental.
 	m_model_matrices[surface_id] = transform;
+	m_transforms_outdated = true;
 	return 0; // Success
 }
 
