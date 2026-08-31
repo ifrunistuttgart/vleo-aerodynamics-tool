@@ -76,9 +76,31 @@ double time_ms(int reps, F&& f) {
     return t[t.size() / 2];
 }
 
+// A pipeline built before a rotation and one built after it must shade the same
+// pose identically. They do not if the model matrices are applied both on the CPU
+// (baked into the uploaded vertices) and again on the GPU. Holding two pipelines
+// at once also exercises the GLFW context reference counting.
+void report_construction_order_invariant(RotatableMeshSatellite& sat) {
+    constexpr unsigned int P = 512;
+    constexpr float ANGLE__RAD = 0.785398163f;
+    const glm::vec3 direction = flow_directions()[1];
+
+    sat.turn_surface_around_axis(0, 0.0f, HINGE_ORIGIN, HINGE_AXIS);
+    ShadingPipeline built_before_rotation(sat, ShadingAlgorithmType::CoP, P);
+
+    sat.turn_surface_around_axis(0, ANGLE__RAD, HINGE_ORIGIN, HINGE_AXIS);
+    ShadingPipeline built_after_rotation(sat, ShadingAlgorithmType::CoP, P);
+
+    const std::uint64_t before = hash_visibility(built_before_rotation.shade(direction));
+    const std::uint64_t after = hash_visibility(built_after_rotation.shade(direction));
+    std::printf("# construction-order invariant: %s\n", before == after ? "MATCH" : "DIFFER");
+}
+
 void run_fingerprint(RotatableMeshSatellite& sat) {
     AeroConditions aero = make_conditions();
     Sentman gsi(1);
+
+    report_construction_order_invariant(sat);
 
     std::printf("# rot alg    P  dir   visible                 hash          Fx            Fy            Fz"
                 "            Tx            Ty            Tz\n");
