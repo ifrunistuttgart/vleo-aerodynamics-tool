@@ -67,4 +67,3 @@ classdef ShadingPipeline < handle
         end
     end
 end
-

@@ -1,11 +1,5 @@
 %% Some interesting use cases VLEO torque computation
 div = "=========================================";
-
-example_dir = fileparts(mfilename('fullpath'));
-matlab_root = fileparts(example_dir);
-addpath(matlab_root);
-addpath(fullfile(matlab_root, 'bin'));
-
 disp(div);
 disp("Starting aerodynamic and shading tests...");
 disp(div);
@@ -16,9 +10,9 @@ rho     = 1e-9; % density
 ao_mass = 16 * 1.6605390689252e-27;
 alpha_e = 0.95;
 
-aero.conditions = AeroSat.core.AeroConditions(rho, T_env, ao_mass);
+aero.conditions = AeroConditions(rho, T_env, ao_mass);
 
-aero.model = AeroSat.gsi.Sentman(1,alpha_e);
+aero.model = Sentman(1,alpha_e);
 disp(div);
 disp("Created Sentman model.");
 disp(div)
@@ -30,7 +24,7 @@ fp.current_folder = fileparts(mfilename('fullpath'));
 fp.obj_file       = fullfile(fp.current_folder, ...
     "geometries/soar_satellite.obj");
 
-satellite.geometry = AeroSat.satellite.RotatableMeshSatellite(fp.obj_file);
+satellite.geometry = RotatableMeshSatellite(fp.obj_file);
 satellite.verts    = satellite.geometry.get_vertices;
 
 % Rotate the upper panel
@@ -41,7 +35,7 @@ satellite.geometry.turn_surface_around_axis( ...
     0, p1.angle, p1.center, p1.axis);
 
 %% Setup Shading Pipeline
-shader = AeroSat.shading.ShadingPipeline(satellite.geometry, 1, 1000);
+shader = ShadingPipeline(satellite.geometry, 1, 1000);
 
 %% Wind Direction
 % Angle of attack (rotation in the body x-z plane) and sideslip angle
@@ -57,7 +51,7 @@ v_rel   = rot_mat * [v_orbital__m_per_s; 0; 0];
 panel_visibility = shader.shade(v_rel);
 
 %% Visualize Panel Visibility Result
-AeroSat.visualization.show_mesh(satellite.geometry, panel_visibility, v_rel);
+show_mesh(satellite.geometry, panel_visibility, v_rel);
 
 %% Torque Sweep Over Full Sphere (Unrotated Panel)
 % Demonstrates why a fast per-direction shading pipeline matters: the
@@ -65,9 +59,9 @@ AeroSat.visualization.show_mesh(satellite.geometry, panel_visibility, v_rel);
 % covering the full sphere. The satellite's left-right symmetry means
 % alpha in [0, 90] deg combined with beta in [0, 180] deg is sufficient
 % to cover every distinct relative-wind direction.
-flat.geometry         = AeroSat.satellite.RotatableMeshSatellite(fp.obj_file);
-flat.shader           = AeroSat.shading.ShadingPipeline(flat.geometry, 1, 1000);
-flat.load_calculator  = AeroSat.aero_load_calculator.HybridAeroLoadCalculator(flat.geometry, flat.shader, aero.model);
+flat.geometry         = RotatableMeshSatellite(fp.obj_file);
+flat.shader           = ShadingPipeline(flat.geometry, 1, 1000);
+flat.load_calculator  = HybridAeroLoadCalculator(flat.geometry, flat.shader, aero.model);
 
 surface_temp__K = 300;
 

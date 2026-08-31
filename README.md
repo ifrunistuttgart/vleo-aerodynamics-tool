@@ -84,17 +84,11 @@ automatically — no `PATH` changes required. Then, in MATLAB:
 ```matlab
 addpath('<repo_root>\matlab')
 addpath('<repo_root>\matlab\bin')
-
-% package-based usage
-sentman_model = AeroSat.gsi.Sentman(1, single(0.9));
-aero_conditions = AeroSat.core.AeroConditions(1.2482e-11, 934.0, 16 * 1.6605390689252e-27);
-
-% legacy unqualified usage still works if you keep the flat files on the path
-% test_sentman
+test_sentman
 ```
 
-See `matlab/` for the package-based example scripts and the compatibility wrappers in
-`matlab/+AeroSat/*`.
+See `matlab/` for the example scripts (`Sentman.m`, `HybridAeroLoadCalculator.m`,
+`RotatableMeshSatellite.m`, `test_sentman.m`).
 
 `MexGateway` only logs warnings/errors by default (per-call INFO logging goes through
 the MATLAB Engine API and is slow). Set `MEX_GATEWAY_LOG_LEVEL=INFO` in the
