@@ -27,7 +27,11 @@ int Storch::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, 
 
     // Direction of lift: perpendicular to velocity, in the plane of normal and velocity
     // lift_dir = -normalize(cross(cross(v_flow, normal), v_flow))
-    glm::vec3 lift_dir = -glm::normalize(glm::cross(glm::cross(v_rel__m_per_s, normal), v_rel__m_per_s));
+    glm::vec3 lift_dir(0.0f);
+    const glm::vec3 flow_normal_cross = glm::cross(v_rel__m_per_s, normal);
+    if (glm::length(flow_normal_cross) > 1e-10f) {
+        lift_dir = -glm::normalize(glm::cross(flow_normal_cross, v_rel__m_per_s));
+    }
     glm::vec3 drag_dir = glm::normalize(v_rel_inv__m_per_s);
 
     const float cos_d = glm::dot(v_rel__m_per_s, normal) / v_rel_magnitude__m_per_s;
