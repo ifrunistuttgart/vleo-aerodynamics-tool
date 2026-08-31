@@ -1,39 +1,43 @@
 #include "rotatable_mesh_satellite.h"
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
 
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
 RotatableMeshSatellite::RotatableMeshSatellite(std::string file)
-	: StaticMeshSatellite(file) {
+	: StaticMeshSatellite(file),
+	  m_transformed_vertices(m_vertices.size()),
+	  m_transformed_normals(m_normals.size()),
+	  m_transformed_centroids(m_centroids.size()) {
 }
 
 std::span<const float> RotatableMeshSatellite::get_vertices() {
-	m_transformed_vertices = apply_transform(m_vertices, 9);
-	return std::span<const float>(m_transformed_vertices.data(), m_transformed_vertices.size());
+	transform_positions(m_vertices, 9, m_transformed_vertices);
+	return m_transformed_vertices;
 }
 
 std::span<const float> RotatableMeshSatellite::get_normals() {
-	m_transformed_normals = apply_transform(m_normals, 3);
-	return std::span<const float>(m_transformed_normals.data(), m_transformed_normals.size());
+	transform_directions(m_normals, m_transformed_normals);
+	return m_transformed_normals;
 }
 
 std::span<const float> RotatableMeshSatellite::get_centroids() {
-	m_transformed_centroids = apply_transform(m_centroids, 3);
-	return std::span<const float>(m_transformed_centroids.data(), m_transformed_centroids.size());
+	transform_positions(m_centroids, 3, m_transformed_centroids);
+	return m_transformed_centroids;
 }
 
 float RotatableMeshSatellite::get_bounding_sphere_radius() {
-	std::vector<float> transformed_vertices = apply_transform(m_vertices, 9);
-	float max_distance = 0.0f;
-	for (size_t i = 0; i < transformed_vertices.size(); i += 3) {
-		float distance = std::sqrt(transformed_vertices[i] * transformed_vertices[i] +
-			transformed_vertices[i + 1] * transformed_vertices[i + 1] +
-			transformed_vertices[i + 2] * transformed_vertices[i + 2]);
-		max_distance = std::max(max_distance, distance);
+	transform_positions(m_vertices, 9, m_transformed_vertices);
+
+	float max_distance_squared = 0.0f;
+	for (size_t i = 0; i < m_transformed_vertices.size(); i += 3) {
+		const glm::vec3 vertex(m_transformed_vertices[i], m_transformed_vertices[i + 1], m_transformed_vertices[i + 2]);
+		max_distance_squared = std::max(max_distance_squared, glm::dot(vertex, vertex));
 	}
-	m_bounding_sphere_radius = max_distance;
+	m_bounding_sphere_radius = std::sqrt(max_distance_squared);
 	return m_bounding_sphere_radius;
 }
 
@@ -43,33 +47,50 @@ int RotatableMeshSatellite::turn_surface_around_axis(const int surface_id, float
 		SPDLOG_ERROR("turn_surface_around_axis invalid surface_id={} (num_surfaces={})", surface_id, m_model_matrices.size());
 		return -1;
 	}
-	// Create rotation matrix
+	// Create rotation matrix (glm::rotate normalizes the axis internally)
 	glm::mat4 translation_to_origin = glm::translate(glm::mat4(1.0f), glm::vec3(-origin[0], -origin[1], -origin[2]));
-	glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), angle__rad, glm::vec3(axis[0], axis[1], axis[2])); //TODO: consider normalizing axis vector
+	glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), angle__rad, glm::vec3(axis[0], axis[1], axis[2]));
 	glm::mat4 translation_back = glm::translate(glm::mat4(1.0f), glm::vec3(origin[0], origin[1], origin[2]));
 	glm::mat4 transform = translation_back * rotation * translation_to_origin;
 
-	// Apply transformation to the specified surface's vertices
+	// Applied to the pristine geometry on every getter call, so this is absolute, not incremental.
 	m_model_matrices[surface_id] = transform;
 	return 0; // Success
 }
 
-std::vector<float> RotatableMeshSatellite::apply_transform(std::span<float> coordinates, int num_entries_per_triangle) {
-	std::vector<float> transformed(coordinates.begin(), coordinates.end());
+void RotatableMeshSatellite::transform_positions(std::span<const float> source, int floats_per_triangle, std::vector<float>& target) const {
+	size_t offset = 0;
+	for (size_t mesh_id = 0; mesh_id < m_model_matrices.size(); ++mesh_id) {
+		const glm::mat4& model = m_model_matrices[mesh_id];
+		const size_t end = offset + static_cast<size_t>(m_num_triangles_per_mesh[mesh_id]) * floats_per_triangle;
 
-	int offset = 0;
-	for (int mesh_id = 0; mesh_id < m_model_matrices.size(); ++mesh_id) {
-		glm::mat4 transform = m_model_matrices[mesh_id];
-
-		for (size_t i = offset; i < (offset + m_num_triangles_per_mesh[mesh_id] * num_entries_per_triangle); i += 3) {
-			glm::vec4 vertex(coordinates[i], coordinates[i + 1], coordinates[i + 2], 1.0f);
-			glm::vec4 transformed_vertex = transform * vertex;
-			transformed[i] = transformed_vertex.x;
-			transformed[i + 1] = transformed_vertex.y;
-			transformed[i + 2] = transformed_vertex.z;
+		for (size_t i = offset; i < end; i += 3) {
+			const glm::vec3 position(model * glm::vec4(source[i], source[i + 1], source[i + 2], 1.0f));
+			target[i] = position.x;
+			target[i + 1] = position.y;
+			target[i + 2] = position.z;
 		}
-		
-		offset += m_num_triangles_per_mesh[mesh_id] * num_entries_per_triangle; // Move to the next mesh's vertices
+		offset = end;
 	}
-	return transformed;
+}
+
+void RotatableMeshSatellite::transform_directions(std::span<const float> source, std::vector<float>& target) const {
+	size_t offset = 0;
+	for (size_t mesh_id = 0; mesh_id < m_model_matrices.size(); ++mesh_id) {
+		// Only the linear block: a direction must not pick up the translation column,
+		// which is (I - R) * origin and therefore non-zero whenever the rotation axis
+		// misses the body origin. The block is a pure rotation, so it is already the
+		// correct normal matrix and preserves unit length; introducing scaling here
+		// would require the inverse transpose instead.
+		const glm::mat3 rotation(m_model_matrices[mesh_id]);
+		const size_t end = offset + static_cast<size_t>(m_num_triangles_per_mesh[mesh_id]) * 3;
+
+		for (size_t i = offset; i < end; i += 3) {
+			const glm::vec3 direction = rotation * glm::vec3(source[i], source[i + 1], source[i + 2]);
+			target[i] = direction.x;
+			target[i + 1] = direction.y;
+			target[i + 2] = direction.z;
+		}
+		offset = end;
+	}
 }

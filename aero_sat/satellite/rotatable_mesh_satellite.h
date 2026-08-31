@@ -29,5 +29,20 @@ public:
     int turn_surface_around_axis(const int surface_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) override;
 
 private:
-	std::vector<float> apply_transform(std::span<float> coordinates, int num_entries_per_triangle);
+	/**
+	 * Applies each mesh's model matrix to position data (vertices, centroids).
+	 *
+	 * @param source Untransformed coordinates, mesh blocks in load order.
+	 * @param floats_per_triangle Number of floats one triangle occupies (9 for vertices, 3 for centroids).
+	 * @param target Pre-sized destination, written in place so previously returned spans stay valid.
+	 */
+	void transform_positions(std::span<const float> source, int floats_per_triangle, std::vector<float>& target) const;
+
+	/**
+	 * Applies each mesh's model matrix to direction data (normals).
+	 *
+	 * Directions transform by the linear block only - unlike a position, a direction
+	 * must not pick up the matrix's translation column.
+	 */
+	void transform_directions(std::span<const float> source, std::vector<float>& target) const;
 };

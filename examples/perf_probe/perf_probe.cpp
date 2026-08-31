@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -82,6 +83,17 @@ void run_fingerprint(RotatableMeshSatellite& sat) {
     std::printf("# rot alg    P  dir   visible                 hash          Fx            Fy            Fz"
                 "            Tx            Ty            Tz\n");
     for (int rotated = 0; rotated <= 1; ++rotated) {
+        // Sentman divides only by |v_rel|, so it requires unit normals. Report how far
+        // the transformed normals drift from unit length in this pose.
+        sat.turn_surface_around_axis(0, rotated ? 0.785398163f : 0.0f, HINGE_ORIGIN, HINGE_AXIS);
+        const auto normals = sat.get_normals();
+        float max_norm_error = 0.0f;
+        for (std::size_t i = 0; i < normals.size(); i += 3) {
+            const glm::vec3 n(normals[i], normals[i + 1], normals[i + 2]);
+            max_norm_error = std::max(max_norm_error, std::abs(glm::length(n) - 1.0f));
+        }
+        std::printf("# rot=%d max abs(|n|-1) over all normals: %.6e\n", rotated, max_norm_error);
+
         for (unsigned int P : {512u, 1024u}) {
             for (int alg = 0; alg <= 1; ++alg) {
                 // Set the pose before the pipeline is built, mirroring soar_rotatable.m.
