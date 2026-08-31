@@ -137,7 +137,7 @@ public:
                 return;
             }
             if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "get_gsi_parameter") {
-                validate_input_size_min(inputs, 4);
+                validate_input_size_min(inputs, 3);
                 validate_argument(inputs, 1, "int", 1);
                 validate_argument(inputs, 2, "string", 1);
                 float value = gsi_map.at(inputs[1][0]).get()->get_gsi_parameter(inputs[2][0]);
