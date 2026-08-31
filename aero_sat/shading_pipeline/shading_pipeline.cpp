@@ -14,7 +14,8 @@ ShadingPipeline::ShadingPipeline(
 	  m_satellite(satellite) {
 	m_context->make_current();
 
-	std::span<const float> vertices = m_satellite.get_vertices();
+	// Model space on purpose: shade_satellite() applies the model matrices on the GPU.
+	std::span<const float> vertices = m_satellite.get_model_space_vertices();
 	std::span<const std::uint32_t> triangleIDs = m_satellite.get_triangle_ids();
 	const int set_vertices_result = m_algorithm->set_vertices(vertices, triangleIDs);
 	if (set_vertices_result != 0) {
