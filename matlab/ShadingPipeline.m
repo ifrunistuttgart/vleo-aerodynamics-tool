@@ -29,6 +29,11 @@ classdef ShadingPipeline < handle
             %       num_pixel         - The resolution (number of pixels) 
             %                           used for the visibility analysis.
             %
+            arguments
+                satellite (1,1) RotatableMeshSatellite
+                shading_algorithm (1,1) int32
+                num_pixel (1,1) int32
+            end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             try
                 this.handle_ = MexGateway("Shading.new", int32(satellite.handle_), int32(shading_algorithm), int32(num_pixel));
@@ -42,6 +47,9 @@ classdef ShadingPipeline < handle
             %
             %   Releases the underlying C++ pipeline object.
             %
+            arguments
+                this (1,1) ShadingPipeline
+            end
             if this.handle_ ~= int32(-1)
                 MexGateway("Shading.delete", int32(this.handle_));
                 this.handle_ = int32(-1);
@@ -63,6 +71,10 @@ classdef ShadingPipeline < handle
             %       visibility - A vector of visibility factors (1.0 = exposed, 
             %                    0.0 = shaded).
             %
+            arguments
+                this (1,1) ShadingPipeline
+                velocity (1,3) double
+            end
             visibility = MexGateway("Shading.shade", int32(this.handle_), velocity);
         end
     end

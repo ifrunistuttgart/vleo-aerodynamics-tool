@@ -26,6 +26,9 @@ classdef RotatableMeshSatellite < handle
             %   Input Arguments:
             %       file_path - Path to the 3D model file (e.g., .obj or .stl).
             %
+            arguments
+                file_path {mustBeTextScalar}
+            end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             this.handle_ = int32(MexGateway("Satellite.new", string(file_path)));
         end
@@ -35,6 +38,9 @@ classdef RotatableMeshSatellite < handle
             %
             %   Releases the underlying C++ satellite object.
             %
+            arguments
+                this (1,1) RotatableMeshSatellite
+            end
             if this.handle_ ~= int32(-1)
                 MexGateway("Satellite.delete", int32(this.handle_));
                 this.handle_ = int32(-1);
@@ -50,6 +56,9 @@ classdef RotatableMeshSatellite < handle
             %   Output Arguments:
             %       vertices - Array of vertex coordinates [3 x N].
             %
+            arguments
+                this (1,1) RotatableMeshSatellite
+            end
             vertices = MexGateway("Satellite.get_vertices", int32(this.handle_));
         end
 
@@ -62,6 +71,9 @@ classdef RotatableMeshSatellite < handle
             %   Output Arguments:
             %       num_triangles - The number of triangles.
             %
+            arguments
+                this (1,1) RotatableMeshSatellite
+            end
             num_triangles = MexGateway("Satellite.get_num_triangles", int32(this.handle_));
         end
 
@@ -77,6 +89,13 @@ classdef RotatableMeshSatellite < handle
             %       origin     - The 3D coordinates [x, y, z] of the rotation origin.
             %       axis       - The 3D vector [x, y, z] defining the axis of rotation.
             %
+            arguments
+                this (1,1) RotatableMeshSatellite
+                surface_id (1,1) int32
+                angle__rad (1,1) double
+                origin (1,3) double
+                axis (1,3) double
+            end
             MexGateway("Satellite.turn_surface_around_axis", int32(this.handle_), int32(surface_id), angle__rad, origin, axis)
         end
     end

@@ -26,6 +26,10 @@ classdef Sentman < handle
             %           between the surface and the incoming flow.
             %       alpha_e - The accommodation coefficient for energy exchange.
             %
+            arguments
+                temperature_ratio_method (1,1) int32
+                alpha_e (1,1) single
+            end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             this.handle_ = int32(MexGateway("Sentman.new", int32(temperature_ratio_method), alpha_e));
         end
@@ -34,6 +38,9 @@ classdef Sentman < handle
             %
             %   Releases the underlying C++ model object.
             %
+            arguments
+                this (1,1) Sentman
+            end
             if this.handle_ ~= int32(-1)
                 MexGateway("Sentman.delete", int32(this.handle_));
                 this.handle_ = int32(-1);
@@ -59,6 +66,15 @@ classdef Sentman < handle
             %       force__N       - Resulting aerodynamic force vector [N].
             %       torque__Nm     - Resulting aerodynamic torque vector [Nm].
             %
+            arguments
+                this (1,1) Sentman
+                area__m2 (1,1) double
+                normal (1,3) double
+                centroid_m (1,3) double
+                v_rel__m_per_s (1,3) double
+                surf_temp__K (1,1) double
+                aero_cond (1,1) AeroConditions
+            end
             [force__N, torque__Nm] = MexGateway("Sentman.calc_aero_force_torque", int32(this.handle_), area__m2, normal, centroid_m, v_rel__m_per_s, surf_temp__K, int32(aero_cond.handle_));
         end
         function alpha_e = get_alpha_e(this)
@@ -67,6 +83,9 @@ classdef Sentman < handle
             %   alpha_e = get_alpha_e(this) retrieves the alpha_e parameter from
             %   the underlying sentman model.
             %
+            arguments
+                this (1,1) Sentman
+            end
             alpha_e = MexGateway("Sentman.get_gsi_parameter", int32(this.handle_), "alpha_e");
         end
         function set_alpha_e(this, alpha_e)
@@ -75,6 +94,10 @@ classdef Sentman < handle
             %   set_alpha_e(this, alpha_e) sets the alpha_e parameter in
             %   the underlying sentman model.
             %
+            arguments
+                this (1,1) Sentman
+                alpha_e (1,1) single
+            end
             MexGateway("Sentman.set_gsi_parameter", int32(this.handle_), "alpha_e", alpha_e);
         end
     end

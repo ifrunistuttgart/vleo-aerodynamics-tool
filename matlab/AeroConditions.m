@@ -36,25 +36,37 @@ classdef AeroConditions < handle
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             this.handle_ = int32(MexGateway("AeroCond.new", density__kg_per_m3, T_atmospheric__K, particle_mass__kg));
         end
-        function this = setDensity(density__kg_per_m3)
+        function setDensity(this, density__kg_per_m3)
             % SETDENSITY Sets the atmospheric density.
             %
             %   obj.setDensity(density) sets the atmospheric density [kg/m^3].
             %
-            MexGateway("AeroCond.set_", int32(this.handle_), density__kg_per_m3);
+            arguments
+                this (1,1) AeroConditions
+                density__kg_per_m3 (1,1) double
+            end
+            MexGateway("AeroCond.set_density", int32(this.handle_), density__kg_per_m3);
         end
-        function this = setTatmospheric(this, T_atmospheric__K)
+        function setTatmospheric(this, T_atmospheric__K)
             % SETTATMOSPHERIC Sets the atmospheric temperature.
             %
             %   obj.setTatmospheric(temperature) sets the atmospheric temperature [K].
             %
+            arguments
+                this (1,1) AeroConditions
+                T_atmospheric__K (1,1) double
+            end
             MexGateway("AeroCond.set_T_atmospheric", int32(this.handle_), T_atmospheric__K);
         end
-        function this = setParticleMass(this, particle_mass__kg)
+        function setParticleMass(this, particle_mass__kg)
             % SETPARTICLEMASS Sets the mean particle mass of the atmosphere.
             %
             %   obj.setParticleMass(mass) sets the mean particle mass [kg].
             %
+            arguments
+                this (1,1) AeroConditions
+                particle_mass__kg (1,1) double
+            end
             MexGateway("AeroCond.set_particle_mass", int32(this.handle_), particle_mass__kg);
         end
         function delete(this)
@@ -62,6 +74,9 @@ classdef AeroConditions < handle
             %
             %   Releases the underlying C++ AeroConditions object.
             %
+            arguments
+                this (1,1) AeroConditions
+            end
             if this.handle_ ~= int32(-1)
                 MexGateway("AeroCond.delete", int32(this.handle_));
                 this.handle_ = int32(-1);

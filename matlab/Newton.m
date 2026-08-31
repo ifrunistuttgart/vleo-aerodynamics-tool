@@ -26,6 +26,9 @@ classdef Newton < handle
             %
             %   Releases the underlying C++ model object.
             %
+            arguments
+                this (1,1) Newton
+            end
             if this.handle_ ~= int32(-1)
                 MexGateway("Newton.delete", int32(this.handle_));
                 this.handle_ = int32(-1);
@@ -51,6 +54,15 @@ classdef Newton < handle
             %       force__N       - Resulting aerodynamic force vector [N].
             %       torque__Nm     - Resulting aerodynamic torque vector [Nm].
             %
+            arguments
+                this (1,1) Newton
+                area__m2 (1,1) double
+                normal (1,3) double
+                centroid_m (1,3) double
+                v_rel__m_per_s (1,3) double
+                surf_temp__K (1,1) double
+                aero_cond (1,1) AeroConditions
+            end
             [force__N, torque__Nm] = MexGateway("Newton.calc_aero_force_torque", int32(this.handle_), area__m2, normal, centroid_m, v_rel__m_per_s, surf_temp__K, int32(aero_cond.handle_));
         end
     end
