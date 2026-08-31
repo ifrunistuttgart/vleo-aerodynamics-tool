@@ -30,4 +30,5 @@ public:
 
 private:
 	std::vector<float> apply_transform(std::span<float> coordinates, int num_entries_per_triangle);
+	std::vector<float> apply_normal_transform(std::span<float> normals, int num_entries_per_triangle);
 };
