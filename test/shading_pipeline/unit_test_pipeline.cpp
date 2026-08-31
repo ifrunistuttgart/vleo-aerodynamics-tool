@@ -20,6 +20,10 @@ public:
         return std::span<const float>(vertices.data(), vertices.size());
     }
 
+    std::span<const float> get_raw_vertices() override {
+        return std::span<const float>(vertices.data(), vertices.size());
+    }
+
     std::span<const std::uint32_t> get_triangle_ids() override {
         return std::span<const std::uint32_t>(triangleIDs.data(), triangleIDs.size());
     }
@@ -57,8 +61,7 @@ TEST(ShadingPipelineTests, TestShading) {
     FakeSatelliteData sat;
     ShadingPipeline pipeline(sat, ShadingAlgorithmType::Binary, 800);
 
-    std::vector<float> isTriangleVisible(triangleIDs.size(), 0.0f);
-    pipeline.shade(std::span<float>(isTriangleVisible), glm::vec3(1.0f, 0.0f, 0.0f));
+    std::vector<float> isTriangleVisible = pipeline.shade(glm::vec3(1.0f, 0.0f, 0.0f));
 
     EXPECT_NEAR(isTriangleVisible[0], 0.0f, 1e-5);
     EXPECT_NEAR(isTriangleVisible[1], 0.0f, 1e-5);

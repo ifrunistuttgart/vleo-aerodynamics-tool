@@ -1,0 +1,21 @@
+# Tetrahedron geometry
+# 4 vertices
+
+v 0.0 -0.5 0.0
+v 0.0 0.5 0.0
+v 0.0 0.0 0.5
+v -0.5 0.0 0.0
+
+# 4 triangular faces
+
+# Face 1: bottom (v0, v1, v3)
+f 1 4 2
+
+# Face 2: right back (v1, v2, v3)
+f 2 4 3
+
+# Face 3: left back (v2, v0, v3)
+f 3 4 1
+
+# Face 4: front (v0, v2, v1)
+f 1 2 3

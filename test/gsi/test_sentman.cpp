@@ -11,22 +11,21 @@ protected:
     AeroConditions create_leo_conditions() {
         AeroConditions cond;
         cond.density__kg_per_m3 = 1.2482e-11f;
-        cond.temperature__K = 934.0f;            // Exospheric temperature
+        cond.T_atmospheric__K = 934.0f;          // Exospheric temperature
         cond.particle_mass__kg = 16 * 1.6605390689252e-27f;       // Atomic oxygen mass
-        cond.alpha_e = 0.9f;                      // Energy accommodation coefficient
         return cond;
     }
 };
 
 // Constructor Tests
 TEST_F(SentmanTest, Constructor_ValidMethods_Construct) {
-    EXPECT_NO_THROW(Sentman{ 1 });
-    EXPECT_NO_THROW(Sentman{ 2 });
-    EXPECT_NO_THROW(Sentman{ 3 });
+    EXPECT_NO_THROW({ Sentman s(1, 0.9f); });
+    EXPECT_NO_THROW({ Sentman s(2, 0.9f); });
+    EXPECT_NO_THROW({ Sentman s(3, 0.9f); });
 }
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
     // Arrange
-    Sentman sentman{ 1 };
+    Sentman sentman{ 1, 0.9f };
     glm::vec3 normal(0.0f, 0.0f, -1.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(-0.166667f, 0.0f, 0.0f);
@@ -54,7 +53,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
 
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
     // Arrange
-    Sentman sentman{ 1 };
+    Sentman sentman{ 1, 0.9f };
     glm::vec3 normal(1.0f, 0.0f, 0.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(0.0f, 0.0f, 0.1666667f);
@@ -81,7 +80,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
 }
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
     // Arrange
-    Sentman sentman{ 2 };
+    Sentman sentman{ 2, 0.9f };
     glm::vec3 normal(1.0f, 1.0f, 0.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(1.0f, 1.0f, 1.0f);
@@ -109,7 +108,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
 
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod3) {
     // Arrange
-    Sentman sentman{ 3 };
+    Sentman sentman{ 3, 0.9f };
     glm::vec3 normal(1.0f, 1.0f, 0.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(1.0f, 1.0f, 1.0f);
