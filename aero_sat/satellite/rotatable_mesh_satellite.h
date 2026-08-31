@@ -20,6 +20,8 @@ public:
 
     std::span<const float> get_vertices() override;
 
+    std::span<const float> get_raw_vertices() override;
+
     std::span<const float> get_normals() override;
 
     std::span<const float> get_centroids() override;

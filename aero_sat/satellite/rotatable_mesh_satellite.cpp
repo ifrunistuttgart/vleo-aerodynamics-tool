@@ -14,6 +14,10 @@ std::span<const float> RotatableMeshSatellite::get_vertices() {
 	return std::span<const float>(m_transformed_vertices.data(), m_transformed_vertices.size());
 }
 
+std::span<const float> RotatableMeshSatellite::get_raw_vertices() {
+	return std::span<const float>(m_vertices.data(), m_vertices.size());
+}
+
 std::span<const float> RotatableMeshSatellite::get_normals() {
 	m_transformed_normals = apply_normal_transform(m_normals, 3);
 	return std::span<const float>(m_transformed_normals.data(), m_transformed_normals.size());
