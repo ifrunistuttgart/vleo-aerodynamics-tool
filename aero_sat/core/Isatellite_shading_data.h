@@ -15,11 +15,23 @@ public:
     virtual ~ISatelliteShadingData() = default;
 
     /**
-     * Retrieves the vertex positions of the satellite's meshes.
+     * Retrieves the vertex positions of the satellite's meshes, with each mesh's
+     * model matrix already applied.
      *
      * @return A span containing vertex positions (x, y, z triplets).
      */
     virtual std::span<const float> get_vertices() = 0;
+
+    /**
+     * Retrieves the vertex positions in model space, i.e. without the model matrices applied.
+     *
+     * Intended for consumers that apply get_model_matrices() themselves, such as the
+     * shading pipeline, which uploads the geometry once and transforms it on the GPU.
+     * Using get_vertices() there would apply the rotation twice.
+     *
+     * @return A span containing vertex positions (x, y, z triplets).
+     */
+    virtual std::span<const float> get_model_space_vertices() = 0;
 
     /**
      * Retrieves the triangle IDs for the satellite's meshes.
