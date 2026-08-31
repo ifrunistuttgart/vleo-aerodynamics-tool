@@ -5,6 +5,7 @@ find_package(GLEW REQUIRED)
 
 target_sources(shading_pipeline PRIVATE
     compute_shader.cpp
+    visibility_reducer.cpp
     glfw_opengl_context.cpp
     gl_helpers.cpp
     index_buffer.cpp
@@ -12,6 +13,7 @@ target_sources(shading_pipeline PRIVATE
     vertex_array.cpp
     vertex_buffer.cpp
     compute_shader.h
+    visibility_reducer.h
     frame_buffer.cpp
     glfw_opengl_context.h
     gl_helpers.h
