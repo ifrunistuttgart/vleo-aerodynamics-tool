@@ -68,7 +68,9 @@ int SchaafChambre::calc_aero_force_and_torque(float area__m2, const glm::vec3 &n
     const float ctau = ((m_sigma_t * sin_d) / (s * sqrt_pi)) * (exp_term + s * sqrt_pi * cos_d * erf_term);
 
     const float cd = cp * cos_d + ctau * sin_d;
-    const float cl = cp * sin_d + ctau * cos_d;
+    // Shear acts downstream of the surface, so the tangential term subtracts from
+    // lift: cd = cp*cos_d + ctau*sin_d,  cl = cp*sin_d - ctau*cos_d
+    const float cl = cp * sin_d - ctau * cos_d;
 
     const float q = 0.5f * density__kg_per_m3 * v_rel_magnitude__m_per_s * v_rel_magnitude__m_per_s;
 
