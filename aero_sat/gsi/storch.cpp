@@ -15,6 +15,10 @@ int Storch::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, 
     aero_force__N = glm::vec3(0.0f);
     aero_torque__Nm = glm::vec3(0.0f);
 
+    if(glm::dot(v_rel__m_per_s, normal)< 0.0f) {
+        return 0; // No aerodynamic force if the surface is facing away from the flow
+    }
+
     // Extract aerodynamic conditions
     const float density__kg_per_m3 = aero.density__kg_per_m3;
     glm::vec3 v_rel_inv__m_per_s = -v_rel__m_per_s; // Invert velocity to match GSIMs convention (velocity of gas relative to surface)
