@@ -11,7 +11,10 @@ project (AeroSat)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(BUILD_MATLAB_BINDINGS "Build MATLAB bindings for Sentman" OFF)
+option(BUILD_MATLAB_BINDINGS "Build MATLAB bindings" OFF)
+
+# Keep SPDLOG_DEBUG active in all build configurations (including Release)
+add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
 
 add_subdirectory("aero_sat")
 add_subdirectory("examples")

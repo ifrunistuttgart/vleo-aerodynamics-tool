@@ -27,7 +27,7 @@ classdef Sentman < handle
             %       alpha_e - The accommodation coefficient for energy exchange.
             %
             arguments
-                temperature_ratio_method (1,1) int32
+                temperature_ratio_method (1,1) {mustBeMember(temperature_ratio_method, [1, 2, 3])}
                 alpha_e (1,1) single
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
@@ -68,11 +68,11 @@ classdef Sentman < handle
             %
             arguments
                 this (1,1) Sentman
-                area__m2 (1,1) double
+                area__m2 (1,1) double {mustBePositive}
                 normal (1,3) double
                 centroid_m (1,3) double
                 v_rel__m_per_s (1,3) double
-                surf_temp__K (1,1) double
+                surf_temp__K (1,1) double {mustBePositive}
                 aero_cond (1,1) AeroConditions
             end
             [force__N, torque__Nm] = MexGateway("Sentman.calc_aero_force_torque", int32(this.handle_), area__m2, normal, centroid_m, v_rel__m_per_s, surf_temp__K, int32(aero_cond.handle_));
