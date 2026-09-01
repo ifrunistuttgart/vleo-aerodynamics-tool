@@ -265,7 +265,8 @@ public:
                 if (cmd == "set_density") {
                     validate_input_size(inputs, 3);
                     validate_argument(inputs, 1, "int", 1);
-                    validate_argument(inputs, 2, "float", 1);
+                    // double, matching AeroCond.new and the (1,1) double in AeroConditions.m
+                    validate_argument(inputs, 2, "double", 1);
                     const int id = inputs[1][0];
                     aero_conditions_map.at(id)->density__kg_per_m3 = inputs[2][0];
                     return;
@@ -273,7 +274,8 @@ public:
                 if (cmd == "set_T_atmospheric") {
                     validate_input_size(inputs, 3);
                     validate_argument(inputs, 1, "int", 1);
-                    validate_argument(inputs, 2, "float", 1);
+                    // double, matching AeroCond.new and the (1,1) double in AeroConditions.m
+                    validate_argument(inputs, 2, "double", 1);
                     const int id = inputs[1][0];
                     aero_conditions_map.at(id)->T_atmospheric__K = inputs[2][0];
                     return;
@@ -281,7 +283,8 @@ public:
                 if (cmd == "set_particle_mass") {
                     validate_input_size(inputs, 3);
                     validate_argument(inputs, 1, "int", 1);
-                    validate_argument(inputs, 2, "float", 1);
+                    // double, matching AeroCond.new and the (1,1) double in AeroConditions.m
+                    validate_argument(inputs, 2, "double", 1);
                     const int id = inputs[1][0];
                     aero_conditions_map.at(id)->particle_mass__kg = inputs[2][0];
                     return;
