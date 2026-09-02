@@ -1,3 +1,4 @@
+
 > **For the original MATLAB/panel-method implementation** described in
 > Geyer et al., *"Aerodynamic attitude control of very-low-earth-orbit
 > satellites: simulative analysis and insights into nonlinear system
@@ -7,162 +8,158 @@
 > (see tag [`paper-v1.0`](../../releases/tag/paper-v1.0)). Development has
 > since moved to a faster, GPU-accelerated toolbox
 
-# AeroSat Toolbox
+# VLEO Aerodynamics Tool (VAT)
 
-Modular C++ toolbox for aerodynamic analysis of VLEO satellites, combining
-computer-graphics-based surface visibility (shading) with gas-surface interaction (GSI)
-models.
+The VLEO Aerodynamics Tool provides algorithms for fast calculations of panel shadowing and force/torque calculations in free-molecular flow (FMF) conditions based on classical graphics pipelines ([OpenGL](https://www.opengl.org/)).
 
-Built for research workflows where many configurations must be evaluated efficiently —
-attitude changes, flow directions, atmospheric conditions, model parameters.
 
-## Scientific Goal
+![A CubeSat with deployed panels, showing the resulting drag and lift vectors](docs/figures/toolbox-visualized-annotated.png)
 
-Initialize geometry/model data once, then compute aerodynamic force and torque quickly
-for many parameter combinations.
+## Main features
+- **Six GSI models**, interchangeable at runtime: Sentman, Maxwell, Cook, Schaaf–Chambre,
+  Storch, Newton.
+- **Two shading algorithms**, Binary and CoP, with the raster resolution as a single
+  accuracy/runtime knob.
+- **Articulated geometry** — individual meshes (solar arrays, panels for aerodynamic actuation) can be rotated
+  about an arbitrary hinge axis between evaluations.
+- **A C++20 library and MATLAB bindings** over the same pipeline, so exploratory work in MATLAB
+  and production sweeps in C++ give identical numbers.
 
-Typical target applications:
-- Comparative studies of GSI models
-- Sensitivity analyses for atmosphere/surface parameters
-- Fast generation of aerodynamic loads for simulation pipelines (e.g. Sadycos coupling)
-- Method development for GPU-based shading and force/torque acceleration
 
-Researcher-oriented use cases:
-- Implement and benchmark new aerodynamic/GSI models
-- Implement new shading algorithms (CPU or GPU)
-- Implement alternative aggregation methods for total force/torque
-- Load custom satellite geometries (including `.urdf` workflows)
-- Run sweeps over orientation, flow vector, and environment parameters
-- Integrate aerodynamic load computation into external simulation frameworks
+## Why VAT is so fast
+This toolbox does the visibility test (*shadowing analysis*) on the GPU, by rasterizing the mesh along the flow direction.
+Geometry and models are initialized once; each subsequent change in flow direction or mesh rotation costs one render pass plus a per-triangle GSI evaluation. This removes the need for precomputation ("Databases").
 
-## Building
+One computation takes about 1 to 20 ms, depending on geometry and number of pixels.
 
-### **Prerequisites**
-- dependency manager, either of following:
-  - [pixi](https://pixi.sh) — the only tool you install manually. It provisions
-    everything else (CMake, Ninja, compiler, VTK, assimp, GLEW, GLFW, glm, spdlog) into a
-    project-local environment.
-  - [vcpkg](https://vcpkg.io/en/) - needed if you don't want to use pixi 
-- **Windows only:** Visual Studio 2022 Build Tools (C++ workload). conda-forge can
-  locate an installed compiler but can't redistribute `cl.exe` itself, so this one step
-  stays manual.
-- **Optional:** MATLAB R2024a or later — only needed for the MATLAB bindings.
 
-### **Build and run**
-### **Pixi**
+
+## Requirements
+
+- **Windows 10/11.** (Linux/MacOS support is WIP)
+- **Visual Studio 2022 Build Tools** (C++ workload). The one dependency you install by hand:
+  conda-forge can locate an installed compiler but may not redistribute `cl.exe` itself.
+- **A GPU and driver supporting OpenGL 4.3 core profile.** The shading pipeline requires it.
+- **[pixi](https://pixi.sh)**, which provisions everything else — CMake, Ninja, VTK, assimp,
+  GLEW, GLFW, glm, spdlog — into a project-local environment.
+- **MATLAB R2024a or newer**, optional, only for the MATLAB bindings.
+
+## Install and run
+
+### C++
+
 ```powershell
-pixi install                                  # one-time: resolves and downloads all dependencies
-pixi run build                                # configure + build the core toolbox and all examples
-pixi run run-example import_and_visualize     # run an example (see examples/)
+pixi install                                   # one-time: resolve and download dependencies
+pixi run build                                 # build the library and examples
+pixi run run-example compute_force_and_torque  # force/torque on a shuttlecock geometry
+pixi run run-example import_and_visualize      # load a mesh and view it
 ```
 
-Two things worth knowing:
-- The build type is `RelWithDebInfo`, not `Debug`. conda-forge's Windows packages are
-  Release-only (`/MD`); a `Debug` build (`/MDd`) corrupts memory across the DLL boundary
-  between your code and theirs.
-- Always launch built executables via `pixi run run-example <name>` (or from a `pixi
-  shell`), not by running the `.exe` directly — its DLLs live inside the pixi
-  environment, not on your normal `PATH`.
 
-Linux and macOS are supported by the same `pixi.toml`/`pixi.lock`, but only the Windows
-path has been fully verified so far.
 
-If you prefer VS Code's CMake Tools UI over the `pixi run` tasks, the same setup is
-available as CMake presets: `pixi-debug`, `pixi-release`, `pixi-debug-matlab`.
+## How it works
 
-**MATLAB bindings**
+![The satellite, the flow vector, and the raster grid used for the visibility test](docs/figures/toolbox-visualized-annotated.png)
 
-Off by default — building the core toolbox never requires MATLAB.
+An orthographic camera is placed along the flow direction, looking at the satellite, and the
+mesh is rendered into an `n_pixels × n_pixels` buffer in which each triangle draws its own ID.
+Any triangle whose ID survives to the final image is exposed to the flow; anything hidden behind
+another part of the spacecraft is not. The GSI model is then evaluated per triangle, weighted by
+that visibility, and summed into a total force and torque.
+
+`num_pixel` is the accuracy knob: higher resolution resolves finer geometry, at the cost of
+render time.
+
+**Flow direction convention.** `v_rel_B__m_per_s` is the velocity of the *satellite relative to
+the atmosphere*, expressed in the body frame — the orange vector above.
+
+## Minimal example (C++)
+
+```cpp
+auto satellite = std::make_unique<RotatableMeshSatellite>("shuttlecock_15k.obj");
+auto gsi_model = std::make_unique<Sentman>(1, 0.9f);   // temperature ratio method, alpha_e
+
+// The pipeline is built once; shading any further direction is then cheap.
+auto pipeline = std::make_unique<ShadingPipeline>(
+    *satellite, ShadingAlgorithmType::CoP, /*num_pixel=*/4000);
+
+auto calculator = std::make_unique<HybridForceTorqueCalculator>(
+    *satellite, *pipeline, *gsi_model);
+
+AeroConditions conditions{
+    .density__kg_per_m3 = 1.2482e-11f,
+    .T_atmospheric__K   = 934.0f,
+    .particle_mass__kg  = 16 * 1.6605390689252e-27f,
+};
+
+glm::vec3 v_rel__m_per_s(0.0f, -7800.0f, 0.0f);
+glm::vec3 force__N(0.0f), torque__Nm(0.0f);
+calculator->calc_aero_torque_force(
+    v_rel__m_per_s, /*surface_temp__K=*/300.0f, conditions, torque__Nm, force__N);
+```
+
+The full program, including visualization of the shading result, is in
+[examples/compute_force_and_torque/](examples/compute_force_and_torque/).
+
+## From MATLAB
+
+The bindings are off by default — building the core library never requires MATLAB.
 
 ```powershell
 pixi run build-matlab
 ```
 
-This builds `matlab/bin/MexGateway.mexw64` together with every DLL it needs, copied in
-automatically — no `PATH` changes required. Then, in MATLAB:
+This produces `matlab/bin/MexGateway.mexw64` together with every DLL it needs, copied in
+alongside it, so no `PATH` changes are required. Then, in MATLAB:
 
 ```matlab
 addpath('<repo_root>\matlab')
 addpath('<repo_root>\matlab\bin')
-test_sentman
+cd('<repo_root>\matlab\examples')
+quickstart
 ```
 
-See `matlab/` for the example scripts (`Sentman.m`, `HybridAeroLoadCalculator.m`,
-`RotatableMeshSatellite.m`, `test_sentman.m`).
+[quickstart.m](matlab/examples/quickstart.m) walks through the whole path — atmosphere, GSI
+model, geometry, shading, force and torque — and ends by visualizing which surfaces the flow
+reached. [soar_rotatable.m](matlab/examples/soar_rotatable.m) goes further, sweeping the
+aerodynamic torque over a full sphere of flow directions with one panel deflected.
 
-`MexGateway` only logs warnings/errors by default (per-call INFO logging goes through
-the MATLAB Engine API and is slow). Set `MEX_GATEWAY_LOG_LEVEL=INFO` in the
-environment before starting MATLAB to see per-call logs — no rebuild needed.
+Logging defaults to DEBUG, which is slow because every message crosses into the MATLAB engine.
+Turn it down with `setLogLevel("warn")` before benchmarking.
 
-### **vcpkg**
-Vcpkg is used in manifest mode. The repository contains a `vcpkg.json` and `vcpkg-configuration.json` to record and reproduce the dependency set.
+## Gas–surface interaction models
 
-**Notes and tips:**
-- Before configuring, ensure your vcpkg installation is available and (when using the presets) that the presets point to the correct vcpkg toolchain file. The presets in `CMakePresets.json` set the toolchain for you when they are used.
-- Typical workflow (PowerShell, from project root):
+All six implement the same `IGSIModel` interface and can be substituted for one another without
+touching the rest of the pipeline. Parameters can also be set by name at runtime, via
+`set_gsi_parameter` / `get_gsi_parameter`.
 
-```powershell
-# configure via preset (example)
-cmake --preset x64-debug
+| Model | Constructor | Parameters |
+|---|---|---|
+| `Sentman` | `Sentman(temperature_ratio_method, alpha_e)` | energy accommodation |
+| `Maxwell` | `Maxwell(alpha_e)` | energy accommodation |
+| `Cook` | `Cook(alpha_e)` | energy accommodation |
+| `SchaafChambre` | `SchaafChambre(sigma_n, sigma_t)` | normal and tangential momentum accommodation |
+| `Storch` | `Storch(V_w, sigma_n, sigma_t)` | wall velocity, normal and tangential momentum accommodation |
+| `Newton` | `Newton()` | none |
 
-# build
-cmake --build out/build/x64-debug --config Debug -- -j 8
-```
 
-- Enable MATLAB bindings when you have MATLAB installed by configuring with the CMake option `-DBUILD_MATLAB_BINDINGS=ON` (the top-level `CMakeLists.txt` exposes this option).
-- Enable tests with the usual CTest/CMake testing options (tests live in `test/` and use GoogleTest).
-- An IDE solution file is generated by the presets/build (for example `AeroSat.slnx` appears under the configured build directory when using the Visual Studio generator).
+## Status
 
-### Tests
+Actively developed research code. Be aware, bugs might still exist.
 
-`test/` contains GoogleTest-based tests, but they aren't wired into the CMake build yet.
+## Citation
 
-## Architecture Overview
+If VAT contributes to published work, please cite:
 
-A small modular C++ library (root: `aero_sat/`) with separate responsibilities so
-individual parts can be swapped or extended with minimal friction.
+> Geyer et al., *"Aerodynamic attitude control of very-low-earth-orbit satellites: simulative
+> analysis and insights into nonlinear system properties,"* CEAS Space Journal (2025).
+> [doi.org/10.1007/s12567-025-00684-x](https://doi.org/10.1007/s12567-025-00684-x)
 
-- `aero_sat/core/` — core interfaces, common data types, small utilities.
-- `aero_sat/aero_load_calculator/` — load/force/torque aggregation, gluing shading + GSI
-  models into a final aerodynamic result.
-- `aero_sat/gsi/` — gas–surface interaction models (Sentman, Schuette scaffolding, and
-  any future models).
-- `aero_sat/satellite/` — mesh/geometry loaders and satellite abstractions (rotatable
-  meshes).
-- `aero_sat/shading_pipeline/` — occlusion/shading implementations, including an OpenGL
-  backend under `opengl/`.
-- `aero_sat/visualization/` — optional VTK-based viewers used by the examples.
-- `examples/` — small standalone example programs (one per subfolder) demonstrating
-  toolbox usage, e.g. `examples/import_and_visualize/`.
-- `matlab/` — MATLAB MEX gateway and example/test scripts.
-- `test/` — unit and integration tests (GoogleTest).
-
-Design notes:
-- Interface-first, strategy-style composition: shading, GSI, and aggregation are
-  decoupled so any one of them can be replaced independently.
-- Shading backends are intentionally separate from load calculation; shading can run on
-  CPU or GPU and be substituted via the pipeline interfaces.
-
-## Conventions
-
-**Logging**: `spdlog` is used across the project.
-
-**Naming** (PEP 8-inspired, adapted for C++):
-- Classes: PascalCase (`Satellite`)
-- Interfaces: PascalCase with `I` prefix (`ISatellite`)
-- Functions, variables, member variables: snake_case (`calculate_drag`, `drag_coefficient`)
-- Constants: UPPER_SNAKE_CASE (`PI`)
-- Folders and files: snake_case
-
-**Units in identifiers**:
-- `__` separates a variable name from its unit suffix
-- `_per_` for fractional units, e.g. `__m_per_s`
-- Exponents go directly after the unit symbol, e.g. `__m2`
-
-**Velocity definition**: the incoming molecular stream velocity is defined in the
-satellite's body frame and referenced as `v_rel_B__m_per_s`:
-
-![velocity_definition.png](velocity_definition.png)
+That paper describes the original MATLAB panel-method implementation, which lives on the
+[`legacy-matlab-panel-method`](https://github.com/ifrunistuttgart/vleo-aerodynamics-tool/tree/legacy-matlab-panel-method)
+branch at tag [`paper-v1.0`](https://github.com/ifrunistuttgart/vleo-aerodynamics-tool/releases/tag/paper-v1.0).
+Use that branch to reproduce the
+paper; this one is its GPU-accelerated successor.
 
 ## License
 
