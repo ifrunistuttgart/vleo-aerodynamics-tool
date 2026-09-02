@@ -21,6 +21,11 @@ add_compile_definitions(
         $<$<CONFIG:Release>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO>
 )
 
+add_compile_definitions(
+        $<$<CONFIG:RelWithDebInfo>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>
+        $<$<CONFIG:Release>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO>
+)
+
 add_subdirectory("aero_sat")
 add_subdirectory("examples")
 
