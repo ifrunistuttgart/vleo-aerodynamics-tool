@@ -37,8 +37,7 @@ protected:
 TEST_F(ShadingPipelineIntegrationTest, TestShading) {
     ShadingPipeline pipeline(*satellite, ShadingAlgorithmType::Binary, 800);
 
-    std::vector<float> isTriangleVisible(satellite->get_num_triangles(), 0.0f);
-    pipeline.shade(std::span<float>(isTriangleVisible), glm::vec3(1.0f, 0.0f, 0.0f));
+    std::vector<float> isTriangleVisible = pipeline.shade(glm::vec3(1.0f, 0.0f, 0.0f));
 
     EXPECT_NEAR(isTriangleVisible[0], 0.0f, 1e-5);
     EXPECT_NEAR(isTriangleVisible[1], 0.0f, 1e-5);

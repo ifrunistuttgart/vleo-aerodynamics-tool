@@ -47,6 +47,9 @@ classdef ShadingPipeline < handle
             %
             %   Releases the underlying C++ pipeline object.
             %
+            arguments
+                this (1,1) ShadingPipeline
+            end
             if this.handle_ ~= int32(-1)
                 MexGateway("Shading.delete", int32(this.handle_));
                 this.handle_ = int32(-1);

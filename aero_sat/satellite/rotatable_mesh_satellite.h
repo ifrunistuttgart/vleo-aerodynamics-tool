@@ -20,6 +20,8 @@ public:
 
     std::span<const float> get_vertices() override;
 
+    std::span<const float> get_raw_vertices() override;
+
     std::span<const float> get_normals() override;
 
     std::span<const float> get_centroids() override;
@@ -30,4 +32,5 @@ public:
 
 private:
 	std::vector<float> apply_transform(std::span<float> coordinates, int num_entries_per_triangle);
+	std::vector<float> apply_normal_transform(std::span<float> normals, int num_entries_per_triangle);
 };

@@ -14,8 +14,12 @@ std::span<const float> RotatableMeshSatellite::get_vertices() {
 	return std::span<const float>(m_transformed_vertices.data(), m_transformed_vertices.size());
 }
 
+std::span<const float> RotatableMeshSatellite::get_raw_vertices() {
+	return std::span<const float>(m_vertices.data(), m_vertices.size());
+}
+
 std::span<const float> RotatableMeshSatellite::get_normals() {
-	m_transformed_normals = apply_transform(m_normals, 3);
+	m_transformed_normals = apply_normal_transform(m_normals, 3);
 	return std::span<const float>(m_transformed_normals.data(), m_transformed_normals.size());
 }
 
@@ -70,6 +74,26 @@ std::vector<float> RotatableMeshSatellite::apply_transform(std::span<float> coor
 		}
 		
 		offset += m_num_triangles_per_mesh[mesh_id] * num_entries_per_triangle; // Move to the next mesh's vertices
+	}
+	return transformed;
+}
+
+std::vector<float> RotatableMeshSatellite::apply_normal_transform(std::span<float> normals, int num_entries_per_triangle) {
+	std::vector<float> transformed(normals.begin(), normals.end());
+
+	int offset = 0;
+	for (int mesh_id = 0; mesh_id < m_model_matrices.size(); ++mesh_id) {
+		glm::mat3 normal_transform = glm::transpose(glm::inverse(glm::mat3(m_model_matrices[mesh_id])));
+
+		for (size_t i = offset; i < (offset + m_num_triangles_per_mesh[mesh_id] * num_entries_per_triangle); i += 3) {
+			glm::vec3 normal(normals[i], normals[i + 1], normals[i + 2]);
+			glm::vec3 transformed_normal = glm::normalize(normal_transform * normal);
+			transformed[i] = transformed_normal.x;
+			transformed[i + 1] = transformed_normal.y;
+			transformed[i + 2] = transformed_normal.z;
+		}
+
+		offset += m_num_triangles_per_mesh[mesh_id] * num_entries_per_triangle;
 	}
 	return transformed;
 }

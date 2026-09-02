@@ -6,17 +6,18 @@ disp(div);
 
 
 % Aerodynamic model
-aero.model = Sentman(1);
-disp(div);
-disp("Created Sentman model.");
-disp(div)
-
 T_env   = 934;  % termperature
 rho     = 1e-9; % density
 ao_mass = 16 * 1.6605390689252e-27;
 alpha_e = 0.95;
 
-aero.conditions = AeroConditions(rho, T_env, ao_mass, alpha_e);
+aero.model = Sentman(1,alpha_e);
+disp(div);
+disp("Created Sentman model.");
+disp(div)
+
+
+aero.conditions = AeroConditions(rho, T_env, ao_mass);
 
 fp.current_folder  = fileparts(mfilename('fullpath'));
 fp.obj_file        = fullfile(fp.current_folder, ...

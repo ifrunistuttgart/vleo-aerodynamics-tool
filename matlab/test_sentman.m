@@ -6,15 +6,14 @@ disp("Starting aerodynamic and shading tests...");
 setLogLevel("debug");
 %% Initialize Aerodynamic Models
 % Initialize the Sentman aerodynamic model (ID: 1)
-sentman_model = Sentman(1);
+sentman_model = Sentman(1,single(0.9));
 disp("Created Sentman model.");
 
 % Initialize atmospheric conditions
 % Parameters: density, temperature, molecular mass, accommodation coefficient
 T_inf = 934.0;
 atomic_oxygen_mass = 16 * 1.6605390689252e-27;
-accommodation_coeff = 0.9;
-aero_conditions = AeroConditions(1.2482e-11, T_inf, atomic_oxygen_mass, accommodation_coeff);
+aero_conditions = AeroConditions(1.2482e-11, T_inf, atomic_oxygen_mass);
 disp("Created aerodynamic conditions.");
 
 % Run a single test calculation for the Sentman model
@@ -68,4 +67,4 @@ fprintf('Average load calculation call duration: %.6f seconds.\n', avg_load_calc
 disp("All tests completed successfully.");
 
 %% visualize last shading result
-show_mesh(iss_satellite, panel_visibility, relative_velocity_m_s);
+%show_mesh(iss_satellite, panel_visibility, relative_velocity_m_s);

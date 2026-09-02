@@ -5,17 +5,19 @@ disp("Starting aerodynamic and shading tests...");
 disp(div);
 
 %% Aerodynamic Model
-aero.model = Sentman(1);
-disp(div);
-disp("Created Sentman model.");
-disp(div)
-
 T_env   = 934;  % temperature
 rho     = 1e-9; % density
 ao_mass = 16 * 1.6605390689252e-27;
 alpha_e = 0.95;
 
-aero.conditions = AeroConditions(rho, T_env, ao_mass, alpha_e);
+aero.conditions = AeroConditions(rho, T_env, ao_mass);
+
+aero.model = Sentman(1,alpha_e);
+disp(div);
+disp("Created Sentman model.");
+disp(div)
+
+
 
 %% Load Satellite Geometry
 fp.current_folder = fileparts(mfilename('fullpath'));

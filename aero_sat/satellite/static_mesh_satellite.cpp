@@ -101,6 +101,10 @@ std::span<const float> StaticMeshSatellite::get_vertices() {
     return std::span<const float>(m_vertices.data(), m_vertices.size());
 }
 
+std::span<const float> StaticMeshSatellite::get_raw_vertices() {
+    return std::span<const float>(m_vertices.data(), m_vertices.size());
+}
+
 std::span<const std::uint32_t> StaticMeshSatellite::get_triangle_ids() {
     return std::span<const std::uint32_t>(m_triangle_ids.data(), m_triangle_ids.size());
 }

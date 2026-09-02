@@ -38,6 +38,9 @@ classdef RotatableMeshSatellite < handle
             %
             %   Releases the underlying C++ satellite object.
             %
+            arguments
+                this (1,1) RotatableMeshSatellite
+            end
             if this.handle_ ~= int32(-1)
                 MexGateway("Satellite.delete", int32(this.handle_));
                 this.handle_ = int32(-1);
@@ -53,6 +56,9 @@ classdef RotatableMeshSatellite < handle
             %   Output Arguments:
             %       vertices - Array of vertex coordinates [3 x N].
             %
+            arguments
+                this (1,1) RotatableMeshSatellite
+            end
             vertices = MexGateway("Satellite.get_vertices", int32(this.handle_));
         end
 
@@ -65,6 +71,9 @@ classdef RotatableMeshSatellite < handle
             %   Output Arguments:
             %       num_triangles - The number of triangles.
             %
+            arguments
+                this (1,1) RotatableMeshSatellite
+            end
             num_triangles = MexGateway("Satellite.get_num_triangles", int32(this.handle_));
         end
 

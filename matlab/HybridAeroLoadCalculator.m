@@ -27,9 +27,9 @@ classdef HybridAeroLoadCalculator < handle
             %       gsi_model        - A GSI model object (e.g., Sentman) for load calculation.
             %
             arguments
-                satellite RotatableMeshSatellite
-                shading_pipeline ShadingPipeline
-                gsi_model Sentman
+                satellite (1,1) RotatableMeshSatellite
+                shading_pipeline (1,1) ShadingPipeline
+                gsi_model (1,1) handle
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             this.handle_ = int32(MexGateway("HybridAeroLoadCalculator.new", int32(satellite.handle_), int32(shading_pipeline.handle_), int32(gsi_model.handle_)));

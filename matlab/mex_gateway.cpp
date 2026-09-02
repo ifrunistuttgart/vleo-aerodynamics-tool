@@ -17,6 +17,11 @@
 
 #include "core.h"
 #include "sentman.h"
+#include "storch.h"
+#include "newton.h"
+#include "cook.h"
+#include "maxwell.h"
+#include "schaaf_chambre.h"
 #include "rotatable_mesh_satellite.h"
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
@@ -62,92 +67,205 @@ public:
             size_t dot = cmd_string.find('.');
             std::string cls = cmd_string.substr(0, dot);
             std::string cmd = (dot != std::string::npos) ? cmd_string.substr(dot + 1) : "";
-            matlab_logger->log(LEVEL_INFO,"Received command: " + cmd + " for class: " +cls,"mex_gateway.cpp",__LINE__);
-            if (cls == "Sentman") {
+            matlab_logger->log(LEVEL_INFO, "Received command: " + cmd + " for class: " +cls, "mex_gateway.cpp", __LINE__);
+            if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "delete") {
+                validate_input_size(inputs, 2);
+                validate_output_size(outputs, 0);
+                validate_argument(inputs, 1, "int", 1);
+                const int id = inputs[1][0];
+                gsi_map.erase(id);
+                return;
+            }
+            if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "calc_aero_force_torque") {
+                validate_input_size(inputs, 8);
+                validate_output_size(outputs, 2);
+                validate_argument(inputs, 1, "int", 1);
+                validate_argument(inputs, 2, "double", 1);
+                validate_argument(inputs, 3, "double", 3);
+                validate_argument(inputs, 4, "double", 3);
+                validate_argument(inputs, 5, "double", 3);
+                validate_argument(inputs, 6, "double", 1);
+                validate_argument(inputs, 7, "int", 1);
+
+                const int handle = inputs[1][0];
+                const int aero_cond_handle = inputs[7][0];
+                AeroConditions&  aero_conditions = *aero_conditions_map.at(aero_cond_handle);
+
+                const float area__m2 = inputs[2][0];
+                const glm::vec3 normal(inputs[3][0], inputs[3][1], inputs[3][2]);
+                const glm::vec3 centroid__m(inputs[4][0], inputs[4][1], inputs[4][2]);
+                const glm::vec3 v_rel__m_per_s(inputs[5][0], inputs[5][1], inputs[5][2]);
+                const float surf_temp__K = inputs[6][0];
+
+                glm::vec3 aero_force__N(0.0f, 0.0f, 0.0f);
+                glm::vec3 aero_torque__Nm(0.0f, 0.0f, 0.0f);
+
+                gsi_map.at(handle).get()->calc_aero_force_and_torque(
+                    area__m2,
+                    normal,
+                    centroid__m,
+                    v_rel__m_per_s,
+                    surf_temp__K,
+                    aero_conditions,
+                    aero_force__N,
+                    aero_torque__Nm
+                );
+
+                outputs[0] = factory.createArray({3}, {aero_force__N.x, aero_force__N.y, aero_force__N.z});
+                outputs[1] = factory.createArray({3}, {aero_torque__Nm.x, aero_torque__Nm.y, aero_torque__Nm.z});
+                return;
+            }
+            if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "get_gsi_parameter") {
+                validate_input_size_min(inputs, 3);
+                validate_argument(inputs, 1, "int", 1);
+                validate_argument(inputs, 2, "string", 1);
+                float value = gsi_map.at(inputs[1][0]).get()->get_gsi_parameter(inputs[2][0]);
+                outputs[0] = factory.createScalar<float>(value);
+                return;
+
+            }
+            if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "set_gsi_parameter") {
+                validate_input_size_min(inputs, 4);
+                validate_argument(inputs, 1, "int", 1);
+                validate_argument(inputs, 2, "string", 1);
+                validate_argument(inputs, 3, "float", 1);
+                gsi_map.at(inputs[1][0]).get()->set_gsi_parameter(inputs[2][0], inputs[3][0]);
+                return;
+
+            }
+            if (cls == "Newton") {
                 if (cmd == "new") {
-                    matlab_logger->log(LEVEL_INFO, "Creating new Sentman instance.","mex_gateway.cpp",__LINE__);
+                    matlab_logger->log(LEVEL_INFO, "Creating new Newton instance.", "mex_gateway.cpp", __LINE__);
+                    validate_input_size_min(inputs, 1);
+                    validate_output_size(outputs, 1);
+                    gsi_map.insert({gsi_max_id, std::make_unique<Newton>()});
+                    outputs[0] = factory.createScalar<int>(gsi_max_id);
+                    gsi_max_id++;
+                    return;
+                }
+            }
+            if (cls == "Maxwell") {
+                if (cmd == "new") {
+                    matlab_logger->log(LEVEL_INFO, "Creating new Maxwell instance.", "mex_gateway.cpp", __LINE__);
                     validate_input_size_min(inputs, 2);
                     validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "float", 1);
+                    float alpha_e = inputs[1][0];
+                    gsi_map.insert({gsi_max_id, std::make_unique<Maxwell>(alpha_e)});
+                    outputs[0] = factory.createScalar<int>(gsi_max_id);
+                    gsi_max_id++;
+                    return;
+                }
+            }
+            if (cls == "Cook") {
+                if (cmd == "new") {
+                    matlab_logger->log(LEVEL_INFO, "Creating new Cook instance.", "mex_gateway.cpp", __LINE__);
+                    validate_input_size_min(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "float", 1);
+                    float alpha_e = inputs[1][0];
+                    gsi_map.insert({gsi_max_id, std::make_unique<Cook>(alpha_e)});
+                    outputs[0] = factory.createScalar<int>(gsi_max_id);
+                    gsi_max_id++;
+                    return;
+                }
+            }
+            if (cls == "SchaafChambre") {
+                if (cmd == "new") {
+                    matlab_logger->log(LEVEL_INFO, "Creating new Schaaf-Chambre instance.", "mex_gateway.cpp", __LINE__);
+                    validate_input_size_min(inputs, 3);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "float", 1);
+                    validate_argument(inputs, 2, "float", 1);
+                    float sigma_n = inputs[1][0];
+                    float sigma_t = inputs[2][0];
+                    gsi_map.insert({gsi_max_id, std::make_unique<SchaafChambre>(sigma_n, sigma_t)});
+                    outputs[0] = factory.createScalar<int>(gsi_max_id);
+                    gsi_max_id++;
+                    return;
+                }
+            }
+            if (cls == "Sentman") {
+                if (cmd == "new") {
+                    matlab_logger->log(LEVEL_INFO, "Creating new Sentman instance.", "mex_gateway.cpp", __LINE__);
+                    validate_input_size_min(inputs, 3);
+                    validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 2, "float", 1);
 
                     const int temperature_ratio_method = inputs[1][0];
-                    sentman_map.insert({sentman_max_id, std::make_unique<Sentman>(temperature_ratio_method)});
-                    outputs[0] = factory.createScalar<int>(sentman_max_id);
-                    sentman_max_id++;
+                    float alpha_e = inputs[2][0];
+                    gsi_map.insert({gsi_max_id, std::make_unique<Sentman>(temperature_ratio_method, alpha_e)});
+                    outputs[0] = factory.createScalar<int>(gsi_max_id);
+                    gsi_max_id++;
                     return;
                 }
-                if (cmd == "calc_aero_force_torque") {
-                    validate_input_size(inputs, 8);
-                    validate_output_size(outputs, 2);
-                    validate_argument(inputs, 1, "int", 1);
-                    validate_argument(inputs, 2, "double", 1);
-                    validate_argument(inputs, 3, "double", 3);
-                    validate_argument(inputs, 4, "double", 3);
-                    validate_argument(inputs, 5, "double", 3);
-                    validate_argument(inputs, 6, "double", 1);
-                    validate_argument(inputs, 7, "int", 1);
+            }
+            if (cls == "Storch") {
+                if (cmd == "new") {
+                    matlab_logger->log(LEVEL_INFO, "Creating new Storch instance.", "mex_gateway.cpp", __LINE__);
+                    validate_input_size_min(inputs, 4);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "float", 1);
+                    validate_argument(inputs, 2, "float", 1);
+                    validate_argument(inputs, 3, "float", 1);
 
-                    const int handle = inputs[1][0];
-                    const int aero_cond_handle = inputs[7][0];
-                    Sentman* sentman = sentman_map.at(handle).get();
-                    AeroConditions&  aero_conditions = *aero_conditions_map.at(aero_cond_handle);
-
-                    const float area__m2 = inputs[2][0];
-                    const glm::vec3 normal(inputs[3][0], inputs[3][1], inputs[3][2]);
-                    const glm::vec3 centroid__m(inputs[4][0], inputs[4][1], inputs[4][2]);
-                    const glm::vec3 v_rel__m_per_s(inputs[5][0], inputs[5][1], inputs[5][2]);
-                    const float surf_temp__K = inputs[6][0];
-
-                    glm::vec3 aero_force__N(0.0f, 0.0f, 0.0f);
-                    glm::vec3 aero_torque__Nm(0.0f, 0.0f, 0.0f);
-
-                    sentman->calc_aero_force_and_torque(
-                        area__m2,
-                        normal,
-                        centroid__m,
-                        v_rel__m_per_s,
-                        surf_temp__K,
-                        aero_conditions,
-                        aero_force__N,
-                        aero_torque__Nm
-                    );
-
-                    outputs[0] = factory.createArray({3}, {aero_force__N.x, aero_force__N.y, aero_force__N.z});
-                    outputs[1] = factory.createArray({3}, {aero_torque__Nm.x, aero_torque__Nm.y, aero_torque__Nm.z});
-                    return;
-                }
-                if (cmd == "delete") {
-                    validate_input_size(inputs, 2);
-                    validate_output_size(outputs, 0);
-                    validate_argument(inputs, 1, "int", 1);
-                    const int id = inputs[1][0];
-                    sentman_map.erase(id);
+                    const float V_w = inputs[1][0];
+                    const float sigma_n = inputs[2][0];
+                    const float sigma_t = inputs[3][0];
+                    gsi_map.insert({gsi_max_id, std::make_unique<Storch>(V_w, sigma_n, sigma_t)});
+                    outputs[0] = factory.createScalar<int>(gsi_max_id);
+                    gsi_max_id++;
                     return;
                 }
             }
             if (cls == "AeroCond") {
                 if (cmd == "new") {
                     matlab_logger->log(LEVEL_INFO, "Creating new AeroConditions instance.","mex_gateway.cpp",__LINE__);
-                    validate_input_size_min(inputs, 5);
+                    validate_input_size_min(inputs, 4);
                     validate_argument(inputs, 1, "double", 1);
                     validate_argument(inputs, 2, "double", 1);
                     validate_argument(inputs, 3, "double", 1);
-                    validate_argument(inputs, 4, "double", 1);
 
                     float density__kg_per_m3 = inputs[1][0];
                     float temperature__K = inputs[2][0];
                     float particle_mass__kg = inputs[3][0];
-                    float alpha_e = inputs[4][0];
 
                     aero_conditions_map.insert(
                         {aero_conditions_max_id, std::make_unique<AeroConditions>(
                             density__kg_per_m3,
                             temperature__K,
-                            particle_mass__kg,
-                            alpha_e)}
+                            particle_mass__kg)}
                         );
                     outputs[0] = factory.createScalar<int>(aero_conditions_max_id);
                     aero_conditions_max_id++;
+                    return;
+                }
+                if (cmd == "set_density") {
+                    validate_input_size(inputs, 3);
+                    validate_argument(inputs, 1, "int", 1);
+                    // double, matching AeroCond.new and the (1,1) double in AeroConditions.m
+                    validate_argument(inputs, 2, "double", 1);
+                    const int id = inputs[1][0];
+                    aero_conditions_map.at(id)->density__kg_per_m3 = inputs[2][0];
+                    return;
+                }
+                if (cmd == "set_T_atmospheric") {
+                    validate_input_size(inputs, 3);
+                    validate_argument(inputs, 1, "int", 1);
+                    // double, matching AeroCond.new and the (1,1) double in AeroConditions.m
+                    validate_argument(inputs, 2, "double", 1);
+                    const int id = inputs[1][0];
+                    aero_conditions_map.at(id)->T_atmospheric__K = inputs[2][0];
+                    return;
+                }
+                if (cmd == "set_particle_mass") {
+                    validate_input_size(inputs, 3);
+                    validate_argument(inputs, 1, "int", 1);
+                    // double, matching AeroCond.new and the (1,1) double in AeroConditions.m
+                    validate_argument(inputs, 2, "double", 1);
+                    const int id = inputs[1][0];
+                    aero_conditions_map.at(id)->particle_mass__kg = inputs[2][0];
                     return;
                 }
                 if (cmd == "delete") {
@@ -288,7 +406,7 @@ public:
                         std::make_unique<HybridForceTorqueCalculator>(
                             *satellite_map.at(satellite_id),
                             *shading_pipeline_map.at(shading_pipeline_id),
-                            *sentman_map.at(gsi_id)
+                            *gsi_map.at(gsi_id)
                         )}
                     );
 
@@ -454,12 +572,12 @@ private:
 
     matlab::data::ArrayFactory factory;
     std::unique_ptr<MatlabLogger> matlab_logger;
-    std::unordered_map<int, std::unique_ptr<Sentman>> sentman_map;
+    std::unordered_map<int, std::unique_ptr<IGSIModel>> gsi_map;
     std::unordered_map<int, std::unique_ptr<AeroConditions>> aero_conditions_map;
     std::unordered_map<int, std::unique_ptr<RotatableMeshSatellite>> satellite_map;
     std::unordered_map<int, std::unique_ptr<ShadingPipeline>> shading_pipeline_map;
     std::unordered_map<int, std::unique_ptr<HybridForceTorqueCalculator>> hybrid_aero_load_calculator_map;
-    int sentman_max_id = 0;
+    int gsi_max_id = 0;
     int aero_conditions_max_id = 0;
     int satellite_max_id = 0;
     int shading_pipeline_max_id = 0;

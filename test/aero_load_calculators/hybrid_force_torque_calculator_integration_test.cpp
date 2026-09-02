@@ -32,9 +32,8 @@ protected:
     AeroConditions create_leo_conditions() {
         AeroConditions cond;
         cond.density__kg_per_m3 = 1.2482e-11f;
-        cond.temperature__K = 934.0f;            // Exospheric temperature
+        cond.T_atmospheric__K = 934.0f;          // Exospheric temperature
         cond.particle_mass__kg = 16 * 1.6605390689252e-27f;       // Atomic oxygen mass
-        cond.alpha_e = 0.9f;                      // Energy accommodation coefficient
         return cond;
     }
 
@@ -44,7 +43,7 @@ protected:
 		SPDLOG_INFO("[TEST] loading Test data from: {}", obj_path);
         satellite = std::make_unique<StaticMeshSatellite>(obj_path);
         SPDLOG_INFO("[TEST] Loaded {} triangles", satellite->get_num_triangles());
-		sentman = std::make_unique<Sentman>(1);
+		sentman = std::make_unique<Sentman>(1, 0.9f);
 		shading_pipeline = std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::Binary, 800);
 		force_torque_calculator = std::make_unique<HybridForceTorqueCalculator>(*satellite, *shading_pipeline, *sentman);
     }
