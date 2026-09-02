@@ -36,7 +36,6 @@ int main() {
 	aero_conditions->density__kg_per_m3 = 1.2482e-11f;
 	aero_conditions->T_atmospheric__K = 934.0f;
 	aero_conditions->particle_mass__kg = 16 * 1.6605390689252e-27f;
-	aero_conditions->alpha_e = 0.9f;
 	const float surface_temp__K = 300.0f;
 	SPDLOG_INFO("Created aero conditions");
 

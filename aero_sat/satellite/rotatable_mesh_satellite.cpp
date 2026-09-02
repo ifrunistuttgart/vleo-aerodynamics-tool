@@ -9,8 +9,25 @@ RotatableMeshSatellite::RotatableMeshSatellite(std::string file)
 	: StaticMeshSatellite(file) {
 }
 
-std::span<const float> RotatableMeshSatellite::get_vertices() {
+void RotatableMeshSatellite::refresh_transformed_data() {
 	m_transformed_vertices = apply_transform(m_vertices, 9);
+	m_transformed_normals = apply_normal_transform(m_normals, 3);
+	m_transformed_centroids = apply_transform(m_centroids, 3);
+	float max_distance = 0.0f;
+	for (size_t i = 0; i < m_transformed_vertices.size(); i += 3) {
+		float distance = std::sqrt(m_transformed_vertices[i] * m_transformed_vertices[i] +
+			m_transformed_vertices[i + 1] * m_transformed_vertices[i + 1] +
+			m_transformed_vertices[i + 2] * m_transformed_vertices[i + 2]);
+		max_distance = std::max(max_distance, distance);
+	}
+	m_bounding_sphere_radius = max_distance;
+	m_transformed_data_current = true;
+}
+
+std::span<const float> RotatableMeshSatellite::get_vertices() {
+	if (!m_transformed_data_current) {
+		refresh_transformed_data();
+	}
 	return std::span<const float>(m_transformed_vertices.data(), m_transformed_vertices.size());
 }
 
@@ -19,25 +36,23 @@ std::span<const float> RotatableMeshSatellite::get_raw_vertices() {
 }
 
 std::span<const float> RotatableMeshSatellite::get_normals() {
-	m_transformed_normals = apply_normal_transform(m_normals, 3);
+	if (!m_transformed_data_current) {
+		refresh_transformed_data();
+	}
 	return std::span<const float>(m_transformed_normals.data(), m_transformed_normals.size());
 }
 
 std::span<const float> RotatableMeshSatellite::get_centroids() {
-	m_transformed_centroids = apply_transform(m_centroids, 3);
+	if (!m_transformed_data_current) {
+		refresh_transformed_data();
+	}
 	return std::span<const float>(m_transformed_centroids.data(), m_transformed_centroids.size());
 }
 
 float RotatableMeshSatellite::get_bounding_sphere_radius() {
-	std::vector<float> transformed_vertices = apply_transform(m_vertices, 9);
-	float max_distance = 0.0f;
-	for (size_t i = 0; i < transformed_vertices.size(); i += 3) {
-		float distance = std::sqrt(transformed_vertices[i] * transformed_vertices[i] +
-			transformed_vertices[i + 1] * transformed_vertices[i + 1] +
-			transformed_vertices[i + 2] * transformed_vertices[i + 2]);
-		max_distance = std::max(max_distance, distance);
+	if (!m_transformed_data_current) {
+		refresh_transformed_data();
 	}
-	m_bounding_sphere_radius = max_distance;
 	return m_bounding_sphere_radius;
 }
 
@@ -55,6 +70,7 @@ int RotatableMeshSatellite::turn_surface_around_axis(const int surface_id, float
 
 	// Apply transformation to the specified surface's vertices
 	m_model_matrices[surface_id] = transform;
+	m_transformed_data_current = false;
 	return 0; // Success
 }
 
