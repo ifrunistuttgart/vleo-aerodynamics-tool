@@ -45,9 +45,6 @@ int SchaafChambre::calc_aero_force_and_torque(float area__m2, const glm::vec3 &n
     glm::vec3 drag_dir = glm::normalize(v_rel_inv__m_per_s);
 
     const float cos_d = glm::dot(v_rel__m_per_s, normal) / v_rel_magnitude__m_per_s;
-    if (cos_d <= 0.0f) {
-        return 0; // Surface not exposed to flow, hyperthermal assumption
-    }
     const float sin_d = std::sqrt(std::max(0.0f, 1.0f - cos_d * cos_d));
 
     // Pre-calculate common sub-expressions for efficiency
