@@ -61,8 +61,6 @@ compile_commands.json
 
 # pixi (local env cache only — pixi.lock IS committed for reproducibility)
 .pixi/
-# vcpkg
-vcpkg_installed/
 
 # debug information files
 *.dwo
