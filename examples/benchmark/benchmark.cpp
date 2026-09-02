@@ -21,6 +21,7 @@ std::filesystem::path get_path(const std::string& filename) {
 }
 
 int main() {
+	
 	// 1. Load satellite geometry
 	SPDLOG_INFO("Loading satellite model...");
 	std::string obj_path = get_path("../geometry_files/iss_26k.obj").string();
@@ -28,7 +29,7 @@ int main() {
 	SPDLOG_INFO("Loaded {} triangles", satellite->get_num_triangles());
 
 	// 2. Gas-surface interaction model
-	std::unique_ptr<Sentman> gsi_model = std::make_unique<Sentman>(1);
+	std::unique_ptr<Sentman> gsi_model = std::make_unique<Sentman>(1,0.9f);
 	SPDLOG_INFO("Initialized Sentman GSI model");
 
 	// 3. Shading pipeline: determines which triangles face the incoming flow
@@ -49,7 +50,6 @@ int main() {
 	aero_conditions->density__kg_per_m3 = 1.2482e-11f;
 	aero_conditions->T_atmospheric__K = 934.0f;
 	aero_conditions->particle_mass__kg = 16 * 1.6605390689252e-27f;
-	aero_conditions->alpha_e = 0.9f;
 	const float surface_temp__K = 300.0f;
 	SPDLOG_INFO("Created aero conditions");
 
@@ -58,31 +58,42 @@ int main() {
 	// 6. Shade the mesh and compute the resulting force/torque
 	std::vector<float> triangle_visibility;
 	auto shading_start = std::chrono::high_resolution_clock::now();
+	spdlog::set_level(spdlog::level::off);
+
 	for (int i = 0; i < 1000; i++) {
 		triangle_visibility = pipeline->shade(glm::normalize(velocity__m_per_s));
 	}
+	spdlog::set_level(spdlog::level::info);
+
 	auto shading_end = std::chrono::high_resolution_clock::now();
-	auto shading_duration = std::chrono::duration_cast<std::chrono::microseconds>(shading_end - shading_start)/1000;
-	SPDLOG_INFO("Average shading duration in {} microseconds", shading_duration.count());
+	auto shading_duration = std::chrono::duration_cast<std::chrono::milliseconds>(shading_end - shading_start)/1000;
+	SPDLOG_INFO("Average shading duration in {} milliseconds", shading_duration.count());
 
 	glm::vec3 force__N(0.0f, 0.0f, 0.0f);
 	glm::vec3 torque__Nm(0.0f, 0.0f, 0.0f);
 
 	auto start = std::chrono::high_resolution_clock::now();
+	spdlog::set_level(spdlog::level::off);
 	for (int i = 0; i < 1000; i++) {
 		aero_calculator->calc_aero_torque_force(velocity__m_per_s, surface_temp__K, *aero_conditions, torque__Nm, force__N);
 	}
+	spdlog::set_level(spdlog::level::info);
+
 	auto end = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start)/1000;
-	SPDLOG_INFO("Average aero load calculation duration in {} microseconds", duration.count());
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start)/1000;
+	SPDLOG_INFO("Average aero load calculation duration in {} milliseconds", duration.count());
 
 	auto gpu_start = std::chrono::high_resolution_clock::now();
+
+	spdlog::set_level(spdlog::level::off);
 	for (int i = 0; i < 1000; i++) {
 		gpu_aero_calculator->calc_aero_torque_force(velocity__m_per_s, surface_temp__K, *aero_conditions, torque__Nm, force__N);
 	}
+	spdlog::set_level(spdlog::level::info);
+
 	auto gpu_end = std::chrono::high_resolution_clock::now();
-	auto gpu_duration = std::chrono::duration_cast<std::chrono::microseconds>(gpu_end - gpu_start)/1000;
-	SPDLOG_INFO("Average gpu aero load calculation duration in {} microseconds", gpu_duration.count());
+	auto gpu_duration = std::chrono::duration_cast<std::chrono::milliseconds>(gpu_end - gpu_start)/1000;
+	SPDLOG_INFO("Average gpu aero load calculation duration in {} milliseconds", gpu_duration.count());
 
 	return 0;
 }

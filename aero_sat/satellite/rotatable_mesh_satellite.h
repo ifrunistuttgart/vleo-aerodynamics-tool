@@ -14,6 +14,9 @@ protected:
 	std::vector<float> m_transformed_vertices;
 	std::vector<float> m_transformed_normals;
 	std::vector<float> m_transformed_centroids;
+    bool m_transformed_data_current = false;
+
+    void refresh_transformed_data();
 public:
     RotatableMeshSatellite(std::string file);
     ~RotatableMeshSatellite() = default;
