@@ -8,7 +8,7 @@
 #include <spdlog/spdlog.h>
 #include "rotatable_mesh_satellite.h"
 #include "gpu_aero_load_calculator.h"
-#include "newton.h"
+#include "gsi.h"
 #include "shading_pipeline.h"
 #include "hybrid_aero_load_calculator.h"
 #include "show_mesh.h"
@@ -33,7 +33,7 @@ int main() {
 	const int num_pixels = 800; // number of pixels: affects computation time and accuracy of shading
 
 	//--------traditional torque and force calculation for comparison------------
-	std::unique_ptr<Newton> gsi_model = std::make_unique<Newton>();
+	std::unique_ptr<gsi::cpu::Newton> gsi_model = std::make_unique<gsi::cpu::Newton>();
 
 	std::unique_ptr<ShadingPipeline> pipeline =
 	std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::CoP, num_pixels);

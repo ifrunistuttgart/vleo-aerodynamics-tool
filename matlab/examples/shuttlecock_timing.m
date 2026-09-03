@@ -18,13 +18,13 @@ setLogLevel("error");
 mesh_names  = ["shuttlecock_96.obj", "shuttlecock_240.obj", "shuttlecock_960.obj", ...
                "shuttlecock_3840.obj", "shuttlecock_15360.obj", "shuttlecock_61440.obj"];
 resolutions = [1000, 2000, 4000, 8000];
-num_repeats = 5;
+num_repeats = 100;
 
 % Atomic oxygen at roughly 300 km, flow along +x in the body frame.
 v_rel__m_per_s  = [7800, 0, 0];
 surface_temp__K = 300.0;
-aero_conditions = AeroConditions(1.2482e-11, 934.0, 16 * 1.6605390689252e-27, 0.9);
-gsi_model       = Sentman(1);
+aero_conditions = AeroConditions(1.2482e-11, 934.0, 16 * 1.6605390689252e-27);
+gsi_model       = Sentman(1,0.9);
 
 num_triangles = zeros(numel(mesh_names), 1);
 times__ms     = nan(numel(mesh_names), numel(resolutions));

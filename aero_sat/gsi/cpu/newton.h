@@ -1,7 +1,8 @@
 #pragma once
-#include "Igsi_model.h"
+#include "Igsi_model_cpu.h"
 
-class Newton : public IGSIModel {
+namespace gsi::cpu {
+class Newton : public IGSIModelCPU {
 public:
     /**
     * Constructor for the Newton GSI model.
@@ -17,4 +18,4 @@ public:
     void set_gsi_parameter(std::string name, float value) override;
     [[nodiscard]] float get_gsi_parameter(std::string name) const override;
 };
-
+}

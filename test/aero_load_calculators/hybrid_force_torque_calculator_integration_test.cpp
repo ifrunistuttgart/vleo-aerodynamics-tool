@@ -5,7 +5,7 @@
 #include <memory>
 #include <glm/glm.hpp>
 
-#include "sentman.h"
+#include "gsi.h"
 #include "hybrid_aero_load_calculator.h"
 #include "core.h"
 #include "shading_pipeline.h"
@@ -24,7 +24,7 @@ std::string GetTestDataPath(const std::string& filename) {
 class HybridForceTorqueIntegrationTest : public ::testing::Test {
 protected:
     std::unique_ptr<StaticMeshSatellite> satellite;
-	std::unique_ptr<Sentman> sentman;
+	std::unique_ptr<gsi::cpu::Sentman> sentman;
 	std::unique_ptr<HybridForceTorqueCalculator> force_torque_calculator;
 	std::unique_ptr<ShadingPipeline> shading_pipeline;
 	glm::vec3 v_rel__m_per_s = glm::vec3(7800.0f, 0.0f, 0.0f);
@@ -43,7 +43,7 @@ protected:
 		SPDLOG_INFO("[TEST] loading Test data from: {}", obj_path);
         satellite = std::make_unique<StaticMeshSatellite>(obj_path);
         SPDLOG_INFO("[TEST] Loaded {} triangles", satellite->get_num_triangles());
-		sentman = std::make_unique<Sentman>(1, 0.9f);
+		sentman = std::make_unique<gsi::cpu::Sentman>(1, 0.9f);
 		shading_pipeline = std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::Binary, 800);
 		force_torque_calculator = std::make_unique<HybridForceTorqueCalculator>(*satellite, *shading_pipeline, *sentman);
     }

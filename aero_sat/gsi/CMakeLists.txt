@@ -1,27 +1,17 @@
 find_package(glm REQUIRED CONFIG)
 find_package(spdlog REQUIRED CONFIG)
 
-add_library(gsi
-		sentman.cpp
-		sentman.h
-		cook.cpp
-		cook.h
-        maxwell.cpp
-        maxwell.h
-        schaaf_chambre.cpp
-        schaaf_chambre.h
-		newton.cpp
-		newton.h
-		storch.cpp
-		storch.h)
+add_library(gsi INTERFACE)
 
-target_compile_features(gsi PRIVATE cxx_std_20)
 target_include_directories(gsi
-	PUBLIC
+	INTERFACE
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 		$<INSTALL_INTERFACE:include>
 )
-target_link_libraries(gsi PUBLIC aero_load_calculator)
-target_link_libraries(gsi PRIVATE glm::glm spdlog::spdlog)
+target_link_libraries(gsi INTERFACE glm::glm spdlog::spdlog aero_load_calculator)
+
+add_subdirectory(cpu)
+
+target_link_libraries(gsi INTERFACE AeroSat::gsi::cpu)
 
 add_library(AeroSat::gsi ALIAS gsi)

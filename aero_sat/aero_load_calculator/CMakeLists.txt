@@ -4,7 +4,7 @@ find_package(spdlog REQUIRED CONFIG)
 add_library(aero_load_calculator
         hybrid_aero_load_calculator.cpp
         hybrid_aero_load_calculator.h
-        Igsi_model.h
+        Igsi_model_cpu.h
         Ishading_pipeline.h
         gpu_aero_load_calculator.cpp
         gpu_aero_load_calculator.h)

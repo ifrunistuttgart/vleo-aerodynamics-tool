@@ -11,16 +11,12 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <cmath>
 #include <filesystem>
 #include <string>
 #include <vector>
-
 #define FMT_UNICODE 0
 #include <spdlog/spdlog.h>
-
-#include "sentman.h"
+#include "gsi.h"
 #include "rotatable_mesh_satellite.h"
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
@@ -98,7 +94,7 @@ void report_construction_order_invariant(RotatableMeshSatellite& sat) {
 
 void run_fingerprint(RotatableMeshSatellite& sat) {
     AeroConditions aero = make_conditions();
-    Sentman gsi(1,0.9f);
+    gsi::cpu::Sentman gsi(1,0.9f);
 
     report_construction_order_invariant(sat);
 
@@ -149,7 +145,7 @@ void run_fingerprint(RotatableMeshSatellite& sat) {
 void run_timings(RotatableMeshSatellite& sat, const std::vector<unsigned int>& resolutions) {
     const unsigned int N = sat.get_num_triangles();
     AeroConditions aero = make_conditions();
-    Sentman gsi(1,0.9f);
+    gsi::cpu::Sentman gsi(1,0.9f);
     const glm::vec3 v(SPEED__M_PER_S, 0.0f, 0.0f);
     const glm::vec3 vhat = glm::normalize(v);
 

@@ -10,7 +10,7 @@
  * forces and torques acting on individual surface elements based on physical
  * interaction theories (e.g., Sentman, Maxwell, etc.).
  */
-class IGSIModel {
+class IGSIModelCPU {
 public:
     /**
      * Calculates the aerodynamic force and torque for a single surface element.
@@ -31,7 +31,7 @@ public:
      */
     virtual int calc_aero_force_and_torque(float area__m2, const glm::vec3& normal, const glm::vec3& centroid__m, const glm::vec3& v_rel__m_per_s, float surf_temp__K, AeroConditions& aero, glm::vec3& aero_force__N, glm::vec3& aero_torque__Nm) = 0;
 
-    virtual ~IGSIModel() = default;
+    virtual ~IGSIModelCPU() = default;
 
     virtual void set_gsi_parameter(std::string name, float value) = 0;
     [[nodiscard]] virtual float get_gsi_parameter(std::string name) const = 0;

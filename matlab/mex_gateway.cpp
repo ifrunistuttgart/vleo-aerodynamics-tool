@@ -16,12 +16,7 @@
 #include <spdlog/spdlog.h>
 
 #include "core.h"
-#include "sentman.h"
-#include "storch.h"
-#include "newton.h"
-#include "cook.h"
-#include "maxwell.h"
-#include "schaaf_chambre.h"
+#include "gsi.h"
 #include "rotatable_mesh_satellite.h"
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
@@ -138,7 +133,7 @@ public:
                     matlab_logger->log(LEVEL_INFO, "Creating new Newton instance.", "mex_gateway.cpp", __LINE__);
                     validate_input_size_min(inputs, 1);
                     validate_output_size(outputs, 1);
-                    gsi_map.insert({gsi_max_id, std::make_unique<Newton>()});
+                    gsi_map.insert({gsi_max_id, std::make_unique<gsi::cpu::Newton>()});
                     outputs[0] = factory.createScalar<int>(gsi_max_id);
                     gsi_max_id++;
                     return;
@@ -151,7 +146,7 @@ public:
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "float", 1);
                     float alpha_e = inputs[1][0];
-                    gsi_map.insert({gsi_max_id, std::make_unique<Maxwell>(alpha_e)});
+                    gsi_map.insert({gsi_max_id, std::make_unique<gsi::cpu::Maxwell>(alpha_e)});
                     outputs[0] = factory.createScalar<int>(gsi_max_id);
                     gsi_max_id++;
                     return;
@@ -164,7 +159,7 @@ public:
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "float", 1);
                     float alpha_e = inputs[1][0];
-                    gsi_map.insert({gsi_max_id, std::make_unique<Cook>(alpha_e)});
+                    gsi_map.insert({gsi_max_id, std::make_unique<gsi::cpu::Cook>(alpha_e)});
                     outputs[0] = factory.createScalar<int>(gsi_max_id);
                     gsi_max_id++;
                     return;
@@ -179,7 +174,7 @@ public:
                     validate_argument(inputs, 2, "float", 1);
                     float sigma_n = inputs[1][0];
                     float sigma_t = inputs[2][0];
-                    gsi_map.insert({gsi_max_id, std::make_unique<SchaafChambre>(sigma_n, sigma_t)});
+                    gsi_map.insert({gsi_max_id, std::make_unique<gsi::cpu::SchaafChambre>(sigma_n, sigma_t)});
                     outputs[0] = factory.createScalar<int>(gsi_max_id);
                     gsi_max_id++;
                     return;
@@ -195,7 +190,7 @@ public:
 
                     const int temperature_ratio_method = inputs[1][0];
                     float alpha_e = inputs[2][0];
-                    gsi_map.insert({gsi_max_id, std::make_unique<Sentman>(temperature_ratio_method, alpha_e)});
+                    gsi_map.insert({gsi_max_id, std::make_unique<gsi::cpu::Sentman>(temperature_ratio_method, alpha_e)});
                     outputs[0] = factory.createScalar<int>(gsi_max_id);
                     gsi_max_id++;
                     return;
@@ -213,7 +208,7 @@ public:
                     const float V_w = inputs[1][0];
                     const float sigma_n = inputs[2][0];
                     const float sigma_t = inputs[3][0];
-                    gsi_map.insert({gsi_max_id, std::make_unique<Storch>(V_w, sigma_n, sigma_t)});
+                    gsi_map.insert({gsi_max_id, std::make_unique<gsi::cpu::Storch>(V_w, sigma_n, sigma_t)});
                     outputs[0] = factory.createScalar<int>(gsi_max_id);
                     gsi_max_id++;
                     return;
@@ -572,7 +567,7 @@ private:
 
     matlab::data::ArrayFactory factory;
     std::unique_ptr<MatlabLogger> matlab_logger;
-    std::unordered_map<int, std::unique_ptr<IGSIModel>> gsi_map;
+    std::unordered_map<int, std::unique_ptr<IGSIModelCPU>> gsi_map;
     std::unordered_map<int, std::unique_ptr<AeroConditions>> aero_conditions_map;
     std::unordered_map<int, std::unique_ptr<RotatableMeshSatellite>> satellite_map;
     std::unordered_map<int, std::unique_ptr<ShadingPipeline>> shading_pipeline_map;

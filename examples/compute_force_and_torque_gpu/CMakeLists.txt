@@ -8,5 +8,6 @@ target_link_libraries(compute_force_and_torque_gpu PRIVATE
 	spdlog::spdlog
 	visualization
 	gsi
+	AeroSat::gsi::cpu
 	shading_pipeline
 )
