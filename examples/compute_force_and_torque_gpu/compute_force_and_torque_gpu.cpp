@@ -2,6 +2,8 @@
 #include <filesystem>
 #include <source_location>
 #include <string>
+#include <chrono>
+#include <thread>
 #define FMT_UNICODE 0 // avoid error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 #include "rotatable_mesh_satellite.h"
@@ -16,7 +18,7 @@ std::filesystem::path get_path(const std::string& filename) {
 
 int main() {
 	//set spdlog to trace
-	spdlog::set_level(spdlog::level::info);
+	spdlog::set_level(spdlog::level::trace);
 	// 1. Load satellite geometry
 	SPDLOG_INFO("Loading satellite model...");
 	std::string obj_path = get_path("../geometry_files/tetraeder.obj").string();
@@ -46,5 +48,6 @@ int main() {
 	aero_calculator->calc_aero_torque_force(velocity__m_per_s, surface_temp__K, *aero_conditions, torque__Nm, force__N);
 	SPDLOG_INFO("Force:  {}, {}, {} N", force__N.x, force__N.y, force__N.z);
 	SPDLOG_INFO("Torque: {}, {}, {} Nm", torque__Nm.x, torque__Nm.y, torque__Nm.z);
-	return 0;
+	//wait for 360 sec
+	std::this_thread::sleep_for(std::chrono::seconds(360));   // 2 s
 }

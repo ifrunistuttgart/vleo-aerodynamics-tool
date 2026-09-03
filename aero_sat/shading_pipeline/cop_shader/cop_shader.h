@@ -5,7 +5,7 @@
 #include "Ishading_algorithm.h"
 #include "frame_buffer.h"
 #include "shader.h"
-#include "visibility_reducer.h"
+#include "../visibility_reducer.h"
 #include "vertex_array.h"
 #include "texture_2d.h"
 

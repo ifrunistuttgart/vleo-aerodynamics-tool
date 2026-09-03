@@ -109,6 +109,10 @@ std::span<const std::uint32_t> StaticMeshSatellite::get_triangle_ids() {
     return std::span<const std::uint32_t>(m_triangle_ids.data(), m_triangle_ids.size());
 }
 
+std::span<const float> StaticMeshSatellite::get_raw_normals() {
+    return std::span<const float>(m_normals.data(), m_normals.size());
+}
+
 std::span<const float> StaticMeshSatellite::get_normals() {
     return std::span<const float>(m_normals.data(), m_normals.size());
 }

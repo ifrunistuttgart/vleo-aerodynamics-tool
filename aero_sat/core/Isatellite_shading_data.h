@@ -43,6 +43,15 @@ public:
     virtual  std::span<const std::uint32_t> get_triangle_ids() = 0;
 
     /**
+     * Retrieves the untransformed normals of the underlying mesh data.
+     *
+     * This is used by GPU-based shading pipelines, which apply model matrices during draw
+     * calls and must not receive geometry that is already model-transformed.
+     * @return A span containing the raw normals
+     */
+    virtual std::span<const float> get_raw_normals() = 0;
+
+    /**
      * Retrieves the surface normals of the triangles in the satellite meshes.
      *
      * @return A span containing the normal vectors (x, y, z triplets).

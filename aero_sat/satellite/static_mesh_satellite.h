@@ -27,11 +27,12 @@ protected:
 
 public:
 	StaticMeshSatellite(std::string file);
-    ~StaticMeshSatellite() = default;
+    ~StaticMeshSatellite() override = default;
 
     std::span<const float> get_vertices() override;
     std::span<const float> get_raw_vertices() override;
     std::span<const std::uint32_t> get_triangle_ids() override;
+	std::span<const float> get_raw_normals() override;
     std::span<const float> get_normals() override;
     std::span<const float> get_areas() override;
     std::span<const float> get_centroids() override;

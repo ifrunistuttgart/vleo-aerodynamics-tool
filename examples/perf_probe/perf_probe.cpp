@@ -39,7 +39,7 @@ constexpr std::array<float, 3> HINGE_ORIGIN{-0.15f, 0.0f, 0.05f};
 constexpr std::array<float, 3> HINGE_AXIS{0.0f, 0.0f, -1.0f};
 
 AeroConditions make_conditions() {
-    return AeroConditions{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f, 0.9f};
+    return AeroConditions{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f};
 }
 
 const std::vector<glm::vec3>& flow_directions() {
@@ -98,7 +98,7 @@ void report_construction_order_invariant(RotatableMeshSatellite& sat) {
 
 void run_fingerprint(RotatableMeshSatellite& sat) {
     AeroConditions aero = make_conditions();
-    Sentman gsi(1);
+    Sentman gsi(1,0.9f);
 
     report_construction_order_invariant(sat);
 
@@ -149,7 +149,7 @@ void run_fingerprint(RotatableMeshSatellite& sat) {
 void run_timings(RotatableMeshSatellite& sat, const std::vector<unsigned int>& resolutions) {
     const unsigned int N = sat.get_num_triangles();
     AeroConditions aero = make_conditions();
-    Sentman gsi(1);
+    Sentman gsi(1,0.9f);
     const glm::vec3 v(SPEED__M_PER_S, 0.0f, 0.0f);
     const glm::vec3 vhat = glm::normalize(v);
 

@@ -6,6 +6,7 @@
 #include <cstring>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <memory>
 
 //custom abstractions
 #include "vertex_buffer.h"
@@ -20,15 +21,15 @@ BinaryShader::BinaryShader(unsigned int num_pixel)
 {
     // framebuffer for counting ids
     SPDLOG_DEBUG("create framebuffer with ID texture of size {}x{}", NUM_PIXEL, NUM_PIXEL);
-    m_texture.reset(new Texture2D(num_pixel, num_pixel, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT));
+    m_texture = std::make_unique<Texture2D>(num_pixel, num_pixel, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT);
 
-    m_frame_buffer.reset(new FrameBuffer(NUM_PIXEL, NUM_PIXEL,m_texture.get()));
+    m_frame_buffer = std::make_unique<FrameBuffer>(NUM_PIXEL, NUM_PIXEL,m_texture.get());
     m_frame_buffer->unbind();
 
     m_visibility_reducer = std::make_unique<VisibilityReducer>(m_numTriangles);
 
     // Create shader program from embedded sources
-    m_shader.reset(new Shader(ID_vertex_shader, ID_fragment_shader, true));
+    m_shader = std::make_unique<Shader>(ID_vertex_shader, ID_fragment_shader, true);
     m_shader->unbind();
 
     // Enable depth testing for proper occlusion
@@ -45,6 +46,7 @@ BinaryShader::BinaryShader(unsigned int num_pixel)
 
 BinaryShader::~BinaryShader() {
     m_shader.reset();
+    m_visibility_reducer.reset();
     m_frame_buffer.reset();
     m_vao.reset();
     m_texture.reset();
@@ -58,7 +60,7 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
 	}
 
     m_lenVertices = vertices.size();
-	m_vao.reset(new VertexArray());
+	m_vao = std::make_unique<VertexArray>();
     VertexBufferLayout layoutVertices;
     layoutVertices.push<float>(3);           // vec3 position
     VertexBuffer vb(vertices.data(), static_cast<unsigned int>(sizeof(float) * vertices.size()));
@@ -121,5 +123,5 @@ std::vector<float> BinaryShader::shade_satellite(glm::vec3 v_rel_hat, float boun
     // only one flag per triangle is read back, not the whole NUM_PIXEL^2 image.
     GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT));
     m_frame_buffer->unbind();
-    return m_visibility_reducer->reduce(m_ID_texture, NUM_PIXEL);
+    return m_visibility_reducer->reduce(m_texture->get_texture_id(), NUM_PIXEL);
 };

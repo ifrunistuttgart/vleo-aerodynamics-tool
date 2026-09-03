@@ -6,9 +6,8 @@
 
 #include "frame_buffer.h"
 #include "shader.h"
-#include "compute_shader.h"
 #include "vertex_array.h"
-#include "visibility_reducer.h"
+#include "../visibility_reducer.h"
 #include "texture_2d.h"
 #include "Ishading_algorithm.h"
 
@@ -22,12 +21,11 @@ private:
 	const unsigned int MAX_TRIANGLES = (2u << 28) - 1; //keeps the per-triangle visibility buffer to a sane size
 	size_t m_lenVertices = 0;
 	unsigned int m_numTriangles = 0;
-	unsigned int m_histogramBuffer = 0;
 	std::unique_ptr<VisibilityReducer> m_visibility_reducer;
 	const unsigned int NUM_PIXEL = 800;
 public:
 	BinaryShader(unsigned int num_pixel);
-	~BinaryShader();
+	~BinaryShader() override;
 	int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) override;
 	std::vector<float> shade_satellite(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) override;
 };

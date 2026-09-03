@@ -42,8 +42,8 @@ GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, i
     m_frame_buffer->attach_texture_2d(m_float_texture.get());
     m_frame_buffer->unbind();
 
-    std::span<const float> vertices = m_satellite.get_vertices();
-    std::span<const float> normals = m_satellite.get_normals();
+    std::span<const float> vertices = m_satellite.get_raw_vertices();
+    std::span<const float> normals = m_satellite.get_raw_normals();
 
     std::vector<float> vertex_normals;
     vertex_normals.reserve(static_cast<std::size_t>(m_satellite.get_num_triangles()) * 9u);
@@ -122,7 +122,6 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
     m_frame_buffer->bind();
     m_frame_buffer->clear();
 
-	//render triangles and cops to Framebuffer
     m_shader->bind();
 	m_vertex_array->bind();
     std::span<const unsigned int> num_triangles_per_mesh = m_satellite.get_num_triangles_per_mesh();
@@ -154,6 +153,12 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
         glm::ivec3 force;
         glm::ivec3 torque;
     };
+
+    // display texture
+    m_frame_buffer->unbind();
+    m_normal_texture->plot_texture("normal_texture.png");
+    m_position_texture->plot_texture("position_texture.png");
+    m_float_texture->plot_texture("float_texture.png");
 
     ForceTorqueData force_torque_data{ glm::ivec3(0), glm::ivec3(0) };
     ShaderStorageBuffer ssbo = ShaderStorageBuffer(&force_torque_data, sizeof(ForceTorqueData));

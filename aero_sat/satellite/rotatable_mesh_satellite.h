@@ -19,18 +19,12 @@ protected:
     void refresh_transformed_data();
 public:
     RotatableMeshSatellite(std::string file);
-    ~RotatableMeshSatellite() = default;
+    ~RotatableMeshSatellite() override = default;
 
     std::span<const float> get_vertices() override;
-
-    std::span<const float> get_raw_vertices() override;
-
     std::span<const float> get_normals() override;
-
     std::span<const float> get_centroids() override;
-
     float get_bounding_sphere_radius() override;
-
     int turn_surface_around_axis(const int surface_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) override;
 
 private:

@@ -47,6 +47,7 @@ GlfwOpenGLContext::GlfwOpenGLContext(int width, int height, const char* title, b
     }
 
     ++s_live_contexts;
+    SPDLOG_DEBUG("Created OpenGL context currently live {}", s_live_contexts);
 }
 
 GlfwOpenGLContext::~GlfwOpenGLContext() {
@@ -60,6 +61,7 @@ GlfwOpenGLContext::~GlfwOpenGLContext() {
         glfwTerminate();
         s_glew_initialized = false; // the next glfwInit needs GLEW resolved again
     }
+    SPDLOG_DEBUG("Destroyed OpenGL context currently live {}", s_live_contexts);
 }
 
 void GlfwOpenGLContext::make_current() const {
