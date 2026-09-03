@@ -8,6 +8,7 @@
 #include "shader.h"
 #include "compute_shader.h"
 #include "vertex_array.h"
+#include "visibility_reducer.h"
 #include "texture_2d.h"
 #include "Ishading_algorithm.h"
 
@@ -16,13 +17,13 @@ class BinaryShader : public IShadingAlgorithm {
 private:
 	std::unique_ptr<FrameBuffer> m_frame_buffer;
 	std::unique_ptr<Shader> m_shader;
-	std::unique_ptr<ComputeShader> m_compute_shader;
 	std::unique_ptr<VertexArray> m_vao;
 	std::unique_ptr<Texture2D> m_texture;
-	const unsigned int MAX_TRIANGLES = (2u << 28) - 1; //limit histogrambuffer size to about 1GB
+	const unsigned int MAX_TRIANGLES = (2u << 28) - 1; //keeps the per-triangle visibility buffer to a sane size
 	size_t m_lenVertices = 0;
 	unsigned int m_numTriangles = 0;
 	unsigned int m_histogramBuffer = 0;
+	std::unique_ptr<VisibilityReducer> m_visibility_reducer;
 	const unsigned int NUM_PIXEL = 800;
 public:
 	BinaryShader(unsigned int num_pixel);

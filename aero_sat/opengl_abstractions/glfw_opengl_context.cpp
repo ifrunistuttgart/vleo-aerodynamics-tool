@@ -5,9 +5,10 @@
 #include <spdlog/spdlog.h>
 #include <format>
 bool GlfwOpenGLContext::s_glew_initialized = false;
+int GlfwOpenGLContext::s_live_contexts = 0;
 
 GlfwOpenGLContext::GlfwOpenGLContext(int width, int height, const char* title, bool visible) {
-    if (!glfwInit()) {
+    if (s_live_contexts == 0 && !glfwInit()) {
         SPDLOG_ERROR("glfwInit failed");
         throw std::runtime_error("glfwInit failed");
     }
@@ -23,7 +24,9 @@ GlfwOpenGLContext::GlfwOpenGLContext(int width, int height, const char* title, b
         int errorCode = glfwGetError(&description);
         SPDLOG_ERROR("glfwCreateWindow failed! Error Code: {} | Description: {}", errorCode, description ? description : "Unknown");
         SPDLOG_ERROR("glfwCreateWindow failed (size={}x{}, title='{}', visible={})", width, height, title, visible);
-        glfwTerminate();
+        if (s_live_contexts == 0) {
+            glfwTerminate();
+        }
         throw std::runtime_error(std::format("glfwCreateWindow failed (size={}x{}, title='{}', visible={}): {}", width, height, title, visible, std::string(description ? description : "Unknown")));
     }
 
@@ -35,19 +38,28 @@ GlfwOpenGLContext::GlfwOpenGLContext(int width, int height, const char* title, b
             SPDLOG_ERROR("glewInit failed (code={})", static_cast<unsigned int>(glew_result));
             glfwDestroyWindow(m_window);
             m_window = nullptr;
-            glfwTerminate();
+            if (s_live_contexts == 0) {
+                glfwTerminate();
+            }
             throw std::runtime_error("glewInit failed");
         }
         s_glew_initialized = true;
     }
+
+    ++s_live_contexts;
 }
 
 GlfwOpenGLContext::~GlfwOpenGLContext() {
-    if (m_window != nullptr) {
-        glfwDestroyWindow(m_window);
-        m_window = nullptr;
+    if (m_window == nullptr) {
+        return; // construction failed; this context never counted
     }
-    glfwTerminate();
+    glfwDestroyWindow(m_window);
+    m_window = nullptr;
+
+    if (--s_live_contexts == 0) {
+        glfwTerminate();
+        s_glew_initialized = false; // the next glfwInit needs GLEW resolved again
+    }
 }
 
 void GlfwOpenGLContext::make_current() const {

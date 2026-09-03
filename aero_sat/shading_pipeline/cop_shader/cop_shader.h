@@ -5,7 +5,7 @@
 #include "Ishading_algorithm.h"
 #include "frame_buffer.h"
 #include "shader.h"
-#include "compute_shader.h"
+#include "visibility_reducer.h"
 #include "vertex_array.h"
 #include "texture_2d.h"
 
@@ -14,14 +14,13 @@ private:
     std::unique_ptr<FrameBuffer> m_frame_buffer;
     std::unique_ptr<Shader> m_shader;
     std::unique_ptr<Shader> m_point_shader;
-    std::unique_ptr<ComputeShader> m_compute_shader;
     std::unique_ptr<VertexArray> m_triangle_vao;
     std::unique_ptr<VertexArray> m_cop_vao;
     std::unique_ptr<Texture2D> m_texture;
-    const unsigned int MAX_TRIANGLES = (2u << 28) - 1; //limit histogrambuffer size to about 1GB
+    const unsigned int MAX_TRIANGLES = (2u << 28) - 1; //keeps the per-triangle visibility buffer to a sane size
     size_t m_lenVertices = 0;
     unsigned int m_numTriangles = 0;
-    unsigned int m_histogramBuffer = 0;
+    std::unique_ptr<VisibilityReducer> m_visibility_reducer;
     const unsigned int NUM_PIXEL = 800;
 public:
     CoPShader(unsigned int num_pixel);

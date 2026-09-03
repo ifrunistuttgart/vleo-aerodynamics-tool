@@ -12,7 +12,6 @@
 
 // embedded shader headers
 #include "cop_shader/shaders/id_shader.h"
-#include "cop_shader/shaders/compute_shader.h"
 
 
 CoPShader::CoPShader(unsigned int num_pixel)
@@ -21,8 +20,6 @@ CoPShader::CoPShader(unsigned int num_pixel)
     // Create shader program from embedded sources
     m_shader.reset(new Shader(ID_vertex_shader, ID_fragment_shader, true));
     m_shader->unbind();
-    m_compute_shader.reset(new ComputeShader(Compute_shader, true));
-    m_compute_shader->unbind();
 
     m_point_shader.reset(new Shader(ID_point_shader, ID_fragment_shader, true));
     m_point_shader->unbind();
@@ -60,11 +57,8 @@ int CoPShader::set_vertices(std::span<const float> vertices, std::span<const std
 		SPDLOG_ERROR("Number of triangles ({}) exceeds the maximum supported ({}).", m_numTriangles, MAX_TRIANGLES);
         return -1;
 	}
-	// histogrambuffer for compute shader to count pixels per triangle ID
-    GLCall(glGenBuffers(1, &m_histogramBuffer));
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_histogramBuffer));
-	GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER, (m_numTriangles + 1) * sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW)); // +1 für Hintergrund (ID 0)
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
+
+    m_visibility_reducer = std::make_unique<VisibilityReducer>(m_numTriangles);
 
     m_lenVertices = vertices.size();
 	m_triangle_vao.reset(new VertexArray());
@@ -109,8 +103,6 @@ int CoPShader::set_vertices(std::span<const float> vertices, std::span<const std
 }
 
 std::vector<float> CoPShader::shade_satellite(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) {
-    std::vector<float> triangle_visibility(m_numTriangles,0);
-
     //projection matrices
     glm::vec3 camera_position = v_rel_hat * bounding_sphere_radius;
 
@@ -168,26 +160,9 @@ std::vector<float> CoPShader::shade_satellite(glm::vec3 v_rel_hat, float boundin
     m_cop_vao->unbind();
     m_point_shader->unbind();
 
-    // Read pixel IDs back to CPU via glReadPixels.
-    // imageLoad from uimage2D is unreliable on AMD/Intel (returns 0 for all pixels);
-    // glReadPixels from the bound FBO is spec-guaranteed and works on all drivers.
+    // Make the rendered IDs visible to the reduction shader, then reduce on the GPU:
+    // only one flag per triangle is read back, not the whole NUM_PIXEL^2 image.
     GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT));
-    GLCall(glReadBuffer(GL_COLOR_ATTACHMENT0));
-    std::vector<GLuint> pixel_ids(NUM_PIXEL * NUM_PIXEL, 0);
-    GLCall(glReadPixels(0, 0, NUM_PIXEL, NUM_PIXEL, GL_RED_INTEGER, GL_UNSIGNED_INT, pixel_ids.data()));
     m_frame_buffer->unbind();
-
-    // Count visible triangles on CPU
-    const size_t count = std::min(triangle_visibility.size(), static_cast<size_t>(m_numTriangles));
-    std::vector<bool> seen(m_numTriangles + 1, false);
-    for (GLuint id : pixel_ids) {
-        if (id > 0 && id <= m_numTriangles) seen[id] = true;
-    }
-    int visible = 0;
-    for (size_t i = 0; i < count; i++) {
-        if (seen[i + 1]) { triangle_visibility[i] = 1.0f; visible++; }
-    }
-    SPDLOG_INFO("CoPShader: {}/{} panels visible", visible, m_numTriangles);
-
-    return triangle_visibility;
+    return m_visibility_reducer->reduce(m_ID_texture, NUM_PIXEL);
 };

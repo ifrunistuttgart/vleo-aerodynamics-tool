@@ -6,7 +6,10 @@
 #include <spdlog/spdlog.h>
 
 RotatableMeshSatellite::RotatableMeshSatellite(std::string file)
-	: StaticMeshSatellite(file) {
+	: StaticMeshSatellite(file),
+	  m_transformed_vertices(m_vertices.size()),
+	  m_transformed_normals(m_normals.size()),
+	  m_transformed_centroids(m_centroids.size()) {
 }
 
 void RotatableMeshSatellite::refresh_transformed_data() {
@@ -62,13 +65,13 @@ int RotatableMeshSatellite::turn_surface_around_axis(const int surface_id, float
 		SPDLOG_ERROR("turn_surface_around_axis invalid surface_id={} (num_surfaces={})", surface_id, m_model_matrices.size());
 		return -1;
 	}
-	// Create rotation matrix
+	// Create rotation matrix (glm::rotate normalizes the axis internally)
 	glm::mat4 translation_to_origin = glm::translate(glm::mat4(1.0f), glm::vec3(-origin[0], -origin[1], -origin[2]));
-	glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), angle__rad, glm::vec3(axis[0], axis[1], axis[2])); //TODO: consider normalizing axis vector
+	glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), angle__rad, glm::vec3(axis[0], axis[1], axis[2]));
 	glm::mat4 translation_back = glm::translate(glm::mat4(1.0f), glm::vec3(origin[0], origin[1], origin[2]));
 	glm::mat4 transform = translation_back * rotation * translation_to_origin;
 
-	// Apply transformation to the specified surface's vertices
+	// Applied to the pristine geometry, so this is absolute, not incremental.
 	m_model_matrices[surface_id] = transform;
 	m_transformed_data_current = false;
 	return 0; // Success
