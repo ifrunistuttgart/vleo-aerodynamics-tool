@@ -14,11 +14,11 @@ uniform float pixelArea;
 uniform float density;
 uniform float velocity_mag;
 
-// SSBO using int to support atomicAdd (e.g., values in nano-Newtons)
+// SSBO using int to support atomicAdd (values are scaled to pico-Newtons)
 layout(std430, binding = 3) buffer LoadBuffer
 {
-    ivec3 Force;  // Force.x, Force.y, Force.z
-    ivec3 Torque; // Torque.x, Torque.y, Torque.z
+    ivec4 Force;  // Force.xyz, Force.w is padding
+    ivec4 Torque; // Torque.xyz, Torque.w is padding
 };
 
 // 1. Declare shared memory variables for workgroup-level accumulation
@@ -45,7 +45,7 @@ void main()
         {
             float cp = 2.0 * cos_d * cos_d;
             float area = pixelArea / cos_d;
-            pixelForce  = ivec3(-0.5 * density * velocity_mag * velocity_mag * cp * area * 1.0e9 * normal);
+            pixelForce  = ivec3(-0.5 * density * velocity_mag * velocity_mag * cp * area * 1.0e12 * normal);
             pixelTorque = ivec3(cross(position, vec3(pixelForce)));
         }
     }

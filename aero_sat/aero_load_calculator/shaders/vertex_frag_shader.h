@@ -1,7 +1,7 @@
 #pragma once
 
 // Embedded ID shader (vertex + fragment)
-inline constexpr const char* ID_vertex_shader = R"GLSL(
+inline constexpr const char* gsi_vertex_shader = R"GLSL(
 #version 330 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNormal;
@@ -25,13 +25,13 @@ void main()
 
     vec3 nNormal = dot(Normal, Normal) > 0.0 ? normalize(Normal) : vec3(0.0);
     vec3 nWindDir = normalize(windDir);
-    cos_d = dot(-nWindDir,nNormal);
+    cos_d = dot(nWindDir,nNormal);
 
     gl_Position = projection * view * worldPos;
 }
 )GLSL";
 
-inline constexpr const char* ID_fragment_shader = R"GLSL(
+inline constexpr const char* gsi_fragment_shader = R"GLSL(
 #version 330 core
 flat in vec3 Normal;
 in vec3 FragPos;

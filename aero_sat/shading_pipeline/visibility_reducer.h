@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "../opengl_abstractions/compute_shader.h"
+#include "compute_shader.h"
 
 /**
  * Reduces a rendered triangle-ID image to one visibility value per triangle.

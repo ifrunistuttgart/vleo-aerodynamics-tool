@@ -17,7 +17,7 @@ GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, i
     m_context->make_current();
     
     // Create shader program from embedded sources
-    m_shader = std::make_unique<Shader>(ID_vertex_shader, ID_fragment_shader, true);
+    m_shader = std::make_unique<Shader>(gsi_vertex_shader, gsi_fragment_shader, true);
     m_shader->unbind();
     m_compute_shader = std::make_unique<ComputeShader>(Compute_shader, true);
     m_compute_shader->unbind();
@@ -145,22 +145,26 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
     m_vertex_array->unbind();
     m_shader->unbind();
 
+    GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT));
+
     SPDLOG_INFO("Dispatching compute shader with {}x{} groups.", (m_num_pixel + 15u) / 16u, (m_num_pixel + 15u) / 16u);
     const GLuint groups_x = (m_num_pixel + 15u) / 16u;
     const GLuint groups_y = (m_num_pixel + 15u) / 16u;
 
     struct ForceTorqueData {
-        glm::ivec3 force;
-        glm::ivec3 torque;
+        glm::ivec4 force;
+        glm::ivec4 torque;
     };
+
+    static_assert(sizeof(ForceTorqueData) == 2 * sizeof(glm::ivec4));
 
     // display texture
     m_frame_buffer->unbind();
-    m_normal_texture->plot_texture("normal_texture.png");
-    m_position_texture->plot_texture("position_texture.png");
-    m_float_texture->plot_texture("float_texture.png");
+    //m_normal_texture->plot_texture("normal_texture.png");
+    //m_position_texture->plot_texture("position_texture.png");
+    //m_float_texture->plot_texture("float_texture.png");
 
-    ForceTorqueData force_torque_data{ glm::ivec3(0), glm::ivec3(0) };
+    ForceTorqueData force_torque_data{ glm::ivec4(0), glm::ivec4(0) };
     ShaderStorageBuffer ssbo = ShaderStorageBuffer(&force_torque_data, sizeof(ForceTorqueData));
 
     m_compute_shader->bind();
@@ -176,7 +180,7 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
 
     ssbo.get_data(&force_torque_data, sizeof(ForceTorqueData));
 
-    force__N = glm::vec1(1.0e-9)* glm::vec3(force_torque_data.force);
-    torque__Nm =  glm::vec1(1.0e-9)* glm::vec3(force_torque_data.torque);
+    force__N = glm::vec1(1.0e-12)* glm::vec3(force_torque_data.force);
+    torque__Nm =  glm::vec1(1.0e-12)* glm::vec3(force_torque_data.torque);
     return 0;
 }

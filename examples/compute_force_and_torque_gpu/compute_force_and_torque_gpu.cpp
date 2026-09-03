@@ -8,6 +8,10 @@
 #include <spdlog/spdlog.h>
 #include "rotatable_mesh_satellite.h"
 #include "gpu_aero_load_calculator.h"
+#include "newton.h"
+#include "shading_pipeline.h"
+#include "hybrid_aero_load_calculator.h"
+#include "show_mesh.h"
 
 
 // Resolves a filename relative to this source file's own location on disk.
@@ -18,7 +22,7 @@ std::filesystem::path get_path(const std::string& filename) {
 
 int main() {
 	//set spdlog to trace
-	spdlog::set_level(spdlog::level::trace);
+	spdlog::set_level(spdlog::level::info);
 	// 1. Load satellite geometry
 	SPDLOG_INFO("Loading satellite model...");
 	std::string obj_path = get_path("../geometry_files/tetraeder.obj").string();
@@ -28,6 +32,16 @@ int main() {
 	// 3. Shading pipeline: determines which triangles face the incoming flow
 	const int num_pixels = 800; // number of pixels: affects computation time and accuracy of shading
 
+	//--------traditional torque and force calculation for comparison------------
+	std::unique_ptr<Newton> gsi_model = std::make_unique<Newton>();
+
+	std::unique_ptr<ShadingPipeline> pipeline =
+	std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::CoP, num_pixels);
+
+	std::unique_ptr<HybridForceTorqueCalculator> hybrid_aero_calculator =
+	std::make_unique<HybridForceTorqueCalculator>(*satellite, *pipeline, *gsi_model);
+
+	//--------GPU torque and force calculation-------------------------------
 	// 4. Aero load calculator: combines geometry, shading, and the GSI model
 	std::unique_ptr<GPUAeroLoadCalculator> aero_calculator =
 		std::make_unique<GPUAeroLoadCalculator>(*satellite, num_pixels);
@@ -43,11 +57,19 @@ int main() {
 
 	glm::vec3 velocity__m_per_s(7800.0f, 0.0f,0.0f);  // ~7.8 km/s orbital velocity
 
+	//compute force and torque as reference
+	glm::vec3 Hybrid_force__N(0.0f, 0.0f, 0.0f);
+	glm::vec3 Hybrid_torque__Nm(0.0f, 0.0f, 0.0f);
+	hybrid_aero_calculator->calc_aero_torque_force(velocity__m_per_s, surface_temp__K, *aero_conditions, Hybrid_torque__Nm, Hybrid_force__N);
+	SPDLOG_INFO("Hybrid Force:  {}, {}, {} N", Hybrid_force__N.x, Hybrid_force__N.y, Hybrid_force__N.z);
+	SPDLOG_INFO("Hybrid Torque: {}, {}, {} Nm", Hybrid_torque__Nm.x, Hybrid_torque__Nm.y, Hybrid_torque__Nm.z);
+
+	//compute force and torque with GPU
 	glm::vec3 force__N(0.0f, 0.0f, 0.0f);
 	glm::vec3 torque__Nm(0.0f, 0.0f, 0.0f);
 	aero_calculator->calc_aero_torque_force(velocity__m_per_s, surface_temp__K, *aero_conditions, torque__Nm, force__N);
 	SPDLOG_INFO("Force:  {}, {}, {} N", force__N.x, force__N.y, force__N.z);
 	SPDLOG_INFO("Torque: {}, {}, {} Nm", torque__Nm.x, torque__Nm.y, torque__Nm.z);
 	//wait for 360 sec
-	std::this_thread::sleep_for(std::chrono::seconds(360));   // 2 s
+	//std::this_thread::sleep_for(std::chrono::seconds(360));   // 2 s
 }

@@ -33,7 +33,8 @@ void ComputeShader::unbind() const
 
 void ComputeShader::run(unsigned int num_groups_x, unsigned int num_groups_y, unsigned int num_groups_z) {
     GLCall(glDispatchCompute(num_groups_x, num_groups_y, num_groups_z));
-    GLCall(glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT));
+    GLCall(glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT |
+        GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT));
 }
 
 void ComputeShader::set_uniform_4f(const std::string& name, const glm::vec4& vector)

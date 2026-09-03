@@ -6,4 +6,7 @@ target_link_libraries(compute_force_and_torque_gpu PRIVATE
 	satellite
 	aero_load_calculator
 	spdlog::spdlog
+	visualization
+	gsi
+	shading_pipeline
 )
