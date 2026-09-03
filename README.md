@@ -139,7 +139,7 @@ touching the rest of the pipeline. Parameters can also be set by name at runtime
 | `Maxwell` | `Maxwell(alpha_e)` | energy accommodation |
 | `Cook` | `Cook(alpha_e)` | energy accommodation |
 | `SchaafChambre` | `SchaafChambre(sigma_n, sigma_t)` | normal and tangential momentum accommodation |
-| `Storch` | `Storch(V_w, sigma_n, sigma_t)` | wall velocity, normal and tangential momentum accommodation |
+| `Storch` | `Storch(V_w, sigma_n, sigma_t)` | Average normal velocity of diffusely reflected molecules, normal and tangential momentum accommodation |
 | `Newton` | `Newton()` | none |
 
 
