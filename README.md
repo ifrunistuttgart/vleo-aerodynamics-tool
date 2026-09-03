@@ -13,7 +13,7 @@
 The VLEO Aerodynamics Tool provides algorithms for fast calculations of panel shadowing and force/torque calculations in free-molecular flow (FMF) conditions based on classical graphics pipelines ([OpenGL](https://www.opengl.org/)).
 
 
-![A CubeSat with deployed panels, showing the resulting drag and lift vectors](docs/figures/toolbox-visualized-annotated.png)
+![A CubeSat with deployed panels, showing the resulting drag and lift vectors](docs/figures/drag-lift-visualized.png)
 
 ## Main features
 - **Six GSI models**, interchangeable at runtime: Sentman, Maxwell, Cook, Schaaf–Chambre,
