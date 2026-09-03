@@ -165,5 +165,5 @@ std::vector<float> CoPShader::shade_satellite(glm::vec3 v_rel_hat, float boundin
     // only one flag per triangle is read back, not the whole NUM_PIXEL^2 image.
     GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT));
     m_frame_buffer->unbind();
-    return m_visibility_reducer->reduce(m_texture->get_texture_id(), NUM_PIXEL);
+    return m_visibility_reducer->reduce(m_texture.get());
 };

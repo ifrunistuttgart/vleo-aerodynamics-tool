@@ -1,6 +1,7 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
+#include "shader_storage_buffer.h"
 #include "gl_helpers.h"
 #include "visibility_reducer.h"
 
@@ -44,47 +45,36 @@ void main()
 
 } // namespace
 
-// TODO use shader storage buffer abstraction
 VisibilityReducer::VisibilityReducer(unsigned int num_triangles)
 	: m_shader(std::make_unique<ComputeShader>(VISIBILITY_REDUCTION_SHADER, true)),
 	  m_num_triangles(num_triangles),
 	  m_flags(static_cast<size_t>(num_triangles) + 1, 0) {
-	GLCall(glGenBuffers(1, &m_visibility_buffer));
-	GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_visibility_buffer));
-	GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER,
-		static_cast<GLsizeiptr>(m_flags.size() * sizeof(std::uint32_t)), nullptr, GL_DYNAMIC_READ));
-	GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
 	m_shader->unbind();
 
 	SPDLOG_DEBUG("VisibilityReducer ready for {} triangles ({} bytes read back per shade)",
 		num_triangles, m_flags.size() * sizeof(std::uint32_t));
 }
 
-VisibilityReducer::~VisibilityReducer() {
-	if (m_visibility_buffer != 0) {
-		GLCall(glDeleteBuffers(1, &m_visibility_buffer));
-	}
-}
+VisibilityReducer::~VisibilityReducer() = default;
 
-std::vector<float> VisibilityReducer::reduce(unsigned int id_texture, unsigned int num_pixel) {
-	const GLuint cleared = 0;
-	GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_visibility_buffer));
-	GLCall(glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &cleared));
-	GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_visibility_buffer));
+std::vector<float> VisibilityReducer::reduce(const Texture2D* id_texture) {
+	std::vector<std::uint32_t> cleared_flags(m_flags.size(), 0);
+	ShaderStorageBuffer visibility_buffer(cleared_flags.data(), cleared_flags.size() * sizeof(std::uint32_t));
+	visibility_buffer.bind_base(0);
+
+	int num_pixel = id_texture->get_width();
 
 	m_shader->bind();
 	m_shader->set_uniform_1i("u_triangle_ids", 0);
 	GLCall(glActiveTexture(GL_TEXTURE0));
-	GLCall(glBindTexture(GL_TEXTURE_2D, id_texture));
+	id_texture->bind();
 
-	const GLuint num_groups = (num_pixel + LOCAL_SIZE - 1) / LOCAL_SIZE;
-	GLCall(glDispatchCompute(num_groups, num_groups, 1));
-	GLCall(glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT));
+	const unsigned int num_groups = (num_pixel + LOCAL_SIZE - 1) / LOCAL_SIZE;
+	m_shader->run(num_groups, num_groups, 1);
 
-	GLCall(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0,
-		static_cast<GLsizeiptr>(m_flags.size() * sizeof(std::uint32_t)), m_flags.data()));
+	visibility_buffer.get_data(m_flags.data(), m_flags.size() * sizeof(std::uint32_t));
 
-	GLCall(glBindTexture(GL_TEXTURE_2D, 0));
+	id_texture->unbind();
 	m_shader->unbind();
 
 	// Triangle IDs are 1-based, so slot 0 is the background and is skipped.

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "compute_shader.h"
+#include "texture_2d.h"
 
 /**
  * Reduces a rendered triangle-ID image to one visibility value per triangle.
@@ -30,7 +31,7 @@ public:
 	 * @param num_pixel Edge length of the square ID texture.
 	 * @return 1.0 for every visible triangle, 0.0 otherwise.
 	 */
-	std::vector<float> reduce(unsigned int id_texture, unsigned int num_pixel);
+	std::vector<float> reduce(const Texture2D* id_texture);
 
 private:
 	std::unique_ptr<ComputeShader> m_shader;
