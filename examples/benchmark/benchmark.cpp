@@ -24,16 +24,18 @@ int main() {
 	
 	// 1. Load satellite geometry
 	SPDLOG_INFO("Loading satellite model...");
-	std::string obj_path = get_path("../geometry_files/iss_26k.obj").string();
+	std::string obj_path = get_path("../../matlab/examples/geometries/shuttlecock_15360.obj").string();
 	std::unique_ptr<RotatableMeshSatellite> satellite = std::make_unique<RotatableMeshSatellite>(obj_path);
 	SPDLOG_INFO("Loaded {} triangles", satellite->get_num_triangles());
 
 	// 2. Gas-surface interaction model
 	std::unique_ptr<gsi::cpu::Sentman> gsi_model = std::make_unique<gsi::cpu::Sentman>(1,0.9f);
+	std::unique_ptr<gsi::gpu::Newton> gsi_model_gpu = std::make_unique<gsi::gpu::Newton>();
+
 	SPDLOG_INFO("Initialized Sentman GSI model");
 
 	// 3. Shading pipeline: determines which triangles face the incoming flow
-	const int num_pixels = 800; // number of pixels: affects computation time and accuracy of shading
+	const int num_pixels = 1000; // number of pixels: affects computation time and accuracy of shading
 	std::unique_ptr<ShadingPipeline> pipeline = std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::CoP, num_pixels);
 	SPDLOG_INFO("Created shading pipeline (algorithm=CoP, pixels={})", num_pixels);
 
@@ -42,7 +44,7 @@ int main() {
 	SPDLOG_INFO("Created hybrid aero load calculator");
 
 	// 5. create GPU based
-	std::unique_ptr<GPUAeroLoadCalculator> gpu_aero_calculator = std::make_unique<GPUAeroLoadCalculator>(*satellite, num_pixels);
+	std::unique_ptr<GPUAeroLoadCalculator> gpu_aero_calculator = std::make_unique<GPUAeroLoadCalculator>(*satellite, *gsi_model_gpu, num_pixels);
 	SPDLOG_INFO("Created GPU aero load calculator");
 
 	// 5. Atmospheric/environment conditions

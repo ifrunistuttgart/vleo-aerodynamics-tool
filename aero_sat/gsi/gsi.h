@@ -7,3 +7,4 @@
 #include "cpu/sentman.h"
 #include "cpu/storch.h"
 
+#include "gpu/newton.h"

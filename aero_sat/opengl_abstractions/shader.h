@@ -29,8 +29,11 @@ public:
 	// set uniforms
 	void set_uniform_4f(const std::string& name, const glm::vec4& vector);
 	void set_uniform_3f(const std::string& name, const glm::vec3& vector);
+	void set_uniform_2f(const std::string& name, const glm::vec2& vector);
+	void set_uniform_1f(const std::string& name, float value);
 	void set_uniform_mat4f(const std::string& name, const glm::mat4& matrix);
 	void set_uniform_mat3f(const std::string& name, const glm::mat3& matrix);
+
 
 
 private:

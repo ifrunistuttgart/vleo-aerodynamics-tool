@@ -33,6 +33,19 @@ public:
 
     virtual ~IGSIModelCPU() = default;
 
+    /**
+     * Sets a parameter for the GSI model.
+     *
+     * @param name The name of the parameter to set.
+     * @param value The value to set the parameter to.
+     */
     virtual void set_gsi_parameter(std::string name, float value) = 0;
+
+    /**
+     * Retrive the value of a specific gsi parameter
+     *
+     * @param name The name of the parameter
+     * @return The value of the parameter
+     */
     [[nodiscard]] virtual float get_gsi_parameter(std::string name) const = 0;
 };

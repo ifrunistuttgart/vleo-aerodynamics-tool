@@ -1,6 +1,7 @@
 #include "shader_storage_buffer.h"
 #include "gl_helpers.h"
 ShaderStorageBuffer::ShaderStorageBuffer(const void *data, size_t size) {
+    m_size = size;
     GLCall(glGenBuffers(1, &m_shader_storage_buffer_id));
     bind();
     GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GL_DYNAMIC_DRAW));
@@ -22,10 +23,17 @@ void ShaderStorageBuffer::unbind() {
 
 void ShaderStorageBuffer::bind_base(unsigned int binding_point) {
     GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, m_shader_storage_buffer_id));
+    m_binding_point = binding_point;
 }
 
 void ShaderStorageBuffer::get_data(void *data, size_t size) {
     bind();
     GLCall(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, size, data));
+    unbind();
+}
+
+void ShaderStorageBuffer::set_zero() {
+    bind();
+    GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER, m_size, nullptr, GL_DYNAMIC_DRAW));
     unbind();
 }

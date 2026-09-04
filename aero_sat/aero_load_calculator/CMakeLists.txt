@@ -7,7 +7,8 @@ add_library(aero_load_calculator
         Igsi_model_cpu.h
         Ishading_pipeline.h
         gpu_aero_load_calculator.cpp
-        gpu_aero_load_calculator.h)
+        gpu_aero_load_calculator.h
+        Igsi_model_gpu.h)
 
 target_compile_features(aero_load_calculator PRIVATE cxx_std_20)
 target_include_directories(aero_load_calculator 

@@ -10,14 +10,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 
-GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, int num_pixel)
-    :m_satellite(satellite), m_num_pixel(num_pixel) {
+GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, IGSIModelGPU& gsi_model, int num_pixel)
+    :m_satellite(satellite),m_gsi_model(gsi_model), m_num_pixel(num_pixel) {
 
     m_context = std::make_unique<GlfwOpenGLContext>(num_pixel, num_pixel, "GPU Aero Load Calculator", false);
     m_context->make_current();
     
     // Create shader program from embedded sources
-    m_shader = std::make_unique<Shader>(gsi_vertex_shader, gsi_fragment_shader, true);
+    m_shader = std::make_unique<Shader>(m_gsi_model.get_vertex_shader_code(), gsi_fragment_shader, true);
     m_shader->unbind();
     m_compute_shader = std::make_unique<ComputeShader>(Compute_shader, true);
     m_compute_shader->unbind();
@@ -34,11 +34,11 @@ GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, i
 
     //create framebuffers
     m_position_texture = std::make_unique<Texture2D>(m_num_pixel, m_num_pixel, GL_RGBA32F, GL_RGBA, GL_FLOAT);
-    m_normal_texture = std::make_unique<Texture2D>(m_num_pixel, m_num_pixel, GL_RGBA32F, GL_RGBA, GL_FLOAT);
+    m_pressure_vec_texture = std::make_unique<Texture2D>(m_num_pixel, m_num_pixel, GL_RGBA32F, GL_RGBA, GL_FLOAT);
     m_float_texture = std::make_unique<Texture2D>(m_num_pixel, m_num_pixel, GL_RGBA32F, GL_RGBA, GL_FLOAT);
 
     m_frame_buffer = std::make_unique<FrameBuffer>(m_num_pixel, m_num_pixel, m_position_texture.get());
-    m_frame_buffer->attach_texture_2d(m_normal_texture.get());
+    m_frame_buffer->attach_texture_2d(m_pressure_vec_texture.get());
     m_frame_buffer->attach_texture_2d(m_float_texture.get());
     m_frame_buffer->unbind();
 
@@ -70,6 +70,8 @@ GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, i
     layoutNormals.push<float>(3);           // vec3 normal
     VertexBuffer vbNormals(vertex_normals.data(), static_cast<unsigned int>(sizeof(float) * vertex_normals.size()));
     m_vertex_array->add_buffer(vbNormals, layoutNormals);
+
+    m_ssbo = std::make_unique<ShaderStorageBuffer>(&m_force_torque_data, sizeof(ForceTorqueData));
 }
 
 GPUAeroLoadCalculator::~GPUAeroLoadCalculator() {
@@ -79,9 +81,11 @@ GPUAeroLoadCalculator::~GPUAeroLoadCalculator() {
     m_frame_buffer.reset();
     m_vertex_array.reset();
     m_position_texture.reset();
-    m_normal_texture.reset();
+    m_pressure_vec_texture.reset();
     m_float_texture.reset();
+    m_ssbo.reset();
     m_context.reset();
+
 }
 
 int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_s, float surface_temp__K, AeroConditions &aero, glm::vec3 &torque__Nm, glm::vec3 &force__N) {
@@ -92,7 +96,8 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
     float bounding_sphere_radius = m_satellite.get_bounding_sphere_radius();
     float pixel_length = 2.0f * bounding_sphere_radius / static_cast<float>(m_num_pixel);
     float pixel_area = pixel_length * pixel_length;
-    SPDLOG_TRACE("pixel_area = {}", pixel_area);
+    float aero_pressure = 0.5f * aero.density__kg_per_m3 * glm::length(v_rel__m_per_s) * glm::length(v_rel__m_per_s);
+    SPDLOG_INFO("Aero pressure: {}", aero_pressure);
     glm::vec3 camera_position = v_rel_hat * bounding_sphere_radius;
 
     glm::mat4 orthoProj = glm::ortho(-bounding_sphere_radius,
@@ -139,48 +144,40 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
         m_shader->set_uniform_mat4f("projection",orthoProj);
         m_shader->set_uniform_mat3f("normalMatrix",normal_matrix);
         m_shader->set_uniform_3f("windDir",v_rel_hat);
+        m_shader->set_uniform_1f("aero_pressure", aero_pressure);
+        m_gsi_model.set_shader_uniforms(m_shader.get());
         glDrawArrays(GL_TRIANGLES, triangle_offset, static_cast<GLsizei>(num_triangles_per_mesh[i] * 3));
         triangle_offset += num_triangles_per_mesh[i] * 3;
     }
     m_vertex_array->unbind();
     m_shader->unbind();
 
-    GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT));
+    m_frame_buffer->unbind();
 
     SPDLOG_INFO("Dispatching compute shader with {}x{} groups.", (m_num_pixel + 15u) / 16u, (m_num_pixel + 15u) / 16u);
     const GLuint groups_x = (m_num_pixel + 15u) / 16u;
     const GLuint groups_y = (m_num_pixel + 15u) / 16u;
 
-    struct ForceTorqueData {
-        glm::ivec4 force;
-        glm::ivec4 torque;
-    };
-
     static_assert(sizeof(ForceTorqueData) == 2 * sizeof(glm::ivec4));
 
     // display texture
-    m_frame_buffer->unbind();
-    //m_normal_texture->plot_texture("normal_texture.png");
+    GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT));
+    //m_pressure_vec_texture->plot_texture("normal_texture.png");
     //m_position_texture->plot_texture("position_texture.png");
     //m_float_texture->plot_texture("float_texture.png");
-
-    ForceTorqueData force_torque_data{ glm::ivec4(0), glm::ivec4(0) };
-    ShaderStorageBuffer ssbo = ShaderStorageBuffer(&force_torque_data, sizeof(ForceTorqueData));
-
+    m_ssbo->set_zero();
     m_compute_shader->bind();
     m_compute_shader->set_uniform_1f("pixelArea", pixel_area);
-    m_compute_shader->set_uniform_1f("density", aero.density__kg_per_m3);
-    m_compute_shader->set_uniform_1f("velocity_mag", glm::length(v_rel__m_per_s));
     m_compute_shader->set_texture(0, *m_position_texture);
-    m_compute_shader->set_texture(1, *m_normal_texture);
+    m_compute_shader->set_texture(1, *m_pressure_vec_texture);
     m_compute_shader->set_texture(2, *m_float_texture);
-    ssbo.bind_base(3);
+    m_ssbo->bind_base(3);
     m_compute_shader->run(groups_x, groups_y, 1);
     m_compute_shader->unbind();
 
-    ssbo.get_data(&force_torque_data, sizeof(ForceTorqueData));
+    m_ssbo->get_data(&m_force_torque_data, sizeof(ForceTorqueData));
 
-    force__N = glm::vec1(1.0e-12)* glm::vec3(force_torque_data.force);
-    torque__Nm =  glm::vec1(1.0e-12)* glm::vec3(force_torque_data.torque);
+    force__N = glm::vec1(1.0e-12)* glm::vec3(m_force_torque_data.force);
+    torque__Nm =  glm::vec1(1.0e-12)* glm::vec3(m_force_torque_data.torque);
     return 0;
 }

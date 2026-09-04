@@ -25,7 +25,7 @@ int main() {
 	spdlog::set_level(spdlog::level::info);
 	// 1. Load satellite geometry
 	SPDLOG_INFO("Loading satellite model...");
-	std::string obj_path = get_path("../geometry_files/tetraeder.obj").string();
+	std::string obj_path = get_path("../geometry_files/shuttlecock_15k.obj").string();
 	std::unique_ptr<RotatableMeshSatellite> satellite = std::make_unique<RotatableMeshSatellite>(obj_path);
 	SPDLOG_INFO("Loaded {} triangles", satellite->get_num_triangles());
 
@@ -34,6 +34,7 @@ int main() {
 
 	//--------traditional torque and force calculation for comparison------------
 	std::unique_ptr<gsi::cpu::Newton> gsi_model = std::make_unique<gsi::cpu::Newton>();
+	std::unique_ptr<gsi::gpu::Newton> gsi_model_gpu = std::make_unique<gsi::gpu::Newton>();
 
 	std::unique_ptr<ShadingPipeline> pipeline =
 	std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::CoP, num_pixels);
@@ -44,7 +45,7 @@ int main() {
 	//--------GPU torque and force calculation-------------------------------
 	// 4. Aero load calculator: combines geometry, shading, and the GSI model
 	std::unique_ptr<GPUAeroLoadCalculator> aero_calculator =
-		std::make_unique<GPUAeroLoadCalculator>(*satellite, num_pixels);
+		std::make_unique<GPUAeroLoadCalculator>(*satellite, *gsi_model_gpu, num_pixels);
 	SPDLOG_INFO("Created GPU aero load calculator");
 
 	// 5. Atmospheric/environment conditions

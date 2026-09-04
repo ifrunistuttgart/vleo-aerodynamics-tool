@@ -7,12 +7,10 @@ layout(local_size_x = 16, local_size_y = 16) in;
 
 // Image bindings matching C++ textures
 layout(rgba32f, binding = 0) uniform readonly image2D img_position;
-layout(rgba32f, binding = 1) uniform readonly image2D img_normal;
+layout(rgba32f, binding = 1) uniform readonly image2D img_pressure_vec;
 layout(rgba32f, binding = 2) uniform readonly image2D img_float;
 
 uniform float pixelArea;
-uniform float density;
-uniform float velocity_mag;
 
 // SSBO using int to support atomicAdd (values are scaled to pico-Newtons)
 layout(std430, binding = 3) buffer LoadBuffer
@@ -38,14 +36,13 @@ void main()
     if (coord.x < fb_size.x && coord.y < fb_size.y)
     {
         vec3 position = imageLoad(img_position, coord).rgb;
-        vec3 normal   = imageLoad(img_normal, coord).rgb;
+        vec3 pressureVec   = imageLoad(img_pressure_vec, coord).rgb;
         float cos_d   = imageLoad(img_float, coord).r;
 
         if (cos_d > 0.0)
         {
-            float cp = 2.0 * cos_d * cos_d;
             float area = pixelArea / cos_d;
-            pixelForce  = ivec3(-0.5 * density * velocity_mag * velocity_mag * cp * area * 1.0e12 * normal);
+            pixelForce  = ivec3(pressureVec * area * 1.0e12 );
             pixelTorque = ivec3(cross(position, vec3(pixelForce)));
         }
     }
@@ -53,7 +50,6 @@ void main()
     // 2. Write individual thread contributions to shared memory
     groupForce[localID]  = pixelForce;
     groupTorque[localID] = pixelTorque;
-
     // Barrier ensures all threads in the workgroup have written to shared memory
     barrier();
 
@@ -69,16 +65,23 @@ void main()
         barrier();
     }
 
-    // 4. Thread 0 writes the single workgroup total to global SSBO memory via atomicAdd
+    // 4. Thread 0 writes the single workgroup total to global SSBO memory via atomicAdd.
+    //    Skip global writes entirely when both force and torque sums are zero.
     if (localID == 0u)
     {
-        atomicAdd(Force.x, groupForce[0].x);
-        atomicAdd(Force.y, groupForce[0].y);
-        atomicAdd(Force.z, groupForce[0].z);
+        ivec3 totalForce = groupForce[0];
+        ivec3 totalTorque = groupTorque[0];
 
-        atomicAdd(Torque.x, groupTorque[0].x);
-        atomicAdd(Torque.y, groupTorque[0].y);
-        atomicAdd(Torque.z, groupTorque[0].z);
+        if (any(notEqual(totalForce, ivec3(0))) || any(notEqual(totalTorque, ivec3(0))))
+        {
+            atomicAdd(Force.x, totalForce.x);
+            atomicAdd(Force.y, totalForce.y);
+            atomicAdd(Force.z, totalForce.z);
+
+            atomicAdd(Torque.x, totalTorque.x);
+            atomicAdd(Torque.y, totalTorque.y);
+            atomicAdd(Torque.z, totalTorque.z);
+        }
     }
 }
 )GLSL";

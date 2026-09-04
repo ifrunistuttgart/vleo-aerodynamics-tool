@@ -11,7 +11,9 @@ target_include_directories(gsi
 target_link_libraries(gsi INTERFACE glm::glm spdlog::spdlog aero_load_calculator)
 
 add_subdirectory(cpu)
+add_subdirectory(gpu)
 
 target_link_libraries(gsi INTERFACE AeroSat::gsi::cpu)
+target_link_libraries(gsi INTERFACE AeroSat::gsi::gpu)
 
 add_library(AeroSat::gsi ALIAS gsi)
