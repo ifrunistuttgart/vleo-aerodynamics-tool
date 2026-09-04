@@ -18,6 +18,7 @@
 #include "core.h"
 #include "gsi.h"
 #include "rotatable_mesh_satellite.h"
+#include "gpu_aero_load_calculator.h"
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
 #include "hybrid_aero_load_calculator.h"
@@ -63,6 +64,41 @@ public:
             std::string cls = cmd_string.substr(0, dot);
             std::string cmd = (dot != std::string::npos) ? cmd_string.substr(dot + 1) : "";
             matlab_logger->log(LEVEL_INFO, "Received command: " + cmd + " for class: " +cls, "mex_gateway.cpp", __LINE__);
+            if (cls == "GPUNewton") {
+                if (cmd == "new") {
+                    matlab_logger->log(LEVEL_INFO, "Creating new GPUNewton instance.", "mex_gateway.cpp", __LINE__);
+                    validate_input_size(inputs, 1);
+                    validate_output_size(outputs, 1);
+                    gpu_gsi_map.insert({gpu_gsi_max_id, std::make_unique<gsi::gpu::Newton>()});
+                    outputs[0] = factory.createScalar<int>(gpu_gsi_max_id);
+                    gpu_gsi_max_id++;
+                    return;
+                }
+                if (cmd == "delete") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 0);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    gpu_gsi_map.erase(id);
+                    return;
+                }
+                if (cmd == "get_gsi_parameter") {
+                    validate_input_size_min(inputs, 3);
+                    validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 2, "string", 1);
+                    float value = gpu_gsi_map.at(inputs[1][0]).get()->get_gsi_parameter(inputs[2][0]);
+                    outputs[0] = factory.createScalar<float>(value);
+                    return;
+                }
+                if (cmd == "set_gsi_parameter") {
+                    validate_input_size_min(inputs, 4);
+                    validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 2, "string", 1);
+                    validate_argument(inputs, 3, "float", 1);
+                    gpu_gsi_map.at(inputs[1][0]).get()->set_gsi_parameter(inputs[2][0], inputs[3][0]);
+                    return;
+                }
+            }
             if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "delete") {
                 validate_input_size(inputs, 2);
                 validate_output_size(outputs, 0);
@@ -127,6 +163,62 @@ public:
                 gsi_map.at(inputs[1][0]).get()->set_gsi_parameter(inputs[2][0], inputs[3][0]);
                 return;
 
+            }
+            if (cls == "GPUAeroLoadCalculator") {
+                if (cmd == "new") {
+                    validate_input_size(inputs, 4);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 2, "int", 1);
+                    validate_argument(inputs, 3, "int", 1);
+
+                    const int satellite_id = inputs[1][0];
+                    const int gsi_id = inputs[2][0];
+                    const int num_pixels = inputs[3][0];
+
+                    gpu_aero_load_calculator_map.insert(
+                        {gpu_aero_load_calculator_max_id,
+                         std::make_unique<GPUAeroLoadCalculator>(
+                             *satellite_map.at(satellite_id),
+                             *gpu_gsi_map.at(gsi_id),
+                             num_pixels)}
+                    );
+
+                    outputs[0] = factory.createScalar<int>(gpu_aero_load_calculator_max_id);
+                    gpu_aero_load_calculator_max_id++;
+                    return;
+                }
+                if (cmd == "calc_aero_torque_force") {
+                    validate_input_size(inputs, 5);
+                    validate_output_size(outputs, 2);
+                    validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 2, "double", 3);
+                    validate_argument(inputs, 3, "double", 1);
+                    validate_argument(inputs, 4, "int", 1);
+
+                    const int id = inputs[1][0];
+                    GPUAeroLoadCalculator* calculator = gpu_aero_load_calculator_map.at(id).get();
+                    AeroConditions& aero_conditions = *aero_conditions_map.at(inputs[4][0]);
+
+                    const glm::vec3 velocity__m_per_s(inputs[2][0], inputs[2][1], inputs[2][2]);
+                    const float surface_temp__K = inputs[3][0];
+                    glm::vec3 torque__Nm(0.0f, 0.0f, 0.0f);
+                    glm::vec3 force__N(0.0f, 0.0f, 0.0f);
+
+                    calculator->calc_aero_torque_force(velocity__m_per_s, surface_temp__K, aero_conditions, torque__Nm, force__N);
+
+                    outputs[0] = factory.createArray({3}, {force__N.x, force__N.y, force__N.z});
+                    outputs[1] = factory.createArray({3}, {torque__Nm.x, torque__Nm.y, torque__Nm.z});
+                    return;
+                }
+                if (cmd == "delete") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 0);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    gpu_aero_load_calculator_map.erase(id);
+                    return;
+                }
             }
             if (cls == "Newton") {
                 if (cmd == "new") {
@@ -567,14 +659,18 @@ private:
 
     matlab::data::ArrayFactory factory;
     std::unique_ptr<MatlabLogger> matlab_logger;
+    std::unordered_map<int, std::unique_ptr<gsi::gpu::Newton>> gpu_gsi_map;
     std::unordered_map<int, std::unique_ptr<IGSIModelCPU>> gsi_map;
     std::unordered_map<int, std::unique_ptr<AeroConditions>> aero_conditions_map;
     std::unordered_map<int, std::unique_ptr<RotatableMeshSatellite>> satellite_map;
     std::unordered_map<int, std::unique_ptr<ShadingPipeline>> shading_pipeline_map;
     std::unordered_map<int, std::unique_ptr<HybridForceTorqueCalculator>> hybrid_aero_load_calculator_map;
+    std::unordered_map<int, std::unique_ptr<GPUAeroLoadCalculator>> gpu_aero_load_calculator_map;
+    int gpu_gsi_max_id = 0;
     int gsi_max_id = 0;
     int aero_conditions_max_id = 0;
     int satellite_max_id = 0;
     int shading_pipeline_max_id = 0;
     int hybrid_aero_max_id = 0;
+    int gpu_aero_load_calculator_max_id = 0;
 };
