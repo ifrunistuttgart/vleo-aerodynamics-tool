@@ -8,6 +8,9 @@
 
 clear; close all;
 
+% Change log level
+setLogLevel("info");
+
 %% 1. Atmosphere
 % Representative conditions for roughly 300 km altitude. Atomic oxygen is
 % the dominant species in VLEO, hence the particle mass of 16 u.
