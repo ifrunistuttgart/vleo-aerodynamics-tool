@@ -29,6 +29,10 @@ using clk = std::chrono::steady_clock;
 constexpr float SURFACE_TEMP__K = 300.0f;
 constexpr float SPEED__M_PER_S = 7800.0f;
 
+// Energy accommodation coefficient. It is a property of the gas-surface pair, so it
+// lives in the GSI model rather than in AeroConditions.
+constexpr float ALPHA_E = 0.9f;
+
 // Hinge deliberately off the body origin, so the model matrix carries a
 // non-zero translation column.
 constexpr std::array<float, 3> HINGE_ORIGIN{-0.15f, 0.0f, 0.05f};
@@ -94,7 +98,7 @@ void report_construction_order_invariant(RotatableMeshSatellite& sat) {
 
 void run_fingerprint(RotatableMeshSatellite& sat) {
     AeroConditions aero = make_conditions();
-    gsi::cpu::Sentman gsi(1,0.9f);
+    gsi::cpu::Sentman gsi(1, ALPHA_E);
 
     report_construction_order_invariant(sat);
 
@@ -145,7 +149,7 @@ void run_fingerprint(RotatableMeshSatellite& sat) {
 void run_timings(RotatableMeshSatellite& sat, const std::vector<unsigned int>& resolutions) {
     const unsigned int N = sat.get_num_triangles();
     AeroConditions aero = make_conditions();
-    gsi::cpu::Sentman gsi(1,0.9f);
+    gsi::cpu::Sentman gsi(1,ALPHA_E);
     const glm::vec3 v(SPEED__M_PER_S, 0.0f, 0.0f);
     const glm::vec3 vhat = glm::normalize(v);
 

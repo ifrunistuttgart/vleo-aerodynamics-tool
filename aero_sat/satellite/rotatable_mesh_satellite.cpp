@@ -1,5 +1,7 @@
 #include "rotatable_mesh_satellite.h"
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
 
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
@@ -12,47 +14,44 @@ RotatableMeshSatellite::RotatableMeshSatellite(std::string file)
 	  m_transformed_centroids(m_centroids.size()) {
 }
 
-void RotatableMeshSatellite::refresh_transformed_data() {
-	m_transformed_vertices = apply_transform(m_vertices, 9);
-	m_transformed_normals = apply_normal_transform(m_normals, 3);
-	m_transformed_centroids = apply_transform(m_centroids, 3);
-	float max_distance = 0.0f;
-	for (size_t i = 0; i < m_transformed_vertices.size(); i += 3) {
-		float distance = std::sqrt(m_transformed_vertices[i] * m_transformed_vertices[i] +
-			m_transformed_vertices[i + 1] * m_transformed_vertices[i + 1] +
-			m_transformed_vertices[i + 2] * m_transformed_vertices[i + 2]);
-		max_distance = std::max(max_distance, distance);
-	}
-	m_bounding_sphere_radius = max_distance;
-	m_transformed_data_current = true;
-}
-
 std::span<const float> RotatableMeshSatellite::get_vertices() {
-	if (!m_transformed_data_current) {
-		refresh_transformed_data();
-	}
+	refresh_transforms();
 	return std::span<const float>(m_transformed_vertices.data(), m_transformed_vertices.size());
 }
 
 std::span<const float> RotatableMeshSatellite::get_normals() {
-	if (!m_transformed_data_current) {
-		refresh_transformed_data();
-	}
+	refresh_transforms();
 	return std::span<const float>(m_transformed_normals.data(), m_transformed_normals.size());
 }
 
 std::span<const float> RotatableMeshSatellite::get_centroids() {
-	if (!m_transformed_data_current) {
-		refresh_transformed_data();
-	}
+	refresh_transforms();
 	return std::span<const float>(m_transformed_centroids.data(), m_transformed_centroids.size());
 }
 
 float RotatableMeshSatellite::get_bounding_sphere_radius() {
-	if (!m_transformed_data_current) {
-		refresh_transformed_data();
-	}
+	refresh_transforms();
 	return m_bounding_sphere_radius;
+}
+
+void RotatableMeshSatellite::refresh_transforms() {
+	if (!m_transforms_outdated) {
+		return;
+	}
+	apply_transform(m_vertices, 9, m_transformed_vertices);
+	apply_transform(m_centroids, 3, m_transformed_centroids);
+	apply_normal_transform(m_normals, 3, m_transformed_normals);
+
+	// Compare squared distances and take a single square root at the end. sqrt is
+	// monotonic, so the winning vertex - and therefore the radius - is unchanged.
+	float max_distance_squared = 0.0f;
+	for (size_t i = 0; i < m_transformed_vertices.size(); i += 3) {
+		const glm::vec3 vertex(m_transformed_vertices[i], m_transformed_vertices[i + 1], m_transformed_vertices[i + 2]);
+		max_distance_squared = std::max(max_distance_squared, glm::dot(vertex, vertex));
+	}
+	m_bounding_sphere_radius = std::sqrt(max_distance_squared);
+
+	m_transforms_outdated = false;
 }
 
 //TODO meshid statt surface id
@@ -69,46 +68,42 @@ int RotatableMeshSatellite::turn_surface_around_axis(const int surface_id, float
 
 	// Applied to the pristine geometry, so this is absolute, not incremental.
 	m_model_matrices[surface_id] = transform;
-	m_transformed_data_current = false;
+	m_transforms_outdated = true;
 	return 0; // Success
 }
 
-std::vector<float> RotatableMeshSatellite::apply_transform(std::span<float> coordinates, int num_entries_per_triangle) {
-	std::vector<float> transformed(coordinates.begin(), coordinates.end());
+void RotatableMeshSatellite::apply_transform(std::span<const float> coordinates, int num_entries_per_triangle, std::vector<float>& target) const {
+	size_t offset = 0;
+	for (size_t mesh_id = 0; mesh_id < m_model_matrices.size(); ++mesh_id) {
+		const glm::mat4& transform = m_model_matrices[mesh_id];
+		const size_t end = offset + static_cast<size_t>(m_num_triangles_per_mesh[mesh_id]) * num_entries_per_triangle;
 
-	int offset = 0;
-	for (int mesh_id = 0; mesh_id < m_model_matrices.size(); ++mesh_id) {
-		glm::mat4 transform = m_model_matrices[mesh_id];
-
-		for (size_t i = offset; i < (offset + m_num_triangles_per_mesh[mesh_id] * num_entries_per_triangle); i += 3) {
+		for (size_t i = offset; i < end; i += 3) {
 			glm::vec4 vertex(coordinates[i], coordinates[i + 1], coordinates[i + 2], 1.0f);
 			glm::vec4 transformed_vertex = transform * vertex;
-			transformed[i] = transformed_vertex.x;
-			transformed[i + 1] = transformed_vertex.y;
-			transformed[i + 2] = transformed_vertex.z;
+			target[i] = transformed_vertex.x;
+			target[i + 1] = transformed_vertex.y;
+			target[i + 2] = transformed_vertex.z;
 		}
-		
-		offset += m_num_triangles_per_mesh[mesh_id] * num_entries_per_triangle; // Move to the next mesh's vertices
+
+		offset = end; // Move to the next mesh's vertices
 	}
-	return transformed;
 }
 
-std::vector<float> RotatableMeshSatellite::apply_normal_transform(std::span<float> normals, int num_entries_per_triangle) {
-	std::vector<float> transformed(normals.begin(), normals.end());
-
-	int offset = 0;
-	for (int mesh_id = 0; mesh_id < m_model_matrices.size(); ++mesh_id) {
+void RotatableMeshSatellite::apply_normal_transform(std::span<const float> normals, int num_entries_per_triangle, std::vector<float>& target) const {
+	size_t offset = 0;
+	for (size_t mesh_id = 0; mesh_id < m_model_matrices.size(); ++mesh_id) {
 		glm::mat3 normal_transform = glm::transpose(glm::inverse(glm::mat3(m_model_matrices[mesh_id])));
+		const size_t end = offset + static_cast<size_t>(m_num_triangles_per_mesh[mesh_id]) * num_entries_per_triangle;
 
-		for (size_t i = offset; i < (offset + m_num_triangles_per_mesh[mesh_id] * num_entries_per_triangle); i += 3) {
+		for (size_t i = offset; i < end; i += 3) {
 			glm::vec3 normal(normals[i], normals[i + 1], normals[i + 2]);
 			glm::vec3 transformed_normal = glm::normalize(normal_transform * normal);
-			transformed[i] = transformed_normal.x;
-			transformed[i + 1] = transformed_normal.y;
-			transformed[i + 2] = transformed_normal.z;
+			target[i] = transformed_normal.x;
+			target[i + 1] = transformed_normal.y;
+			target[i + 2] = transformed_normal.z;
 		}
 
-		offset += m_num_triangles_per_mesh[mesh_id] * num_entries_per_triangle;
+		offset = end;
 	}
-	return transformed;
 }

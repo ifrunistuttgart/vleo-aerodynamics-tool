@@ -38,7 +38,7 @@ protected:
     }
 
     void SetUp() override {
-        std::string obj_path = GetTestDataPath("geometries/tetraeder.obj");
+        std::string obj_path = GetTestDataPath("../geometries/tetraeder.obj");
         //std::string obj_path = GetTestDataPath("International Space Station.obj");
 		SPDLOG_INFO("[TEST] loading Test data from: {}", obj_path);
         satellite = std::make_unique<StaticMeshSatellite>(obj_path);

@@ -26,7 +26,7 @@ protected:
     std::unique_ptr<StaticMeshSatellite> satellite;
 
     void SetUp() override {
-        std::string obj_path = GetTestDataPath("geometries/tetraeder.obj");
+        std::string obj_path = GetTestDataPath("../geometries/tetraeder.obj");
 		SPDLOG_INFO("[TEST] Loading OBJ from: {}", obj_path);
         satellite = std::make_unique<StaticMeshSatellite>(obj_path);
 		SPDLOG_INFO("[TEST] Loaded {} triangles", satellite->get_num_triangles());

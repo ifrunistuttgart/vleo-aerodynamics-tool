@@ -13,7 +13,7 @@ protected:
     RotatableMeshSatellite* satellite = nullptr;
 
     void SetUp() override {
-        std::string obj_path = GetTestDataPath(__FILE__, "geometries/tetraeder.obj");
+        std::string obj_path = GetTestDataPath(__FILE__, "../geometries/tetraeder.obj");
 		SPDLOG_INFO("[TEST] Loading OBJ from: {}", obj_path);
         satellite = new RotatableMeshSatellite(obj_path);
 		SPDLOG_INFO("[TEST] Loaded {} triangles", satellite->get_num_triangles());
