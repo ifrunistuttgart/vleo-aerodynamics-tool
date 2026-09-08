@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -32,13 +33,17 @@ using clk = std::chrono::steady_clock;
 constexpr float SURFACE_TEMP__K = 300.0f;
 constexpr float SPEED__M_PER_S = 7800.0f;
 
+// Energy accommodation coefficient. It is a property of the gas-surface pair, so it
+// lives in the GSI model rather than in AeroConditions.
+constexpr float ALPHA_E = 0.9f;
+
 // Hinge deliberately off the body origin, so the model matrix carries a
 // non-zero translation column.
 constexpr std::array<float, 3> HINGE_ORIGIN{-0.15f, 0.0f, 0.05f};
 constexpr std::array<float, 3> HINGE_AXIS{0.0f, 0.0f, -1.0f};
 
 AeroConditions make_conditions() {
-    return AeroConditions{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f, 0.9f};
+    return AeroConditions{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f};
 }
 
 const std::vector<glm::vec3>& flow_directions() {
@@ -77,11 +82,22 @@ double time_ms(int reps, F&& f) {
 
 void run_fingerprint(RotatableMeshSatellite& sat) {
     AeroConditions aero = make_conditions();
-    Sentman gsi(1);
+    Sentman gsi(1, ALPHA_E);
 
     std::printf("# rot alg    P  dir   visible                 hash          Fx            Fy            Fz"
                 "            Tx            Ty            Tz\n");
     for (int rotated = 0; rotated <= 1; ++rotated) {
+        // Sentman divides only by |v_rel|, so it requires unit normals. Report how far
+        // the transformed normals drift from unit length in this pose.
+        sat.turn_surface_around_axis(0, rotated ? 0.785398163f : 0.0f, HINGE_ORIGIN, HINGE_AXIS);
+        const auto normals = sat.get_normals();
+        float max_norm_error = 0.0f;
+        for (std::size_t i = 0; i < normals.size(); i += 3) {
+            const glm::vec3 n(normals[i], normals[i + 1], normals[i + 2]);
+            max_norm_error = std::max(max_norm_error, std::abs(glm::length(n) - 1.0f));
+        }
+        std::printf("# rot=%d max abs(|n|-1) over all normals: %.6e\n", rotated, max_norm_error);
+
         for (unsigned int P : {512u, 1024u}) {
             for (int alg = 0; alg <= 1; ++alg) {
                 // Set the pose before the pipeline is built, mirroring soar_rotatable.m.
@@ -115,7 +131,7 @@ void run_fingerprint(RotatableMeshSatellite& sat) {
 void run_timings(RotatableMeshSatellite& sat, const std::vector<unsigned int>& resolutions) {
     const unsigned int N = sat.get_num_triangles();
     AeroConditions aero = make_conditions();
-    Sentman gsi(1);
+    Sentman gsi(1, ALPHA_E);
     const glm::vec3 v(SPEED__M_PER_S, 0.0f, 0.0f);
     const glm::vec3 vhat = glm::normalize(v);
 
