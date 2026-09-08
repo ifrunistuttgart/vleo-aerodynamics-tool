@@ -50,6 +50,8 @@ pixi install                                   # one-time: resolve and download 
 pixi run build                                 # build the library and examples
 pixi run run-example compute_force_and_torque  # force/torque on a shuttlecock geometry
 pixi run run-example import_and_visualize      # load a mesh and view it
+pixi run test                                  # build and run the GoogleTest suites
+pixi run clean                                 # remove out/ and matlab/bin
 ```
 
 
@@ -105,29 +107,25 @@ The full program, including visualization of the shading result, is in
 
 ## From MATLAB
 
-The bindings are off by default — building the core library never requires MATLAB.
+To use the toolbox in Matlab, you need to build it first (this also automatically builds the C++ toolbox):
 
 ```powershell
 pixi run build-matlab
 ```
 
-This produces `matlab/bin/MexGateway.mexw64` together with every DLL it needs, copied in
-alongside it, so no `PATH` changes are required. Then, in MATLAB:
+Now from Matlab you can add everything to path by double clicking on `matlab\Vat.prj` or by adding the following the folders to path:
 
 ```matlab
 addpath('<repo_root>\matlab')
 addpath('<repo_root>\matlab\bin')
-cd('<repo_root>\matlab\examples')
-quickstart
 ```
 
-[quickstart.m](matlab/examples/quickstart.m) walks through the whole path — atmosphere, GSI
+Check out the Matlab examples:
+- [quickstart.m](matlab/examples/quickstart.m) walks through the whole path — atmosphere, GSI
 model, geometry, shading, force and torque — and ends by visualizing which surfaces the flow
-reached. [soar_rotatable.m](matlab/examples/soar_rotatable.m) goes further, sweeping the
+reached. 
+- [soar_rotatable.m](matlab/examples/soar_rotatable.m) goes further, sweeping the
 aerodynamic torque over a full sphere of flow directions with one panel deflected.
-
-Logging defaults to DEBUG, which is slow because every message crosses into the MATLAB engine.
-Turn it down with `setLogLevel("warn")` before benchmarking.
 
 ## Gas–surface interaction models
 
@@ -162,6 +160,47 @@ That paper describes the original MATLAB panel-method implementation, which live
 branch at tag [`paper-v1.0`](https://github.com/ifrunistuttgart/vleo-aerodynamics-tool/releases/tag/paper-v1.0).
 Use that branch to reproduce the
 paper; this one is its GPU-accelerated successor.
+
+## FAQ
+
+### `pixi run build-matlab` fails while MATLAB is open
+
+A MATLAB session that has called into the toolbox keeps `MexGateway.mexw64` memory-mapped, and
+Windows will not let the build overwrite a mapped file. The build stops with:
+
+```
+could not write these files into ...\matlab\bin:
+    MexGateway.mexw64
+They are locked by a running MATLAB that has loaded the toolbox.
+Run  clear mex  in MATLAB -- you do not need to close it -- and build again.
+```
+
+Run `clear mex` and build again. Closing MATLAB is not necessary, and deleting the DLLs in
+`matlab/bin` does not help.
+
+### I rebuilt, but MATLAB still runs the old code
+
+Same cause: MATLAB keeps the previously loaded mex file mapped until you `clear mex`. Run it
+after a successful rebuild too, or the changes will not be visible in that session.
+
+### How do I turn down the logging?
+
+Logging defaults to DEBUG, which is slow because every message crosses into the MATLAB engine.
+Turn it down with `setLogLevel("warn")` before benchmarking.
+
+### How do I give the toolbox to someone without a checkout?
+
+`matlab/` is self-contained on purpose: `matlab/bin` holds `MexGateway.mexw64` plus every DLL it
+resolves, including the MSVC runtime, so the target machine needs neither a pixi environment nor
+the VC++ redistributable. It does still need MATLAB and a GPU driver offering OpenGL 4.3. Copy
+`matlab/` as it stands and run:
+
+```matlab
+addpath('<folder>'); addpath('<folder>\bin')
+```
+
+`matlab/bin` is generated and is in `.gitignore`, so build once with `pixi run build-matlab`
+before copying — a `git clone` will not provide it.
 
 ## License
 
