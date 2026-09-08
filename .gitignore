@@ -73,6 +73,9 @@ Testing/
 
 # Visual Studio
 .vs
+# Visual Studio Code
+.vscode
+
 #clion
 .idea
 
