@@ -8,7 +8,8 @@
             "binaryDir": "${sourceDir}/out/build/${presetName}",
             "installDir": "${sourceDir}/out/install/${presetName}",
             "cacheVariables": {
-                "CMAKE_PREFIX_PATH": "$env{CONDA_PREFIX}"
+                "CMAKE_PREFIX_PATH": "$env{CONDA_PREFIX}",
+                "BUILD_TESTING": "ON"
             }
         },
         {
@@ -59,12 +60,14 @@
         {
             "name": "pixi-debug",
             "configurePreset": "pixi-debug",
-            "output": { "outputOnFailure": true }
+            "output": { "outputOnFailure": true },
+            "execution": { "noTestsAction": "error" }
         },
         {
             "name": "pixi-release",
             "configurePreset": "pixi-release",
-            "output": { "outputOnFailure": true }
+            "output": { "outputOnFailure": true },
+            "execution": { "noTestsAction": "error" }
         }
     ]
 }
