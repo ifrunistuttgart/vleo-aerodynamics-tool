@@ -2,7 +2,7 @@
     "version": 3,
     "configurePresets": [
         {
-            "name": "pixi-base",
+            "name": "base",
             "hidden": true,
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/out/build/${presetName}",
@@ -13,30 +13,21 @@
             }
         },
         {
-            "name": "pixi-debug",
-            "displayName": "Pixi Debug (RelWithDebInfo)",
-            "description": "Uses RelWithDebInfo, not Debug: conda-forge's Windows C++ packages are Release-only (/MD); mixing them with a /MDd (Debug) build corrupts memory across the DLL boundary. See CLAUDE.md.",
-            "inherits": "pixi-base",
+            "name": "dev",
+            "displayName": "Dev (RelWithDebInfo: optimized, with debug symbols)",
+            "description": "The normal build. RelWithDebInfo is /O2 with debug symbols, so this is already an optimized build despite being the everyday one. A real Debug build is deliberately not offered: conda-forge's Windows C++ packages are Release-only (/MD), and a /MDd build corrupts memory across the DLL boundary into VTK/assimp/spdlog.",
+            "inherits": "base",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "BUILD_MATLAB_BINDINGS": "OFF"
             }
         },
         {
-            "name": "pixi-release",
-            "displayName": "Pixi Release",
-            "inherits": "pixi-base",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "BUILD_MATLAB_BINDINGS": "OFF"
-            }
-        },
-        {
-            "name": "pixi-debug-matlab",
-            "displayName": "Pixi Debug (RelWithDebInfo) + MATLAB bindings",
-            "description": "Same as pixi-debug plus BUILD_MATLAB_BINDINGS=ON, and deliberately sharing pixi-debug's build tree so switching between the two does not recompile the core toolbox. Both presets pin BUILD_MATLAB_BINDINGS explicitly, so switching flips it rather than inheriting whichever value the shared cache happened to hold. Requires MATLAB: find_package(Matlab) is REQUIRED, so configuring fails without it, which is why this is opt-in rather than the default.",
-            "inherits": "pixi-debug",
-            "binaryDir": "${sourceDir}/out/build/pixi-debug",
+            "name": "dev-matlab",
+            "displayName": "Dev + MATLAB bindings",
+            "description": "Identical to dev plus BUILD_MATLAB_BINDINGS=ON, and deliberately sharing dev's build tree so switching between the two does not recompile the core toolbox. Both presets pin BUILD_MATLAB_BINDINGS explicitly, so switching flips it rather than inheriting whichever value the shared cache happened to hold. Separate only because find_package(Matlab) is REQUIRED, so configuring this fails on a machine without MATLAB.",
+            "inherits": "dev",
+            "binaryDir": "${sourceDir}/out/build/dev",
             "cacheVariables": {
                 "BUILD_MATLAB_BINDINGS": "ON"
             }
@@ -44,28 +35,18 @@
     ],
     "buildPresets": [
         {
-            "name": "pixi-debug",
-            "configurePreset": "pixi-debug"
+            "name": "dev",
+            "configurePreset": "dev"
         },
         {
-            "name": "pixi-release",
-            "configurePreset": "pixi-release"
-        },
-        {
-            "name": "pixi-debug-matlab",
-            "configurePreset": "pixi-debug-matlab"
+            "name": "dev-matlab",
+            "configurePreset": "dev-matlab"
         }
     ],
     "testPresets": [
         {
-            "name": "pixi-debug",
-            "configurePreset": "pixi-debug",
-            "output": { "outputOnFailure": true },
-            "execution": { "noTestsAction": "error" }
-        },
-        {
-            "name": "pixi-release",
-            "configurePreset": "pixi-release",
+            "name": "dev",
+            "configurePreset": "dev",
             "output": { "outputOnFailure": true },
             "execution": { "noTestsAction": "error" }
         }

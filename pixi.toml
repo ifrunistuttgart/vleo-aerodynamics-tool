@@ -29,14 +29,14 @@ CMAKE_GENERATOR_TOOLSET = ""
 CMAKE_ARGS = ""
 
 [tasks]
-configure = "cmake --preset pixi-debug"
-build = { cmd = "cmake --build --preset pixi-debug", depends-on = ["configure"] }
-test = { cmd = "ctest --preset pixi-debug", depends-on = ["build"] }
+configure = "cmake --preset dev"
+build = { cmd = "cmake --build --preset dev", depends-on = ["configure"] }
+test = { cmd = "ctest --preset dev", depends-on = ["build"] }
 clean = "rm -rf out matlab/bin"
 
 # Run via pixi, not the binary directly: its DLLs live in the pixi env, not on PATH.
-run-example = { cmd = "out/build/pixi-debug/examples/{{ name }}/{{ name }}", depends-on = ["build"], args = ["name"] }
+run-example = { cmd = "out/build/dev/examples/{{ name }}/{{ name }}", depends-on = ["build"], args = ["name"] }
 
-# Opt-in MATLAB bindings (MATLAB required); shares pixi-debug's build tree.
-configure-matlab = "cmake --preset pixi-debug-matlab"
-build-matlab = { cmd = "cmake --build --preset pixi-debug-matlab", depends-on = ["configure-matlab"] }
+# Opt-in MATLAB bindings (MATLAB required); shares dev's build tree.
+configure-matlab = "cmake --preset dev-matlab"
+build-matlab = { cmd = "cmake --build --preset dev-matlab", depends-on = ["configure-matlab"] }
