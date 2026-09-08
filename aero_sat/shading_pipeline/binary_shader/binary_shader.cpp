@@ -42,9 +42,14 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
     GLCall(glGenTextures(1, &m_ID_texture));
     GLCall(glBindTexture(GL_TEXTURE_2D, m_ID_texture));
     GLCall(glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, NUM_PIXEL, NUM_PIXEL, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr));
+    // Integer textures cannot be filtered, and the reduction shader samples this one.
+    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
 
     m_frame_buffer.reset(new FrameBuffer(m_ID_texture, NUM_PIXEL, NUM_PIXEL));
     m_frame_buffer->UnBind();
+
+    m_visibility_reducer = std::make_unique<VisibilityReducer>(m_numTriangles);
 
     // Create shader program from embedded sources
     m_shader.reset(new Shader(ID_vertex_shader, ID_fragment_shader, true));
@@ -75,8 +80,6 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
 }
 
 std::vector<float> BinaryShader::shade_satellite(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) {
-    std::vector<float> triangle_visibility(m_numTriangles,0);
-
     //projection matrices
     glm::vec3 camera_position = v_rel_hat * bounding_sphere_radius;
 
@@ -119,33 +122,12 @@ std::vector<float> BinaryShader::shade_satellite(glm::vec3 v_rel_hat, float boun
         glDrawArrays(GL_TRIANGLES, offset, static_cast<GLsizei>(num_triangles_per_mesh[i] * 3));
         offset += num_triangles_per_mesh[i] * 3;
     }
+    m_vao->Unbind();
+    m_shader->Unbind();
 
-	// Ensure all framebuffer writes are visible to the subsequent imageLoad in the compute shader.
-    // GL_FRAMEBUFFER_BARRIER_BIT only covers framebuffer->framebuffer visibility.
-    // GL_SHADER_IMAGE_ACCESS_BARRIER_BIT is required for framebuffer writes to be visible
-    // to imageLoad in compute shaders. NVIDIA flushes all caches on any barrier (masking
-    // the bug); AMD/Intel are spec-precise and only flush the framebuffer cache.
-    // Read pixel IDs back to CPU via glReadPixels.
-    // imageLoad from uimage2D is unreliable on AMD/Intel (returns 0 for all pixels);
-    // glReadPixels from the bound FBO is spec-guaranteed and works on all drivers.
+    // Make the rendered IDs visible to the reduction shader, then reduce on the GPU:
+    // only one flag per triangle is read back, not the whole NUM_PIXEL^2 image.
     GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT));
-    GLCall(glReadBuffer(GL_COLOR_ATTACHMENT0));
-    std::vector<GLuint> pixel_ids(NUM_PIXEL * NUM_PIXEL, 0);
-    GLCall(glReadPixels(0, 0, NUM_PIXEL, NUM_PIXEL, GL_RED_INTEGER, GL_UNSIGNED_INT, pixel_ids.data()));
     m_frame_buffer->UnBind();
-
-    // Count visible triangles on CPU
-    const size_t count = std::min(triangle_visibility.size(), static_cast<size_t>(m_numTriangles));
-    std::vector<bool> seen(m_numTriangles + 1, false);
-    for (GLuint id : pixel_ids) {
-        if (id > 0 && id <= m_numTriangles) seen[id] = true;
-    }
-    int visible = 0;
-    for (size_t i = 0; i < count; i++) {
-        if (seen[i + 1]) { triangle_visibility[i] = 1.0f; visible++; }
-    }
-    SPDLOG_INFO("BinaryShader: {}/{} panels visible", visible, m_numTriangles);
-
-	m_vao->Unbind();
-    return triangle_visibility;
+    return m_visibility_reducer->reduce(m_ID_texture, NUM_PIXEL);
 };
