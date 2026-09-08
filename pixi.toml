@@ -28,15 +28,16 @@ CMAKE_GENERATOR_PLATFORM = ""
 CMAKE_GENERATOR_TOOLSET = ""
 CMAKE_ARGS = ""
 
+# Both presets share one build tree, and a build preset does not apply its configure
+# preset's cache variables -- so the configure step is what pins BUILD_MATLAB_BINDINGS.
+# Skip it and `build-matlab` silently builds no mex whenever `build` ran last.
 [tasks]
-configure = "cmake --preset dev"
-build = { cmd = "cmake --build --preset dev", depends-on = ["configure"] }
+build = "cmake --preset dev && cmake --build --preset dev"
 test = { cmd = "ctest --preset dev", depends-on = ["build"] }
 clean = "rm -rf out matlab/bin"
 
 # Run via pixi, not the binary directly: its DLLs live in the pixi env, not on PATH.
 run-example = { cmd = "out/build/dev/examples/{{ name }}/{{ name }}", depends-on = ["build"], args = ["name"] }
 
-# Opt-in MATLAB bindings (MATLAB required); shares dev's build tree.
-configure-matlab = "cmake --preset dev-matlab"
-build-matlab = { cmd = "cmake --build --preset dev-matlab", depends-on = ["configure-matlab"] }
+# Opt-in MATLAB bindings (MATLAB required).
+build-matlab = "cmake --preset dev-matlab && cmake --build --preset dev-matlab"
