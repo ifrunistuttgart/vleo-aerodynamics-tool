@@ -73,6 +73,10 @@ void ComputeShader::set_uniform_1i(const std::string &name, int value) {
     GLCall(glUniform1i(get_uniform_location(name), value));
 }
 
+void ComputeShader::set_uniform_1ui(const std::string &name, unsigned int value) {
+    GLCall(glUniform1ui(get_uniform_location(name), value));
+}
+
 void ComputeShader::set_uniform_mat4f(const std::string& name, const glm::mat4& matrix)
 {
     GLCall(glUniformMatrix4fv(get_uniform_location(name), 1, GL_FALSE, &matrix[0][0]));

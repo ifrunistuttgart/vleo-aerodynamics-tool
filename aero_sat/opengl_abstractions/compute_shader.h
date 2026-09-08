@@ -36,6 +36,7 @@ public:
     void set_uniform_3i(const std::string& name, const glm::ivec3& vector);
     void set_uniform_2i(const std::string& name, const glm::ivec2& vector);
     void set_uniform_1i(const std::string& name, int value);
+    void set_uniform_1ui(const std::string& name, unsigned int value);
     void set_uniform_mat4f(const std::string& name, const glm::mat4& matrix);
 
     // set textures

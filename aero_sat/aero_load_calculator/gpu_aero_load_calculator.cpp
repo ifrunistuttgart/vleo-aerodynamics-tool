@@ -5,13 +5,14 @@
 #include "vertex_buffer_layout.h"
 #include "shaders/fragment_shader.h"
 #include "shaders/compute_aggregate_force_shader.h"
+#include "shaders/double_pass_compute_shader.h"
 #include <spdlog/spdlog.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <numbers>
 
 GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, IGSIModelGPU& gsi_model, int num_pixel)
-    :m_satellite(satellite),m_gsi_model(gsi_model), m_num_pixel(num_pixel) {
+    :m_satellite(satellite),m_gsi_model(gsi_model), m_num_pixel(num_pixel),m_groups((m_num_pixel + 15u) / 16u) {
 
     // Check if float atomics are supported
     // After initializing your GLFW window and loading OpenGL pointers
@@ -45,8 +46,11 @@ GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, I
     // Create shader program from embedded sources
     m_shader = std::make_unique<Shader>(m_gsi_model.get_vertex_shader_code(), gsi_fragment_shader, true);
     m_shader->unbind();
-    m_compute_shader = std::make_unique<ComputeShader>(Compute_shader, true);
+    m_compute_shader = std::make_unique<ComputeShader>(compute_shader1, true);
     m_compute_shader->unbind();
+
+    m_compute_shader2 = std::make_unique<ComputeShader>(compute_shader2, true);
+    m_compute_shader2->unbind();
 
     // Enable depth testing for proper occlusion
     GLCall(glEnable(GL_DEPTH_TEST));
@@ -97,6 +101,7 @@ GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, I
     VertexBuffer vbNormals(vertex_normals.data(), static_cast<unsigned int>(sizeof(float) * vertex_normals.size()));
     m_vertex_array->add_buffer(vbNormals, layoutNormals);
 
+    m_intermediate_ssbo = std::make_unique<ShaderStorageBuffer>(nullptr, sizeof(float)*8 * m_groups*m_groups);
     m_ssbo = std::make_unique<ShaderStorageBuffer>(&m_force_torque_data, sizeof(ForceTorqueData));
 }
 
@@ -110,6 +115,8 @@ GPUAeroLoadCalculator::~GPUAeroLoadCalculator() {
     m_pressure_vec_texture.reset();
     m_float_texture.reset();
     m_ssbo.reset();
+    m_intermediate_ssbo.reset();
+    m_compute_shader2.reset();
     m_context.reset();
 
 }
@@ -181,33 +188,29 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
     }
     m_vertex_array->unbind();
     m_shader->unbind();
-
     m_frame_buffer->unbind();
 
-    SPDLOG_INFO("Dispatching compute shader with {}x{} groups.", (m_num_pixel + 15u) / 16u, (m_num_pixel + 15u) / 16u);
-    const GLuint groups_x = (m_num_pixel + 15u) / 16u;
-    const GLuint groups_y = (m_num_pixel + 15u) / 16u;
-
-    static_assert(sizeof(ForceTorqueData) == 2 * sizeof(glm::ivec4));
-
-    // display texture
     GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT));
-    //m_pressure_vec_texture->plot_texture("normal_texture.png");
-    //m_position_texture->plot_texture("position_texture.png");
-    //m_float_texture->plot_texture("float_texture.png");
+
     m_ssbo->set_zero();
+    m_intermediate_ssbo->set_zero();
     m_compute_shader->bind();
     m_compute_shader->set_uniform_1f("pixelArea", pixel_area);
     m_compute_shader->set_texture(0, *m_position_texture);
     m_compute_shader->set_texture(1, *m_pressure_vec_texture);
     m_compute_shader->set_texture(2, *m_float_texture);
-    m_ssbo->bind_base(3);
-    m_compute_shader->run(groups_x, groups_y, 1);
+    m_ssbo->bind_base(4);
+    m_intermediate_ssbo->bind_base(3);
+    m_compute_shader->run(m_groups, m_groups, 1);
     m_compute_shader->unbind();
 
+    m_compute_shader2->bind();
+    m_compute_shader2->set_uniform_1ui("numWorkGroupsToAggregate", m_groups*m_groups);
+    m_compute_shader2->run(1,1,1);
+    m_compute_shader2->unbind();
     m_ssbo->get_data(&m_force_torque_data, sizeof(ForceTorqueData));
 
-    force__N = glm::vec1(1.0e-13)* glm::vec3(m_force_torque_data.force);
-    torque__Nm =  glm::vec1(1.0e-13)* glm::vec3(m_force_torque_data.torque);
+    force__N = glm::vec3(m_force_torque_data.force);
+    torque__Nm =  glm::vec3(m_force_torque_data.torque);
     return 0;
 }

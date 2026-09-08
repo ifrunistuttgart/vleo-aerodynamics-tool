@@ -11,8 +11,8 @@
 #include <memory>
 
 struct ForceTorqueData {
-    glm::ivec4 force;
-    glm::ivec4 torque;
+    glm::vec4 force;
+    glm::vec4 torque;
 };
 
 class GPUAeroLoadCalculator: public IAeroLoadCalculator {
@@ -32,8 +32,12 @@ private:
     std::unique_ptr<Shader> m_shader;
     IGSIModelGPU& m_gsi_model;
     std::unique_ptr<ShaderStorageBuffer> m_ssbo;
+    std::unique_ptr<ShaderStorageBuffer> m_intermediate_ssbo;
     std::unique_ptr<ComputeShader> m_compute_shader;
+    std::unique_ptr<ComputeShader> m_compute_shader2;
     ISatelliteShadingData& m_satellite;
     ForceTorqueData m_force_torque_data{ glm::ivec4(0), glm::ivec4(0) };
     std::unique_ptr<GlfwOpenGLContext> m_context;
+
+    const GLuint m_groups;
 };
