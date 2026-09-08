@@ -31,7 +31,7 @@
         {
             "name": "pixi-debug-matlab",
             "displayName": "Pixi Debug (RelWithDebInfo) + MATLAB bindings",
-            "description": "Same as pixi-debug, with BUILD_MATLAB_BINDINGS=ON. Requires MATLAB to be installed -- find_package(Matlab) is REQUIRED, so configure fails without it. Kept as an opt-in preset rather than the default so building the core toolbox never requires MATLAB. Only one preset needed for MATLAB: MexGateway's log verbosity is a runtime env var (MEX_GATEWAY_LOG_LEVEL), not a compile-time option, so there's no separate quiet/verbose build.",
+            "description": "Same as pixi-debug, with BUILD_MATLAB_BINDINGS=ON. Requires MATLAB to be installed -- find_package(Matlab) is REQUIRED, so configure fails without it. Kept as an opt-in preset rather than the default so building the core toolbox never requires MATLAB. Only one preset needed for MATLAB: MexGateway's log verbosity is set at runtime from MATLAB via setLogLevel(\"debug\"|\"info\"|\"warn\"|\"error\"), not at compile time, so there's no separate quiet/verbose build.",
             "inherits": "pixi-debug",
             "cacheVariables": {
               "BUILD_MATLAB_BINDINGS": "ON"
