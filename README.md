@@ -50,6 +50,8 @@ pixi install                                   # one-time: resolve and download 
 pixi run build                                 # build the library and examples
 pixi run run-example compute_force_and_torque  # force/torque on a shuttlecock geometry
 pixi run run-example import_and_visualize      # load a mesh and view it
+pixi run test                                  # build and run the GoogleTest suites
+pixi run clean                                 # remove out/ and matlab/bin
 ```
 
 
@@ -128,6 +130,37 @@ aerodynamic torque over a full sphere of flow directions with one panel deflecte
 
 Logging defaults to DEBUG, which is slow because every message crosses into the MATLAB engine.
 Turn it down with `setLogLevel("warn")` before benchmarking.
+
+### Rebuilding while MATLAB is open
+
+A MATLAB session that has called into the toolbox keeps `MexGateway.mexw64` memory-mapped, and
+Windows will not let the build overwrite a mapped file. `pixi run build-matlab` then stops with:
+
+```
+could not write these files into ...\matlab\bin:
+    MexGateway.mexw64
+They are locked by a running MATLAB that has loaded the toolbox.
+Run  clear mex  in MATLAB -- you do not need to close it -- and build again.
+```
+
+`clear mex` is enough; closing MATLAB is not necessary, and deleting the DLLs in `matlab/bin`
+does not help. Note also that MATLAB keeps running the *old* mex file until you `clear mex`, so
+run it after a successful rebuild too, or the changes will not be visible in that session.
+
+### Giving the toolbox to someone without a checkout
+
+`matlab/` is self-contained on purpose: `matlab/bin` holds `MexGateway.mexw64` plus every DLL it
+resolves, including the MSVC runtime, so the target machine needs neither a pixi environment nor
+the VC++ redistributable. It does still need MATLAB and a GPU driver offering OpenGL 4.3, which
+the shading pipeline requests when it creates its context. Copy `matlab/` as it stands and run:
+
+```matlab
+addpath('<folder>'); addpath('<folder>\bin')
+```
+
+The contents of `matlab/bin` are generated, so build once with `pixi run build-matlab` before
+copying. Note that `matlab/bin` is in `.gitignore` — it is a build output, not something a
+`git clone` will provide.
 
 ## Gas–surface interaction models
 
