@@ -1,6 +1,6 @@
 #pragma once
 
-inline  constexpr const char* compute_shader1 = R"GLSL(
+inline constexpr const char* compute_shader1 = R"GLSL(
 #version 430
 
 layout(local_size_x = 16, local_size_y = 16) in;
@@ -12,18 +12,18 @@ layout(rgba32f, binding = 2) uniform readonly image2D img_float;
 uniform float pixelArea;
 
 struct WorkgroupResult {
-    vec4 force;  // xyz = force, w = padding
-    vec4 torque; // xyz = torque, w = padding
+    dvec4 force;  // xyz = force, w = padding (double precision)
+    dvec4 torque; // xyz = torque, w = padding (double precision)
 };
 
-// Intermediate buffer to hold 1 sum per workgroup
+// Intermediate buffer to hold 1 double-precision sum per workgroup
 layout(std430, binding = 3) buffer IntermediateBuffer
 {
     WorkgroupResult groupResults[];
 };
 
-shared vec3 groupForce[256];
-shared vec3 groupTorque[256];
+shared dvec3 groupForce[256];
+shared dvec3 groupTorque[256];
 
 void main()
 {
@@ -31,18 +31,19 @@ void main()
     ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
     ivec2 fb_size = imageSize(img_position);
 
-    vec3 pixelForce  = vec3(0.0);
-    vec3 pixelTorque = vec3(0.0);
+    dvec3 pixelForce  = dvec3(0.0);
+    dvec3 pixelTorque = dvec3(0.0);
 
     if (coord.x < fb_size.x && coord.y < fb_size.y)
     {
-        vec3 position    = imageLoad(img_position, coord).rgb;
-        vec3 pressureVec = imageLoad(img_pressure_vec, coord).rgb;
-        float cos_d      = imageLoad(img_float, coord).r;
+        // Read 32-bit float image inputs and cast immediately to double
+        dvec3 position    = dvec3(imageLoad(img_position, coord).rgb);
+        dvec3 pressureVec = dvec3(imageLoad(img_pressure_vec, coord).rgb);
+        double cos_d      = double(imageLoad(img_float, coord).r);
 
         if (cos_d > 0.0)
         {
-            float area  = pixelArea / cos_d;
+            double area = double(pixelArea) / cos_d;
             pixelForce  = pressureVec * area;
             pixelTorque = cross(position, pixelForce);
         }
@@ -52,7 +53,7 @@ void main()
     groupTorque[localID] = pixelTorque;
     barrier();
 
-    // Standard workgroup tree reduction
+    // Standard workgroup tree reduction in 64-bit float precision
     for (uint stride = 128u; stride > 0u; stride >>= 1u)
     {
         if (localID < stride)
@@ -64,12 +65,12 @@ void main()
         barrier();
     }
 
-    // Write workgroup sums directly to dedicated slot (No global atomics)
+    // Write double-precision workgroup sums directly to intermediate SSBO slot
     if (localID == 0u)
     {
         uint workGroupIndex = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
-        groupResults[workGroupIndex].force  = vec4(groupForce[0], 0.0);
-        groupResults[workGroupIndex].torque = vec4(groupTorque[0], 0.0);
+        groupResults[workGroupIndex].force  = dvec4(groupForce[0], 0.0);
+        groupResults[workGroupIndex].torque = dvec4(groupTorque[0], 0.0);
     }
 }
 )GLSL";
@@ -80,8 +81,8 @@ inline constexpr const char* compute_shader2 = R"GLSL(
 layout(local_size_x = 256) in;
 
 struct WorkgroupResult {
-    vec4 force;
-    vec4 torque;
+    dvec4 force;  // double precision
+    dvec4 torque; // double precision
 };
 
 layout(std430, binding = 3) buffer IntermediateBuffer
@@ -89,26 +90,26 @@ layout(std430, binding = 3) buffer IntermediateBuffer
     WorkgroupResult groupResults[];
 };
 
-// Target SSBO matching ForceTorqueData struct layout
+// Target SSBO matching float or double output layout
+// Outputting dvec4 ensures 64-bit precision is preserved across host readback
 layout(std430, binding = 4) buffer FinalBuffer
 {
-    vec4 Force;  // Force.xyz, Force.w padding
-    vec4 Torque; // Torque.xyz, Torque.w padding
+    dvec4 Force;  // Force.xyz, Force.w padding
+    dvec4 Torque; // Torque.xyz, Torque.w padding
 };
 
 uniform uint numWorkGroupsToAggregate;
-uniform float scaleFactor;
 
-shared vec3 sharedForce[256];
-shared vec3 sharedTorque[256];
+shared dvec3 sharedForce[256];
+shared dvec3 sharedTorque[256];
 
 void main()
 {
     uint localID = gl_LocalInvocationIndex;
-    vec3 threadForceSum  = vec3(0.0);
-    vec3 threadTorqueSum = vec3(0.0);
+    dvec3 threadForceSum  = dvec3(0.0);
+    dvec3 threadTorqueSum = dvec3(0.0);
 
-    // Grid-stride loop: Each thread sums a slice of the intermediate array
+    // Grid-stride loop: Each thread sums a slice of the intermediate double array
     for (uint i = localID; i < numWorkGroupsToAggregate; i += 256u)
     {
         threadForceSum  += groupResults[i].force.xyz;
@@ -119,7 +120,7 @@ void main()
     sharedTorque[localID] = threadTorqueSum;
     barrier();
 
-    // Workgroup tree reduction
+    // Workgroup tree reduction in 64-bit float precision
     for (uint stride = 128u; stride > 0u; stride >>= 1u)
     {
         if (localID < stride)
@@ -131,11 +132,11 @@ void main()
         barrier();
     }
 
-    // Thread 0 writes the precise total sum converted to scaled integers
+    // Thread 0 writes the full 64-bit precision result
     if (localID == 0u)
     {
-        Force  = vec4(sharedForce[0], 0.0);
-        Torque = vec4(sharedTorque[0], 0.0);
+        Force  = dvec4(sharedForce[0], 0.0);
+        Torque = dvec4(sharedTorque[0], 0.0);
     }
 }
 )GLSL";

@@ -27,7 +27,12 @@ GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, I
             if (ext == "GL_EXT_shader_atomic_float") {
                 hasFloatAtomics = true;
                 SPDLOG_INFO("Float atomics are supported!");
-                break;
+            }
+            if (ext == "GL_ARB_gpu_shader_int64") {
+                SPDLOG_INFO("64-bit integer arithmetics are supported!");
+            }
+            if (ext == "GL_EXT_shader_atomic_int64") {
+                SPDLOG_INFO("64-bit integer atomics are supported!");
             }
         }
     #else
@@ -101,7 +106,7 @@ GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, I
     VertexBuffer vbNormals(vertex_normals.data(), static_cast<unsigned int>(sizeof(float) * vertex_normals.size()));
     m_vertex_array->add_buffer(vbNormals, layoutNormals);
 
-    m_intermediate_ssbo = std::make_unique<ShaderStorageBuffer>(nullptr, sizeof(float)*8 * m_groups*m_groups);
+    m_intermediate_ssbo = std::make_unique<ShaderStorageBuffer>(nullptr, sizeof(double)*8 * m_groups*m_groups);
     m_ssbo = std::make_unique<ShaderStorageBuffer>(&m_force_torque_data, sizeof(ForceTorqueData));
 }
 
@@ -134,6 +139,7 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
     int exponent = static_cast<int>(std::floor(std::log10(std::abs(max_possible_force))));
     int max_possible_exponent = 9 - exponent -1;
     SPDLOG_INFO("Max possible exponent: {}", max_possible_exponent);
+    SPDLOG_INFO("pixelArea: {}", pixel_area);
     SPDLOG_INFO("Aero pressure: {}", aero_pressure);
     glm::vec3 camera_position = v_rel_hat * bounding_sphere_radius;
 
@@ -160,7 +166,12 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
         target,
         up
     );
-
+    // 1. Setup Query Object
+    GLuint sampleQuery;
+    glGenQueries(1, &sampleQuery);
+    // Begin counting fragments
+    glBeginQuery(GL_SAMPLES_PASSED, sampleQuery);
+    GLCall(glEnable(GL_DEPTH_CLAMP));
     m_frame_buffer->bind();
     m_frame_buffer->clear();
 
@@ -186,6 +197,15 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
         glDrawArrays(GL_TRIANGLES, triangle_offset, static_cast<GLsizei>(num_triangles_per_mesh[i] * 3));
         triangle_offset += num_triangles_per_mesh[i] * 3;
     }
+    // End counting
+    glEndQuery(GL_SAMPLES_PASSED);
+    // --- RENDER PASS END ---
+
+    // 2. Retrieve Results (Retrieval blocks until GPU finishes the draw call)
+    GLuint64 filledPixels = 0;
+    glGetQueryObjectui64v(sampleQuery, GL_QUERY_RESULT, &filledPixels);
+    double gpuProjectedArea = static_cast<double>(filledPixels) * pixel_area;
+    SPDLOG_INFO("GPU projected area: {}", gpuProjectedArea);
     m_vertex_array->unbind();
     m_shader->unbind();
     m_frame_buffer->unbind();

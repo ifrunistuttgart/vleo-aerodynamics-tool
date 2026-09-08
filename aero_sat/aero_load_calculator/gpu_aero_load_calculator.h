@@ -11,8 +11,8 @@
 #include <memory>
 
 struct ForceTorqueData {
-    glm::vec4 force;
-    glm::vec4 torque;
+    glm::dvec4 force;
+    glm::dvec4 torque;
 };
 
 class GPUAeroLoadCalculator: public IAeroLoadCalculator {
