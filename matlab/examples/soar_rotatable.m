@@ -4,6 +4,9 @@ disp(div);
 disp("Starting aerodynamic and shading tests...");
 disp(div);
 
+% No logging for this example
+setLogLevel("warn");
+
 %% Aerodynamic Model
 T_env   = 934;  % temperature
 rho     = 1e-9; % density
@@ -35,7 +38,7 @@ satellite.geometry.turn_surface_around_axis( ...
     0, p1.angle, p1.center, p1.axis);
 
 %% Setup Shading Pipeline
-shader = ShadingPipeline(satellite.geometry, 1, 1000);
+shader = ShadingPipeline(satellite.geometry, 0, 4000);
 
 %% Wind Direction
 % Angle of attack (rotation in the body x-z plane) and sideslip angle
