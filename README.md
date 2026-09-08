@@ -30,9 +30,6 @@ The VLEO Aerodynamics Tool provides algorithms for fast calculations of panel sh
 This toolbox does the visibility test (*shadowing analysis*) on the GPU, by rasterizing the mesh along the flow direction.
 Geometry and models are initialized once; each subsequent change in flow direction or mesh rotation costs one render pass plus a per-triangle GSI evaluation. This removes the need for precomputation ("Databases").
 
-One computation takes about 1 to 20 ms, depending on geometry and number of pixels.
-
-
 
 ## Requirements
 
@@ -72,6 +69,11 @@ render time.
 
 **Flow direction convention.** `v_rel_B__m_per_s` is the velocity of the *satellite relative to
 the atmosphere*, expressed in the body frame — the orange vector above.
+
+**Architecture.** Geometry, shading pipeline, shading algorithm and GSI model sit behind four
+interfaces, so any one of them can be replaced without touching the others. See
+[docs/architecture.md](docs/architecture.md) for the class diagram and a walkthrough of how a
+single evaluation flows through them.
 
 ## Minimal example (C++)
 
