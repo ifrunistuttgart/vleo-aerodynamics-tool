@@ -20,8 +20,8 @@ layout(std430, binding = 3) buffer LoadBuffer
 };
 
 // 1. Declare shared memory variables for workgroup-level accumulation
-shared ivec3 groupForce[256];
-shared ivec3 groupTorque[256];
+shared vec3 groupForce[256];
+shared vec3 groupTorque[256];
 
 void main()
 {
@@ -29,8 +29,8 @@ void main()
     ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
     ivec2 fb_size = imageSize(img_position);
 
-    ivec3 pixelForce  = ivec3(0);
-    ivec3 pixelTorque = ivec3(0);
+    vec3 pixelForce  = vec3(0);
+    vec3 pixelTorque = vec3(0);
 
     // Compute pixel forces if thread is inside valid texture bounds
     if (coord.x < fb_size.x && coord.y < fb_size.y)
@@ -42,8 +42,8 @@ void main()
         if (cos_d > 0.0)
         {
             float area = pixelArea / cos_d;
-            pixelForce  = ivec3(pressureVec * area * 1.0e12 );
-            pixelTorque = ivec3(cross(position, vec3(pixelForce)));
+            pixelForce  = vec3(pressureVec * area * 1.0e13 );
+            pixelTorque = vec3(cross(position, vec3(pixelForce)));
         }
     }
 
@@ -69,8 +69,8 @@ void main()
     //    Skip global writes entirely when both force and torque sums are zero.
     if (localID == 0u)
     {
-        ivec3 totalForce = groupForce[0];
-        ivec3 totalTorque = groupTorque[0];
+        ivec3 totalForce = ivec3(groupForce[0]);
+        ivec3 totalTorque = ivec3(groupTorque[0]);
 
         if (any(notEqual(totalForce, ivec3(0))) || any(notEqual(totalTorque, ivec3(0))))
         {

@@ -3,15 +3,41 @@
 #include "texture_2d.h"
 #include "vertex_buffer.h"
 #include "vertex_buffer_layout.h"
-#include "shaders/vertex_frag_shader.h"
-#include "shaders/computer_force_shader.h"
+#include "shaders/fragment_shader.h"
+#include "shaders/compute_aggregate_force_shader.h"
 #include <spdlog/spdlog.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
+#include <numbers>
 
 GPUAeroLoadCalculator::GPUAeroLoadCalculator(ISatelliteShadingData& satellite, IGSIModelGPU& gsi_model, int num_pixel)
     :m_satellite(satellite),m_gsi_model(gsi_model), m_num_pixel(num_pixel) {
+
+    // Check if float atomics are supported
+    // After initializing your GLFW window and loading OpenGL pointers
+    bool hasFloatAtomics = false;
+
+    #ifdef GL_VERSION_3_0
+        // Method 1: Query by extension count
+        GLint numExtensions = 0;
+        glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
+        for (int i = 0; i < numExtensions; i++) {
+            std::string ext = (const char*)glGetStringi(GL_EXTENSIONS, i);
+            if (ext == "GL_EXT_shader_atomic_float") {
+                hasFloatAtomics = true;
+                SPDLOG_INFO("Float atomics are supported!");
+                break;
+            }
+        }
+    #else
+        // Method 2: Legacy fallback string query
+        const char* extString = (const char*)glGetString(GL_EXTENSIONS);
+        if (extString && strstr(extString, "GL_EXT_shader_atomic_float")) {
+            hasFloatAtomics = true;
+            SPDLOG_INFO("Float atomics are supported!");
+        }
+    #endif
+
 
     m_context = std::make_unique<GlfwOpenGLContext>(num_pixel, num_pixel, "GPU Aero Load Calculator", false);
     m_context->make_current();
@@ -97,6 +123,10 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
     float pixel_length = 2.0f * bounding_sphere_radius / static_cast<float>(m_num_pixel);
     float pixel_area = pixel_length * pixel_length;
     float aero_pressure = 0.5f * aero.density__kg_per_m3 * glm::length(v_rel__m_per_s) * glm::length(v_rel__m_per_s);
+    float max_possible_force = aero_pressure * 2.5f * bounding_sphere_radius * bounding_sphere_radius * std::numbers::pi;
+    int exponent = static_cast<int>(std::floor(std::log10(std::abs(max_possible_force))));
+    int max_possible_exponent = 9 - exponent -1;
+    SPDLOG_INFO("Max possible exponent: {}", max_possible_exponent);
     SPDLOG_INFO("Aero pressure: {}", aero_pressure);
     glm::vec3 camera_position = v_rel_hat * bounding_sphere_radius;
 
@@ -177,7 +207,7 @@ int GPUAeroLoadCalculator::calc_aero_torque_force(const glm::vec3 &v_rel__m_per_
 
     m_ssbo->get_data(&m_force_torque_data, sizeof(ForceTorqueData));
 
-    force__N = glm::vec1(1.0e-12)* glm::vec3(m_force_torque_data.force);
-    torque__Nm =  glm::vec1(1.0e-12)* glm::vec3(m_force_torque_data.torque);
+    force__N = glm::vec1(1.0e-13)* glm::vec3(m_force_torque_data.force);
+    torque__Nm =  glm::vec1(1.0e-13)* glm::vec3(m_force_torque_data.torque);
     return 0;
 }

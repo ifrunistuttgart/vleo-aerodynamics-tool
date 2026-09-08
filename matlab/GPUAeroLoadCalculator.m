@@ -34,7 +34,7 @@ classdef GPUAeroLoadCalculator < handle
             this.handle_ = int32(MexGateway("GPUAeroLoadCalculator.new", int32(satellite.handle_), int32(gsi_model.handle_), int32(num_pixel)));
         end
 
-        function [force__N, torque__Nm] = calc_aero_torque_force(this, v_rel__m_per_s, surface_temp__K, aero_conditions)
+        function [force__N, torque__Nm] = calc_aero_load(this, v_rel__m_per_s, surface_temp__K, aero_conditions)
             % CALC_AERO_TORQUE_FORCE Calculates the total aerodynamic force and torque.
             %
             %   [force__N, torque__Nm] = calc_aero_torque_force(this, v_rel,

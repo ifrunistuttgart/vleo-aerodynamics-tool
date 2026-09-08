@@ -25,7 +25,8 @@ conditions = AeroConditions(rho__kg_per_m3, T_atmospheric__K, particle_mass__kg)
 % Sentman(temperature_ratio_method, alpha_e), where alpha_e is the energy
 % accommodation coefficient. Any other GSI model (Maxwell, Cook,
 % SchaafChambre, Storch, Newton) can be dropped in here unchanged.
-gsi_model = Sentman(1, 0.9);
+gsi_model = Newton();
+gsi_model_gpu   = GPUNewton();
 
 %% 3. Geometry
 obj_file  = fullfile(fileparts(mfilename('fullpath')), ...
@@ -38,12 +39,13 @@ fprintf('Loaded %d triangles\n', satellite.get_num_triangles());
 % behind other parts of the satellite.
 %   algorithm: 0 = Binary, 1 = CoP
 %   num_pixel: raster resolution, the accuracy/runtime knob
-num_pixel = 3000;
+num_pixel = 1000;
 pipeline  = ShadingPipeline(satellite, 1, num_pixel);
 
 %% 5. Load calculator
 % Combines geometry, shading, and the GSI model.
 calculator = HybridAeroLoadCalculator(satellite, pipeline, gsi_model);
+calculator_gpu = GPUAeroLoadCalculator(satellite,gsi_model_gpu,num_pixel);
 
 %% 6. Flow direction
 % v_rel is the velocity of the satellite relative to the atmosphere,
@@ -52,6 +54,12 @@ calculator = HybridAeroLoadCalculator(satellite, pipeline, gsi_model);
 v_rel__m_per_s = [7800, 0, 0];
 
 [force__N, torque__Nm] = calculator.calc_aero_load( ...
+    v_rel__m_per_s, surface_temp__K, conditions);
+
+fprintf('Force  [N]  : %+.4e %+.4e %+.4e\n', force__N);
+fprintf('Torque [Nm] : %+.4e %+.4e %+.4e\n', torque__Nm);
+
+[force__N, torque__Nm] = calculator_gpu.calc_aero_load( ...
     v_rel__m_per_s, surface_temp__K, conditions);
 
 fprintf('Force  [N]  : %+.4e %+.4e %+.4e\n', force__N);
