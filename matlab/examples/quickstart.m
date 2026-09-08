@@ -35,7 +35,7 @@ fprintf('Loaded %d triangles\n', satellite.get_num_triangles());
 % behind other parts of the satellite.
 %   algorithm: 0 = Binary, 1 = CoP
 %   num_pixel: raster resolution, the accuracy/runtime knob
-num_pixel = 1000;
+num_pixel = 3000;
 pipeline  = ShadingPipeline(satellite, 1, num_pixel);
 
 %% 5. Load calculator
