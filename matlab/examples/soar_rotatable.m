@@ -22,7 +22,7 @@ disp(div)
 
 
 
-%% Load Geometry Geometry
+%% Load Geometry
 fp.current_folder = fileparts(mfilename('fullpath'));
 fp.obj_file       = fullfile(fp.current_folder, ...
     "geometries/soar_satellite.obj");

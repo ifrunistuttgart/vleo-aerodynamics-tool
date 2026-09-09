@@ -1,5 +1,5 @@
 classdef HybridForceTorqueCalculator < handle
-    % HYBRIDAEROLOADCALCULATOR Calculates aerodynamic loads on a geometry.
+    % HYBRIDFORCETORQUECALCULATOR Calculates aerodynamic loads on a geometry.
     %
     % This class provides a high-level interface for calculating the total 
     % aerodynamic force and torque acting on a geometry. It combines a 
@@ -16,7 +16,7 @@ classdef HybridForceTorqueCalculator < handle
 
     methods
         function this = HybridForceTorqueCalculator(geometry, shading_pipeline, gsi_model)
-            % HYBRIDAEROLOADCALCULATOR Constructor for HybridForceTorqueCalculator.
+            % HYBRIDFORCETORQUECALCULATOR Constructor for HybridForceTorqueCalculator.
             %
             %   obj = HybridForceTorqueCalculator(geometry, shading_pipeline, gsi_model)
             %   initializes the calculator with the necessary components.

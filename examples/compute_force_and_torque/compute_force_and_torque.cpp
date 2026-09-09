@@ -20,7 +20,7 @@ std::filesystem::path get_path(const std::string& filename) {
 }
 
 int main() {
-	// 1. Load geometry geometry
+	// 1. Load the geometry
 	SPDLOG_INFO("Loading geometry model...");
 	std::string obj_path = get_path("../geometry_files/shuttlecock_15k.obj").string();
 	std::unique_ptr<vat::geometry::RotatableMeshGeometry> geometry = std::make_unique<vat::geometry::RotatableMeshGeometry>(obj_path);
