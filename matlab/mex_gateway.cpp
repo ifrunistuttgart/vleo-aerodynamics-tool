@@ -79,13 +79,15 @@ public:
         try {
             validate_input_size_min(inputs, 1);
             validate_argument(inputs, 0, "string", 1);
-            // split string cmd in class and cmd
+            // Split on the LAST dot: the class part mirrors the MATLAB package path
+            // ("gsi_models.Sentman.new" -> cls "gsi_models.Sentman", cmd "new"),
+            // so it may itself contain dots.
             const std::string cmd_string = inputs[0][0];
-            size_t dot = cmd_string.find('.');
+            size_t dot = cmd_string.rfind('.');
             std::string cls = cmd_string.substr(0, dot);
             std::string cmd = (dot != std::string::npos) ? cmd_string.substr(dot + 1) : "";
             matlab_logger->log(LEVEL_INFO, "Received command: " + cmd + " for class: " +cls, "mex_gateway.cpp", __LINE__);
-            if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "delete") {
+            if ((cls == "gsi_models.Newton" || cls == "gsi_models.Sentman" || cls == "gsi_models.Storch" || cls == "gsi_models.Maxwell" || cls == "gsi_models.Cook" || cls == "gsi_models.SchaafChambre") && cmd == "delete") {
                 validate_input_size(inputs, 2);
                 validate_output_size(outputs, 0);
                 validate_argument(inputs, 1, "int", 1);
@@ -93,7 +95,7 @@ public:
                 gsi_map.erase(id);
                 return;
             }
-            if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "calc_aero_force_torque") {
+            if ((cls == "gsi_models.Newton" || cls == "gsi_models.Sentman" || cls == "gsi_models.Storch" || cls == "gsi_models.Maxwell" || cls == "gsi_models.Cook" || cls == "gsi_models.SchaafChambre") && cmd == "calc_aero_force_torque") {
                 validate_input_size(inputs, 8);
                 validate_output_size(outputs, 2);
                 validate_argument(inputs, 1, "int", 1);
@@ -132,7 +134,7 @@ public:
                 outputs[1] = factory.createArray({3}, {aero_torque__Nm.x, aero_torque__Nm.y, aero_torque__Nm.z});
                 return;
             }
-            if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "get_gsi_parameter") {
+            if ((cls == "gsi_models.Newton" || cls == "gsi_models.Sentman" || cls == "gsi_models.Storch" || cls == "gsi_models.Maxwell" || cls == "gsi_models.Cook" || cls == "gsi_models.SchaafChambre") && cmd == "get_gsi_parameter") {
                 validate_input_size_min(inputs, 3);
                 validate_argument(inputs, 1, "int", 1);
                 validate_argument(inputs, 2, "string", 1);
@@ -141,7 +143,7 @@ public:
                 return;
 
             }
-            if ((cls == "Newton" || cls == "Sentman" || cls == "Storch" || cls == "Maxwell" || cls == "Cook" || cls == "SchaafChambre") && cmd == "set_gsi_parameter") {
+            if ((cls == "gsi_models.Newton" || cls == "gsi_models.Sentman" || cls == "gsi_models.Storch" || cls == "gsi_models.Maxwell" || cls == "gsi_models.Cook" || cls == "gsi_models.SchaafChambre") && cmd == "set_gsi_parameter") {
                 validate_input_size_min(inputs, 4);
                 validate_argument(inputs, 1, "int", 1);
                 validate_argument(inputs, 2, "string", 1);
@@ -150,7 +152,7 @@ public:
                 return;
 
             }
-            if (cls == "Newton") {
+            if (cls == "gsi_models.Newton") {
                 if (cmd == "new") {
                     matlab_logger->log(LEVEL_INFO, "Creating new Newton instance.", "mex_gateway.cpp", __LINE__);
                     validate_input_size_min(inputs, 1);
@@ -161,7 +163,7 @@ public:
                     return;
                 }
             }
-            if (cls == "Maxwell") {
+            if (cls == "gsi_models.Maxwell") {
                 if (cmd == "new") {
                     matlab_logger->log(LEVEL_INFO, "Creating new Maxwell instance.", "mex_gateway.cpp", __LINE__);
                     validate_input_size_min(inputs, 2);
@@ -174,7 +176,7 @@ public:
                     return;
                 }
             }
-            if (cls == "Cook") {
+            if (cls == "gsi_models.Cook") {
                 if (cmd == "new") {
                     matlab_logger->log(LEVEL_INFO, "Creating new Cook instance.", "mex_gateway.cpp", __LINE__);
                     validate_input_size_min(inputs, 2);
@@ -187,7 +189,7 @@ public:
                     return;
                 }
             }
-            if (cls == "SchaafChambre") {
+            if (cls == "gsi_models.SchaafChambre") {
                 if (cmd == "new") {
                     matlab_logger->log(LEVEL_INFO, "Creating new Schaaf-Chambre instance.", "mex_gateway.cpp", __LINE__);
                     validate_input_size_min(inputs, 3);
@@ -202,7 +204,7 @@ public:
                     return;
                 }
             }
-            if (cls == "Sentman") {
+            if (cls == "gsi_models.Sentman") {
                 if (cmd == "new") {
                     matlab_logger->log(LEVEL_INFO, "Creating new Sentman instance.", "mex_gateway.cpp", __LINE__);
                     validate_input_size_min(inputs, 3);
@@ -218,7 +220,7 @@ public:
                     return;
                 }
             }
-            if (cls == "Storch") {
+            if (cls == "gsi_models.Storch") {
                 if (cmd == "new") {
                     matlab_logger->log(LEVEL_INFO, "Creating new Storch instance.", "mex_gateway.cpp", __LINE__);
                     validate_input_size_min(inputs, 4);
@@ -236,7 +238,7 @@ public:
                     return;
                 }
             }
-            if (cls == "AeroCond") {
+            if (cls == "AeroConditions") {
                 if (cmd == "new") {
                     matlab_logger->log(LEVEL_INFO, "Creating new AeroConditions instance.","mex_gateway.cpp",__LINE__);
                     validate_input_size_min(inputs, 4);
@@ -294,7 +296,7 @@ public:
                     return;
                 }
             }
-            if (cls=="Satellite") {
+            if (cls == "geometry.RotatableMeshGeometry") {
                 if (cmd == "new") {
                     matlab_logger->log(LEVEL_INFO, "Creating new Geometry instance.","mex_gateway.cpp",__LINE__);
                     validate_input_size(inputs, 2);
@@ -307,7 +309,7 @@ public:
                     geometry_max_id++;
                     return;
                 }
-                if (cmd=="turn_surface_around_axis") {
+                if (cmd == "turn_mesh_around_axis") {
                     validate_input_size(inputs, 6);
                     validate_output_size(outputs, 0);
                     validate_argument(inputs, 1, "int", 1);
@@ -352,7 +354,7 @@ public:
                     return;
                 }
             }
-            if (cls == "Shading") {
+            if (cls == "shading.ShadingPipeline") {
                 if (cmd == "new") {
                     matlab_logger->log(LEVEL_INFO, "Creating new Shading instance.","mex_gateway.cpp",__LINE__);
                     validate_input_size(inputs, 4);
@@ -406,7 +408,7 @@ public:
                     return;
                 }
             }
-            if (cls =="HybridAeroLoadCalculator") {
+            if (cls == "loads.HybridForceTorqueCalculator") {
                 if (cmd == "new") {
                     validate_input_size(inputs, 4);
                     validate_output_size(outputs, 1);
@@ -462,7 +464,7 @@ public:
                     return;
                 }
             }
-            if (cls == "Visualization") {
+            if (cls == "visualization") {
                 if (cmd == "show_mesh") {
                     validate_input_size(inputs, 4);
                     validate_output_size(outputs, 0);

@@ -5,7 +5,7 @@ disp("Starting aerodynamic and shading tests...");
 disp(div);
 
 % No logging for this example
-setLogLevel("warn");
+vat.setLogLevel("warn");
 
 %% Aerodynamic Model
 T_env   = 934;  % temperature
@@ -13,32 +13,32 @@ rho     = 1e-9; % density
 ao_mass = 16 * 1.6605390689252e-27;
 alpha_e = 0.95;
 
-aero.conditions = AeroConditions(rho, T_env, ao_mass);
+aero.conditions = vat.AeroConditions(rho, T_env, ao_mass);
 
-aero.model = Sentman(1,alpha_e);
+aero.model = vat.gsi_models.Sentman(1,alpha_e);
 disp(div);
 disp("Created Sentman model.");
 disp(div)
 
 
 
-%% Load Satellite Geometry
+%% Load Geometry Geometry
 fp.current_folder = fileparts(mfilename('fullpath'));
 fp.obj_file       = fullfile(fp.current_folder, ...
     "geometries/soar_satellite.obj");
 
-satellite.geometry = RotatableMeshSatellite(fp.obj_file);
-satellite.verts    = satellite.geometry.get_vertices;
+geometry.geometry = vat.geometry.RotatableMeshGeometry(fp.obj_file);
+geometry.verts    = geometry.geometry.get_vertices;
 
 % Rotate the upper panel
 p1.angle  = deg2rad(45);
 p1.center = [-0.15; 0.00; 0.05];
 p1.axis   = [0; 0; -1];
-satellite.geometry.turn_surface_around_axis( ...
+geometry.geometry.turn_mesh_around_axis( ...
     0, p1.angle, p1.center, p1.axis);
 
 %% Setup Shading Pipeline
-shader = ShadingPipeline(satellite.geometry, 0, 4000);
+shader = vat.shading.ShadingPipeline(geometry.geometry, 0, 4000);
 
 %% Wind Direction
 % Angle of attack (rotation in the body x-z plane) and sideslip angle
@@ -54,17 +54,17 @@ v_rel   = rot_mat * [v_orbital__m_per_s; 0; 0];
 panel_visibility = shader.shade(v_rel);
 
 %% Visualize Panel Visibility Result
-show_mesh(satellite.geometry, panel_visibility, v_rel);
+vat.visualization.show_mesh(geometry.geometry, panel_visibility, v_rel);
 
 %% Torque Sweep Over Full Sphere (Unrotated Panel)
 % Demonstrates why a fast per-direction shading pipeline matters: the
 % aerodynamic torque is evaluated for hundreds of wind directions,
-% covering the full sphere. The satellite's left-right symmetry means
+% covering the full sphere. The geometry's left-right symmetry means
 % alpha in [0, 90] deg combined with beta in [0, 180] deg is sufficient
 % to cover every distinct relative-wind direction.
-flat.geometry         = RotatableMeshSatellite(fp.obj_file);
-flat.shader           = ShadingPipeline(flat.geometry, 1, 1000);
-flat.load_calculator  = HybridAeroLoadCalculator(flat.geometry, flat.shader, aero.model);
+flat.geometry         = vat.geometry.RotatableMeshGeometry(fp.obj_file);
+flat.shader           = vat.shading.ShadingPipeline(flat.geometry, 1, 1000);
+flat.load_calculator  = vat.loads.HybridForceTorqueCalculator(flat.geometry, flat.shader, aero.model);
 
 surface_temp__K = 300;
 
