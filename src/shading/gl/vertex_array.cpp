@@ -4,6 +4,8 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
+namespace vat::gl {
+
 VertexArray::VertexArray()
 	: m_attrib_index(0)
 {
@@ -55,3 +57,5 @@ void VertexArray::Unbind() const
 {
 	GLCall(glBindVertexArray(0));
 }
+
+} // namespace vat::gl

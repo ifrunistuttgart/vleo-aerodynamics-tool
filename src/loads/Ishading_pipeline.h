@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include "Isatellite_shading_data.h"    
 
+namespace vat {
+
 /**
  * Interface for the shading pipeline.
  *
@@ -26,3 +28,5 @@ class IShadingPipeline {
 
 	virtual ~IShadingPipeline() = default;
 };
+
+} // namespace vat

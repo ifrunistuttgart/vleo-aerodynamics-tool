@@ -1,5 +1,7 @@
 #pragma once
 
+namespace vat {
+
 const float BOLTZMANN_CONSTANT__J_PER_K = 1.380649e-23f; // Boltzmann constant in J/K
 
 struct AeroConditions {
@@ -7,3 +9,5 @@ struct AeroConditions {
     float T_atmospheric__K;
     float particle_mass__kg;
 };
+
+} // namespace vat

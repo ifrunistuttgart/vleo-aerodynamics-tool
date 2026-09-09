@@ -11,6 +11,9 @@
 #include "cop_shader/cop_shader.h"
 #include "geometries/tetraeder_vector.h"
 
+using namespace vat;
+using namespace vat::shading;
+
 
 class CoPShaderTest : public ::testing::Test {
 protected:

@@ -15,6 +15,12 @@
 #include "binary_shader/shaders/id_shader.h"
 #include "gl/vertex_buffer_layout.h"
 
+namespace vat::shading {
+
+// The gl:: wrappers are this layer's own building blocks; unqualified use keeps
+// the OpenGL call sites readable. TU-local, so it never leaks through a header.
+using namespace gl;
+
 BinaryShader::BinaryShader(unsigned int num_pixel)
     : NUM_PIXEL(num_pixel)
 {
@@ -52,7 +58,7 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
     m_visibility_reducer = std::make_unique<VisibilityReducer>(m_numTriangles);
 
     // Create shader program from embedded sources
-    m_shader.reset(new Shader(ID_vertex_shader, ID_fragment_shader, true));
+    m_shader.reset(new Shader(binary_glsl::ID_vertex_shader, binary_glsl::ID_fragment_shader, true));
     m_shader->Unbind();
 
     // Enable depth testing for proper occlusion
@@ -131,3 +137,5 @@ std::vector<float> BinaryShader::shade_satellite(glm::vec3 v_rel_hat, float boun
     m_frame_buffer->UnBind();
     return m_visibility_reducer->reduce(m_ID_texture, NUM_PIXEL);
 };
+
+} // namespace vat::shading

@@ -1,5 +1,7 @@
 #pragma once
 
+namespace vat::gl {
+
 class IndexBuffer
 {
 private:
@@ -14,3 +16,5 @@ public:
 
 	inline unsigned int GetCount() const { return m_Count; }
 };
+
+} // namespace vat::gl

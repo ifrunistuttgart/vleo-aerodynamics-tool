@@ -7,6 +7,8 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
+namespace vat::satellites {
+
 RotatableMeshSatellite::RotatableMeshSatellite(std::string file)
 	: StaticMeshSatellite(file),
 	  m_transformed_vertices(m_vertices.size()),
@@ -111,3 +113,5 @@ void RotatableMeshSatellite::apply_normal_transform(std::span<const float> norma
 		offset = end;
 	}
 }
+
+} // namespace vat::satellites

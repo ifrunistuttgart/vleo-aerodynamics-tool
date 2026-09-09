@@ -3,6 +3,9 @@
 #include "sentman.h"
 #include "core.h"
 
+using namespace vat;
+using namespace vat::gsi_models;
+
 
 // Test Fixture
 class SentmanTest : public ::testing::Test {

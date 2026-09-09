@@ -4,6 +4,8 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
+namespace vat::gl {
+
 VertexBuffer::VertexBuffer(const void* data, unsigned int size)
 {
 	if (data == nullptr || size == 0) {
@@ -29,3 +31,5 @@ void VertexBuffer::Unbind() const
 {
 	GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
 }
+
+} // namespace vat::gl

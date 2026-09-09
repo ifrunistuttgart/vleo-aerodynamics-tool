@@ -1,6 +1,8 @@
 #pragma once
 #include "Igsi_model.h"
 
+namespace vat::gsi_models {
+
 class Maxwell: public IGSIModel {
 private:
     float m_alpha_e;
@@ -23,3 +25,5 @@ public:
     void set_alpha_e(float alpha_e);
 
 };
+
+} // namespace vat::gsi_models

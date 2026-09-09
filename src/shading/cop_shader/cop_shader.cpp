@@ -13,6 +13,11 @@
 // embedded shader headers
 #include "cop_shader/shaders/id_shader.h"
 
+namespace vat::shading {
+
+// The gl:: wrappers are this layer's own building blocks; unqualified use keeps
+// the OpenGL call sites readable. TU-local, so it never leaks through a header.
+using namespace gl;
 
 CoPShader::CoPShader(unsigned int num_pixel)
     : NUM_PIXEL(num_pixel) {
@@ -51,9 +56,9 @@ int CoPShader::set_vertices(std::span<const float> vertices, std::span<const std
     m_visibility_reducer = std::make_unique<VisibilityReducer>(m_numTriangles);
 
     // Create shader program from embedded sources
-    m_shader.reset(new Shader(ID_vertex_shader, ID_fragment_shader, true));
+    m_shader.reset(new Shader(cop_glsl::ID_vertex_shader, cop_glsl::ID_fragment_shader, true));
     m_shader->Unbind();
-    m_point_shader.reset(new Shader(ID_point_shader, ID_fragment_shader, true));
+    m_point_shader.reset(new Shader(cop_glsl::ID_point_shader, cop_glsl::ID_fragment_shader, true));
     m_point_shader->Unbind();
 
     // Enable depth testing for proper occlusion
@@ -172,3 +177,5 @@ std::vector<float> CoPShader::shade_satellite(glm::vec3 v_rel_hat, float boundin
     m_frame_buffer->UnBind();
     return m_visibility_reducer->reduce(m_ID_texture, NUM_PIXEL);
 };
+
+} // namespace vat::shading

@@ -170,3 +170,43 @@ One CMake target per `src/` subdirectory, each with an `AeroSat::` alias and its
 never by relative path. `core` is header-only (INTERFACE). The subdirectories under
 `shading/` (`gl/`, `binary_shader/`, `cop_shader/`) define no targets of their own;
 they `target_sources(...)` into the parent.
+
+## Namespaces
+
+Everything lives under `vat`. The cross-module vocabulary sits at the root, and each
+module gets a nested namespace named after its folder and CMake target:
+
+| namespace | holds |
+|---|---|
+| `vat` | `AeroConditions` and the five interfaces every module speaks: `IGSIModel`, `IShadingPipeline`, `IAeroLoadCalculator`, `ISatelliteShadingData`, `ISatelliteManipulator` |
+| `vat::gsi_models` | `Sentman`, `Cook`, `Maxwell`, `Newton`, `SchaafChambre`, `Storch` |
+| `vat::satellites` | `StaticMeshSatellite`, `RotatableMeshSatellite` |
+| `vat::shading` | `ShadingPipeline`, `ShadingAlgorithmType`, `IShadingAlgorithm`, `BinaryShader`, `CoPShader` |
+| `vat::loads` | `HybridForceTorqueCalculator` |
+| `vat::visualization` | `ShowMeshWithShadingAndWind` |
+| `vat::gl` | the OpenGL wrappers — `Shader`, `VertexArray`, `FrameBuffer`, `VisibilityReducer`, … |
+
+Two deliberate exceptions to "namespace == folder":
+
+- The root-namespace contracts are spread across `core/` and `loads/` rather than living in
+  one folder, because a header's folder decides which CMake target owns it. `IGSIModel` and
+  `IShadingPipeline` are compiled into `loads` but are named `vat::IGSIModel` and
+  `vat::IShadingPipeline`, not `vat::loads::…`.
+- `vat::gl` is a top-level namespace even though its files sit in `src/shading/gl/`. The
+  wrappers are generic — `Shader` and `VertexBuffer` would collide with any other renderer
+  linked into the same program — and they are not conceptually part of the shading algorithm.
+  They live under `shading/` only because they compile into the `shading` target.
+
+`.cpp` files inside `vat::shading` open with a TU-local `using namespace gl;` so the OpenGL
+call sites stay readable. That directive never appears in a header.
+
+The embedded GLSL sources get one namespace per backend — `vat::shading::binary_glsl` and
+`vat::shading::cop_glsl`. Both backends declare `ID_vertex_shader` and `ID_fragment_shader`,
+and before this they were two `inline` definitions of the same global name. Identical text
+made that legal, but the moment one backend's GLSL was edited alone it would have become a
+silent ODR violation, with the linker keeping one definition and one backend rendering with
+the other's shader. Separate namespaces let the two diverge freely.
+
+`MexFunction` in [mex_gateway.cpp](../matlab/mex_gateway.cpp) stays in the global namespace —
+MATLAB resolves the entry point by that exact name — so that file pulls in the toolbox types
+with individual `using` declarations instead of being wrapped.

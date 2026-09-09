@@ -1,6 +1,8 @@
 #include "storch.h"
 #include <spdlog/spdlog.h>
 
+namespace vat::gsi_models {
+
 Storch::Storch(const float V_w, const float sigma_n, const float sigma_t) {
     set_V_w(V_w);
     set_sigma_n(sigma_n);
@@ -126,3 +128,5 @@ void Storch::set_sigma_t(const float sigma_t) {
         m_sigma_t = sigma_t;
     }
 }
+
+} // namespace vat::gsi_models

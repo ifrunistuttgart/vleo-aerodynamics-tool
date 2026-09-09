@@ -7,6 +7,7 @@
 #include "Isatellite_shading_data.h"
 #include "Isatellite_manipulator.h"
 
+namespace vat::satellites {
 
 /**
 * A satellite class with a static mesh structure. It implements both the ISatelliteShadingData and ISatelliteManipulator interfaces. 
@@ -45,3 +46,5 @@ public:
     int turn_surface_around_axis(const int surface_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) override;
     int turn_surfaces() override;
 };
+
+} // namespace vat::satellites

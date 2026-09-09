@@ -24,6 +24,10 @@
     x;\
     ASSERT(GLLogCall(#x, __FILE__,__LINE__))
 
+namespace vat::gl {
+
 void GLClearError();
 
 bool GLLogCall(const char* function, const char* file, int line);
+
+} // namespace vat::gl

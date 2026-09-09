@@ -2,6 +2,8 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+namespace vat::gl {
+
 /**
  * Owns one hidden GLFW window and its OpenGL context.
  *
@@ -22,3 +24,5 @@ public:
     void make_current() const;
     GLFWwindow* window() const { return m_window; }
 };
+
+} // namespace vat::gl

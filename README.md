@@ -80,14 +80,16 @@ single evaluation flows through them.
 ## Minimal example (C++)
 
 ```cpp
-auto satellite = std::make_unique<RotatableMeshSatellite>("shuttlecock_15k.obj");
-auto gsi_model = std::make_unique<Sentman>(1, 0.9f);   // temperature ratio method, alpha_e
+using namespace vat;   // or qualify each name: vat::gsi_models::Sentman, ...
+
+auto satellite = std::make_unique<satellites::RotatableMeshSatellite>("shuttlecock_15k.obj");
+auto gsi_model = std::make_unique<gsi_models::Sentman>(1, 0.9f);   // temperature ratio method, alpha_e
 
 // The pipeline is built once; shading any further direction is then cheap.
-auto pipeline = std::make_unique<ShadingPipeline>(
-    *satellite, ShadingAlgorithmType::CoP, /*num_pixel=*/4000);
+auto pipeline = std::make_unique<shading::ShadingPipeline>(
+    *satellite, shading::ShadingAlgorithmType::CoP, /*num_pixel=*/4000);
 
-auto calculator = std::make_unique<HybridForceTorqueCalculator>(
+auto calculator = std::make_unique<loads::HybridForceTorqueCalculator>(
     *satellite, *pipeline, *gsi_model);
 
 AeroConditions conditions{

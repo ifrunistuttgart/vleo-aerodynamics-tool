@@ -1,5 +1,7 @@
 #pragma once
 
+namespace vat::shading::binary_glsl {
+
 // Embedded ID shader (vertex + fragment)
 inline constexpr const char* ID_vertex_shader = R"GLSL(
 #version 330 core
@@ -27,3 +29,5 @@ void main()
     FragColor = uvec4(vColor, 0u, 0u, 255u);
 }
 )GLSL";
+
+} // namespace vat::shading::binary_glsl

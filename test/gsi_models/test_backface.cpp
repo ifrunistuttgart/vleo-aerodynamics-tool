@@ -8,6 +8,9 @@
 #include "sentman.h"
 #include "core.h"
 
+using namespace vat;
+using namespace vat::gsi_models;
+
 // HybridForceTorqueCalculator hands EVERY triangle to the GSI model and assigns
 // visibility = 1.0 to back-facing ones (hybrid_aero_load_calculator.cpp), relying on
 // the model itself to return ~zero for a face turned away from the flow. A model that

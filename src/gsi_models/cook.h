@@ -1,6 +1,8 @@
 #pragma once
 #include "Igsi_model.h"
 
+namespace vat::gsi_models {
+
 class Cook: public IGSIModel {
 private:
     float m_alpha_e;
@@ -22,3 +24,5 @@ public:
     [[nodiscard]] float get_alpha_e() const { return m_alpha_e; }
     void set_alpha_e(float alpha_e);
 };
+
+} // namespace vat::gsi_models

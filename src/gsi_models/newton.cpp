@@ -3,6 +3,7 @@
 #include <spdlog/spdlog.h>
 #include <cmath>
 
+namespace vat::gsi_models {
 
 int Newton::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, const glm::vec3 &centroid__m,
                                      const glm::vec3 &v_rel__m_per_s, float surf_temp__K, AeroConditions &aero, glm::vec3 &aero_force__N,
@@ -62,3 +63,5 @@ void Newton::set_gsi_parameter(std::string name, float value) {
     SPDLOG_WARN("Unknown GSI parameter for gsi model Newton: {}, ignoring.", name);
     return 0.0f;
 }
+
+} // namespace vat::gsi_models

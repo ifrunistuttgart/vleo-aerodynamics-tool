@@ -3,6 +3,7 @@
 #include <cmath>
 #include "schaaf_chambre.h"
 
+namespace vat::gsi_models {
 
 SchaafChambre::SchaafChambre(float sigma_n, float sigma_t) {
     set_sigma_n(sigma_n);
@@ -130,3 +131,5 @@ void SchaafChambre::set_sigma_t(float sigma_t) {
         m_sigma_t = sigma_t;
     }
 }
+
+} // namespace vat::gsi_models

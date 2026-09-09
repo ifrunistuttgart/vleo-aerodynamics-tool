@@ -7,6 +7,8 @@
 #include "static_mesh_satellite.h"
 #include "test_helpers.h"
 
+using namespace vat::satellites;
+
 
 
 // Test class for StaticMeshSatellite

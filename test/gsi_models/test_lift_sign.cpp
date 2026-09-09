@@ -4,6 +4,9 @@
 #include "storch.h"
 #include "core.h"
 
+using namespace vat;
+using namespace vat::gsi_models;
+
 // Pins down the sign of the tangential (shear) term in the lift coefficient for the
 // models that decompose into cp/ctau:
 //

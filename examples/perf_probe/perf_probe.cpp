@@ -26,6 +26,12 @@
 #include "shading_algorithm_factory.h"
 #include "hybrid_aero_load_calculator.h"
 
+using namespace vat;
+using namespace vat::gsi_models;
+using namespace vat::satellites;
+using namespace vat::shading;
+using namespace vat::loads;
+
 namespace {
 
 using clk = std::chrono::steady_clock;

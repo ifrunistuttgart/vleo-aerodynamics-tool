@@ -3,6 +3,8 @@
 #include <cmath>
 #include "cook.h"
 
+namespace vat::gsi_models {
+
 Cook::Cook(const float alpha_e) {
     set_alpha_e(alpha_e);
 }
@@ -84,3 +86,5 @@ void Cook::set_alpha_e(float alpha_e) {
         m_alpha_e = alpha_e;
     }
 }
+
+} // namespace vat::gsi_models

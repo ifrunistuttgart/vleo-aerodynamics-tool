@@ -1,6 +1,8 @@
 #pragma once
 #include <memory>
 
+namespace vat {
+
 /**
  * Interface for manipulating satellite surfaces and components.
  *
@@ -38,3 +40,5 @@ public:
 
 	virtual ~ISatelliteManipulator() = default;
 };
+
+} // namespace vat

@@ -1,5 +1,5 @@
 #include "show_mesh.h"
-//
+
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
@@ -31,6 +31,9 @@ VTK_MODULE_INIT(vtkInteractionStyle);
 VTK_MODULE_INIT(vtkRenderingFreeType);
 
 #include <iostream>
+
+namespace vat::visualization {
+
 void ShowMeshWithShadingAndWind(
      ISatelliteShadingData& satellite,
      const std::vector<float>& triangle_visibility,
@@ -194,3 +197,5 @@ void ShowMeshWithShadingAndWind(
     << ", |v_rel|=" << glm::length(v_rel__m_per_s) << ")\n";
 
 }
+
+} // namespace vat::visualization

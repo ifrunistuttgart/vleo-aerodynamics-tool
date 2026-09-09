@@ -5,6 +5,12 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
+namespace vat::shading {
+
+// The gl:: wrappers are this layer's own building blocks; unqualified use keeps
+// the OpenGL call sites readable. TU-local, so it never leaks through a header.
+using namespace gl;
+
 ShadingPipeline::ShadingPipeline(
 	ISatelliteShadingData& satellite,
 	ShadingAlgorithmType algorithm_type,
@@ -39,3 +45,5 @@ std::vector<float> ShadingPipeline::shade( const glm::vec3& v_rel_hat) {
 	std::vector<float> triangle_visibility = m_algorithm->shade_satellite(v_rel_hat, bsr, num_triangles_per_mesh, model_matrices);
 	return triangle_visibility;
 }
+
+} // namespace vat::shading

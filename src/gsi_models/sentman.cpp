@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include "sentman.h"
 
+namespace vat::gsi_models {
 
 Sentman::Sentman(int temperature_ratio_method,float alpha_e){
     if (temperature_ratio_method < 1 || temperature_ratio_method > 3) {
@@ -136,3 +137,4 @@ void Sentman::set_alpha_e(float alpha_e) {
     }
 }
 
+} // namespace vat::gsi_models

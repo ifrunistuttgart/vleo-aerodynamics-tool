@@ -1,6 +1,8 @@
 #pragma once
 #include "Igsi_model.h"
 
+namespace vat::gsi_models {
+
 class Newton : public IGSIModel {
 public:
     /**
@@ -18,3 +20,4 @@ public:
     [[nodiscard]] float get_gsi_parameter(std::string name) const override;
 };
 
+} // namespace vat::gsi_models

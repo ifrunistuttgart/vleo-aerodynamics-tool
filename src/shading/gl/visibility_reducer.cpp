@@ -4,6 +4,8 @@
 #include "gl_helpers.h"
 #include "visibility_reducer.h"
 
+namespace vat::gl {
+
 namespace {
 
 constexpr unsigned int LOCAL_SIZE = 16;
@@ -93,3 +95,5 @@ std::vector<float> VisibilityReducer::reduce(unsigned int id_texture, unsigned i
 	}
 	return triangle_visibility;
 }
+
+} // namespace vat::gl

@@ -3,6 +3,8 @@
 #include "core.h"
 #include <string>
 
+namespace vat {
+
 /**
  * Interface for Gas-Surface Interaction (GSI) models.
  *
@@ -36,3 +38,5 @@ public:
     virtual void set_gsi_parameter(std::string name, float value) = 0;
     [[nodiscard]] virtual float get_gsi_parameter(std::string name) const = 0;
 };
+
+} // namespace vat

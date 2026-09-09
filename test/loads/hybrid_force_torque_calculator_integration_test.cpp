@@ -12,6 +12,12 @@
 #include "shading_algorithm_factory.h"
 #include "static_mesh_satellite.h"
 
+using namespace vat;
+using namespace vat::gsi_models;
+using namespace vat::satellites;
+using namespace vat::shading;
+using namespace vat::loads;
+
 
 // Get path relative to this source file
 std::string GetTestDataPath(const std::string& filename) {

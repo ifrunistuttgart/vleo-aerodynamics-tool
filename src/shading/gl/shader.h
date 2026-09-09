@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include "glm/glm.hpp"
 
+namespace vat::gl {
+
 struct ShaderProgramSource
 {
 	std::string VertexSource;
@@ -35,3 +37,5 @@ private:
 	unsigned int CreateShader(const std::string& vertexShader, const std::string& fragmentShader);
 	unsigned int CompileShader(unsigned int type, const std::string& source);
 };
+
+} // namespace vat::gl

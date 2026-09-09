@@ -2,6 +2,8 @@
 #include "core.h"
 #include <glm/glm.hpp>
 
+namespace vat {
+
 /**
  * Interface for calculating aerodynamic loads on a satellite.
  *
@@ -29,3 +31,5 @@ public:
 
     virtual ~IAeroLoadCalculator() = default;
 };
+
+} // namespace vat

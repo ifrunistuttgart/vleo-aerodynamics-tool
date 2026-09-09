@@ -1,6 +1,8 @@
 #pragma once
 #include "Igsi_model.h"
 
+namespace vat::gsi_models {
+
 class Storch: public IGSIModel {
 private:
     float m_V_w;
@@ -30,3 +32,5 @@ public:
     void set_sigma_n(float sigma_n);
     void set_sigma_t(float sigma_t);
 };
+
+} // namespace vat::gsi_models

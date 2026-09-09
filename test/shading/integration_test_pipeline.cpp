@@ -12,6 +12,10 @@
 #include "geometries/tetraeder_vector.h"
 #include "static_mesh_satellite.h"
 
+using namespace vat;
+using namespace vat::satellites;
+using namespace vat::shading;
+
 
 // Get path relative to this source file
 std::string GetTestDataPath(const std::string& filename) {

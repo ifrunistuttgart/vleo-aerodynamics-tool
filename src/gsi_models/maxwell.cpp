@@ -3,6 +3,7 @@
 #include <cmath>
 #include "maxwell.h"
 
+namespace vat::gsi_models {
 
 Maxwell::Maxwell(const float alpha_e){
     set_alpha_e(alpha_e);
@@ -115,3 +116,5 @@ void Maxwell::set_alpha_e(float alpha_e) {
         m_alpha_e = alpha_e;
     }
 }
+
+} // namespace vat::gsi_models

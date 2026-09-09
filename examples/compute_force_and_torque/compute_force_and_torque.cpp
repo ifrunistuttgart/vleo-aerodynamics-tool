@@ -23,26 +23,26 @@ int main() {
 	// 1. Load satellite geometry
 	SPDLOG_INFO("Loading satellite model...");
 	std::string obj_path = get_path("../geometry_files/shuttlecock_15k.obj").string();
-	std::unique_ptr<RotatableMeshSatellite> satellite = std::make_unique<RotatableMeshSatellite>(obj_path);
+	std::unique_ptr<vat::satellites::RotatableMeshSatellite> satellite = std::make_unique<vat::satellites::RotatableMeshSatellite>(obj_path);
 	SPDLOG_INFO("Loaded {} triangles", satellite->get_num_triangles());
 
 	// 2. Gas-surface interaction model
-	std::unique_ptr<Sentman> gsi_model = std::make_unique<Sentman>(1,0.9);
+	std::unique_ptr<vat::gsi_models::Sentman> gsi_model = std::make_unique<vat::gsi_models::Sentman>(1,0.9);
 	SPDLOG_INFO("Initialized Sentman GSI model");
 
 	// 3. Shading pipeline: determines which triangles face the incoming flow
 	const int num_pixels = 4000; // number of pixels: affects computation time and accuracy of shading
-	std::unique_ptr<ShadingPipeline> pipeline =
-		std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::CoP, num_pixels);
+	std::unique_ptr<vat::shading::ShadingPipeline> pipeline =
+		std::make_unique<vat::shading::ShadingPipeline>(*satellite, vat::shading::ShadingAlgorithmType::CoP, num_pixels);
 	SPDLOG_INFO("Created shading pipeline (algorithm=CoP, pixels={})", num_pixels);
 
 	// 4. Aero load calculator: combines geometry, shading, and the GSI model
-	std::unique_ptr<HybridForceTorqueCalculator> aero_calculator =
-		std::make_unique<HybridForceTorqueCalculator>(*satellite, *pipeline, *gsi_model);
+	std::unique_ptr<vat::loads::HybridForceTorqueCalculator> aero_calculator =
+		std::make_unique<vat::loads::HybridForceTorqueCalculator>(*satellite, *pipeline, *gsi_model);
 	SPDLOG_INFO("Created hybrid aero load calculator");
 
 	// 5. Atmospheric/environment conditions
-	std::unique_ptr<AeroConditions> aero_conditions = std::make_unique<AeroConditions>();
+	std::unique_ptr<vat::AeroConditions> aero_conditions = std::make_unique<vat::AeroConditions>();
 	aero_conditions->density__kg_per_m3 = 1.2482e-11f;
 	aero_conditions->T_atmospheric__K = 934.0f;
 	aero_conditions->particle_mass__kg = 16 * 1.6605390689252e-27f;
@@ -62,6 +62,6 @@ int main() {
 	SPDLOG_INFO("Torque: {}, {}, {} Nm", torque__Nm.x, torque__Nm.y, torque__Nm.z);
 
 	// 7. Visualize the shaded mesh together with the wind direction
-	ShowMeshWithShadingAndWind(*satellite, triangle_visibility, velocity__m_per_s);
+	vat::visualization::ShowMeshWithShadingAndWind(*satellite, triangle_visibility, velocity__m_per_s);
 	return 0;
 }
