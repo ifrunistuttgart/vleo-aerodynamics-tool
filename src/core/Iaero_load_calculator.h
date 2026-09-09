@@ -5,23 +5,23 @@
 namespace vat {
 
 /**
- * Interface for calculating aerodynamic loads on a satellite.
+ * Interface for calculating aerodynamic loads on a geometry.
  *
  * This interface provides a common method for calculating aerodynamic torque and force
- * based on the satellite's geometry, its motion relative to the atmosphere, and
+ * based on the geometry's geometry, its motion relative to the atmosphere, and
  * environmental conditions.
  */
 class IAeroLoadCalculator {
 public:
     /**
-     * Calculates the aerodynamic torque and force acting on the satellite.
+     * Calculates the aerodynamic torque and force acting on the geometry.
      *
      * This method evaluates the impact of gas-surface interactions across all relevant
-     * surfaces of the satellite, considering atmospheric density, temperature, and
+     * triangles of the geometry, considering atmospheric density, temperature, and
      * the relative velocity vector.
      *
-     * @param v_rel__m_per_s The relative velocity vector of the incoming flow in the satellite's body frame [m/s].
-     * @param surface_temp__K The uniform surface temperature of the satellite [K].
+     * @param v_rel__m_per_s The relative velocity vector of the incoming flow in the geometry's body frame [m/s].
+     * @param surface_temp__K The uniform surface temperature of the geometry [K].
      * @param aero A structure containing atmospheric properties (density, temperature, particle mass, etc.).
      * @param torque__Nm Output parameter that will be populated with the calculated aerodynamic torque [Nm].
      * @param force__N Output parameter that will be populated with the calculated aerodynamic force [N].

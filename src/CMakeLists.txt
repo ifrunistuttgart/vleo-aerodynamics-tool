@@ -1,6 +1,6 @@
 ﻿add_subdirectory(core)
 add_subdirectory(loads)
 add_subdirectory(gsi_models)
-add_subdirectory(satellites)
+add_subdirectory(geometry)
 add_subdirectory(shading)
 add_subdirectory(visualization)

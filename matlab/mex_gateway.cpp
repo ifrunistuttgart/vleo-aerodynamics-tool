@@ -22,7 +22,7 @@
 #include "cook.h"
 #include "maxwell.h"
 #include "schaaf_chambre.h"
-#include "rotatable_mesh_satellite.h"
+#include "rotatable_mesh_geometry.h"
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
 #include "hybrid_aero_load_calculator.h"
@@ -41,7 +41,7 @@ using vat::gsi_models::SchaafChambre;
 using vat::gsi_models::Sentman;
 using vat::gsi_models::Storch;
 using vat::loads::HybridForceTorqueCalculator;
-using vat::satellites::RotatableMeshSatellite;
+using vat::geometry::RotatableMeshGeometry;
 using vat::shading::ShadingAlgorithmType;
 using vat::shading::ShadingPipeline;
 using vat::visualization::ShowMeshWithShadingAndWind;
@@ -296,15 +296,15 @@ public:
             }
             if (cls=="Satellite") {
                 if (cmd == "new") {
-                    matlab_logger->log(LEVEL_INFO, "Creating new Satellite instance.","mex_gateway.cpp",__LINE__);
+                    matlab_logger->log(LEVEL_INFO, "Creating new Geometry instance.","mex_gateway.cpp",__LINE__);
                     validate_input_size(inputs, 2);
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "string", 1);
-                    const std::string satellite_path = inputs[1][0];
+                    const std::string geometry_path = inputs[1][0];
 
-                    satellite_map.insert({satellite_max_id, std::make_unique<RotatableMeshSatellite>(satellite_path)});
-                    outputs[0] = factory.createScalar<int>(satellite_max_id);
-                    satellite_max_id++;
+                    geometry_map.insert({geometry_max_id, std::make_unique<RotatableMeshGeometry>(geometry_path)});
+                    outputs[0] = factory.createScalar<int>(geometry_max_id);
+                    geometry_max_id++;
                     return;
                 }
                 if (cmd=="turn_surface_around_axis") {
@@ -317,10 +317,10 @@ public:
                     validate_argument(inputs, 5, "double", 3);
 
                     const int id = inputs[1][0];
-                    RotatableMeshSatellite* satellite = satellite_map.at(id).get();
+                    RotatableMeshGeometry* geometry = geometry_map.at(id).get();
                     std::array<float, 3> origin{{inputs[4][0], inputs[4][1], inputs[4][2]}};
                     std::array<float, 3> axis{{inputs[5][0], inputs[5][1], inputs[5][2]}};
-                    satellite->turn_surface_around_axis(inputs[2][0], inputs[3][0], origin, axis);
+                    geometry->turn_mesh_around_axis(inputs[2][0], inputs[3][0], origin, axis);
                     return;
                 }
                 if (cmd=="get_vertices") {
@@ -328,8 +328,8 @@ public:
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
                     const int id = inputs[1][0];
-                    RotatableMeshSatellite* satellite = satellite_map.at(id).get();
-                    std::span<const float> vertices = satellite->get_vertices();
+                    RotatableMeshGeometry* geometry = geometry_map.at(id).get();
+                    std::span<const float> vertices = geometry->get_vertices();
                     outputs[0] = factory.createArray({vertices.size()}, vertices.begin(), vertices.end());
                     return;
                 }
@@ -338,8 +338,8 @@ public:
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
                     const int id = inputs[1][0];
-                    RotatableMeshSatellite* satellite = satellite_map.at(id).get();
-                    const unsigned int num_triangles = satellite->get_num_triangles();
+                    RotatableMeshGeometry* geometry = geometry_map.at(id).get();
+                    const unsigned int num_triangles = geometry->get_num_triangles();
                     outputs[0] = factory.createScalar<unsigned int>(num_triangles);
                     return;
                 }
@@ -348,7 +348,7 @@ public:
                     validate_output_size(outputs, 0);
                     validate_argument(inputs, 1, "int", 1);
                     const int id = inputs[1][0];
-                    satellite_map.erase(id);
+                    geometry_map.erase(id);
                     return;
                 }
             }
@@ -362,7 +362,7 @@ public:
                     validate_argument(inputs, 3, "int", 1);
 
                     const int id = inputs[1][0];
-                    RotatableMeshSatellite& satellite = *satellite_map.at(id);
+                    RotatableMeshGeometry& geometry = *geometry_map.at(id);
                     const int shading_key = inputs[2][0];
                     ShadingAlgorithmType algorithm_type;
                     switch (shading_key) {
@@ -377,7 +377,7 @@ public:
                             throw std::invalid_argument(std::string("Unknown shading algorithm type: ") + std::to_string(shading_key));
                     };
                     shading_pipeline_map.insert({shading_pipeline_max_id,
-                                                std::make_unique<ShadingPipeline>(satellite,algorithm_type, inputs[3][0])});
+                                                std::make_unique<ShadingPipeline>(geometry,algorithm_type, inputs[3][0])});
                     outputs[0] = factory.createScalar<int>(shading_pipeline_max_id);
                     shading_pipeline_max_id++;
                     return;
@@ -414,14 +414,14 @@ public:
                     validate_argument(inputs, 2, "int", 1);
                     validate_argument(inputs, 3, "int", 1);
 
-                    const int satellite_id = inputs[1][0];
+                    const int geometry_id = inputs[1][0];
                     const int shading_pipeline_id = inputs[2][0];
                     const int gsi_id = inputs[3][0];
 
                     hybrid_aero_load_calculator_map.insert(
                         {hybrid_aero_max_id,
                         std::make_unique<HybridForceTorqueCalculator>(
-                            *satellite_map.at(satellite_id),
+                            *geometry_map.at(geometry_id),
                             *shading_pipeline_map.at(shading_pipeline_id),
                             *gsi_map.at(gsi_id)
                         )}
@@ -469,15 +469,15 @@ public:
                     validate_argument(inputs, 1, "int", 1);
                     validate_argument(inputs, 3, "double", 3);
 
-                    const int satellite_id = inputs[1][0];
-                    RotatableMeshSatellite& satellite = *satellite_map.at(satellite_id);
-                    validate_argument(inputs, 2, "float", satellite.get_num_triangles());
+                    const int geometry_id = inputs[1][0];
+                    RotatableMeshGeometry& geometry = *geometry_map.at(geometry_id);
+                    validate_argument(inputs, 2, "float", geometry.get_num_triangles());
 
                     matlab::data::TypedArray<float> const typed_array = inputs[2];
                     std::vector<float> triangle_visibility(typed_array.begin(), typed_array.end());
                     glm::vec3 velocity__m_per_s(inputs[3][0], inputs[3][1], inputs[3][2]);
 
-                    ShowMeshWithShadingAndWind(satellite, triangle_visibility, velocity__m_per_s);
+                    ShowMeshWithShadingAndWind(geometry, triangle_visibility, velocity__m_per_s);
                     return;
                 }
             }
@@ -591,12 +591,12 @@ private:
     std::unique_ptr<MatlabLogger> matlab_logger;
     std::unordered_map<int, std::unique_ptr<IGSIModel>> gsi_map;
     std::unordered_map<int, std::unique_ptr<AeroConditions>> aero_conditions_map;
-    std::unordered_map<int, std::unique_ptr<RotatableMeshSatellite>> satellite_map;
+    std::unordered_map<int, std::unique_ptr<RotatableMeshGeometry>> geometry_map;
     std::unordered_map<int, std::unique_ptr<ShadingPipeline>> shading_pipeline_map;
     std::unordered_map<int, std::unique_ptr<HybridForceTorqueCalculator>> hybrid_aero_load_calculator_map;
     int gsi_max_id = 0;
     int aero_conditions_max_id = 0;
-    int satellite_max_id = 0;
+    int geometry_max_id = 0;
     int shading_pipeline_max_id = 0;
     int hybrid_aero_max_id = 0;
 };

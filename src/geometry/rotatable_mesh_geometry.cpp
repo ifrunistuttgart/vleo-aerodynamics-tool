@@ -1,4 +1,4 @@
-#include "rotatable_mesh_satellite.h"
+#include "rotatable_mesh_geometry.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -7,40 +7,40 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
-namespace vat::satellites {
+namespace vat::geometry {
 
-RotatableMeshSatellite::RotatableMeshSatellite(std::string file)
-	: StaticMeshSatellite(file),
+RotatableMeshGeometry::RotatableMeshGeometry(std::string file)
+	: StaticMeshGeometry(file),
 	  m_transformed_vertices(m_vertices.size()),
 	  m_transformed_normals(m_normals.size()),
 	  m_transformed_centroids(m_centroids.size()) {
 }
 
-std::span<const float> RotatableMeshSatellite::get_vertices() {
+std::span<const float> RotatableMeshGeometry::get_vertices() {
 	refresh_transforms();
 	return std::span<const float>(m_transformed_vertices.data(), m_transformed_vertices.size());
 }
 
-std::span<const float> RotatableMeshSatellite::get_raw_vertices() {
+std::span<const float> RotatableMeshGeometry::get_raw_vertices() {
 	return std::span<const float>(m_vertices.data(), m_vertices.size());
 }
 
-std::span<const float> RotatableMeshSatellite::get_normals() {
+std::span<const float> RotatableMeshGeometry::get_normals() {
 	refresh_transforms();
 	return std::span<const float>(m_transformed_normals.data(), m_transformed_normals.size());
 }
 
-std::span<const float> RotatableMeshSatellite::get_centroids() {
+std::span<const float> RotatableMeshGeometry::get_centroids() {
 	refresh_transforms();
 	return std::span<const float>(m_transformed_centroids.data(), m_transformed_centroids.size());
 }
 
-float RotatableMeshSatellite::get_bounding_sphere_radius() {
+float RotatableMeshGeometry::get_bounding_sphere_radius() {
 	refresh_transforms();
 	return m_bounding_sphere_radius;
 }
 
-void RotatableMeshSatellite::refresh_transforms() {
+void RotatableMeshGeometry::refresh_transforms() {
 	if (!m_transforms_outdated) {
 		return;
 	}
@@ -60,10 +60,9 @@ void RotatableMeshSatellite::refresh_transforms() {
 	m_transforms_outdated = false;
 }
 
-//TODO meshid statt surface id
-int RotatableMeshSatellite::turn_surface_around_axis(const int surface_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) {
-	if (surface_id < 0 || surface_id >= static_cast<int>(m_model_matrices.size())) {
-		SPDLOG_ERROR("turn_surface_around_axis invalid surface_id={} (num_surfaces={})", surface_id, m_model_matrices.size());
+int RotatableMeshGeometry::turn_mesh_around_axis(const int mesh_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) {
+	if (mesh_id < 0 || mesh_id >= static_cast<int>(m_model_matrices.size())) {
+		SPDLOG_ERROR("turn_mesh_around_axis invalid mesh_id={} (num_meshes={})", mesh_id, m_model_matrices.size());
 		return -1;
 	}
 	// Create rotation matrix
@@ -72,13 +71,13 @@ int RotatableMeshSatellite::turn_surface_around_axis(const int surface_id, float
 	glm::mat4 translation_back = glm::translate(glm::mat4(1.0f), glm::vec3(origin[0], origin[1], origin[2]));
 	glm::mat4 transform = translation_back * rotation * translation_to_origin;
 
-	// Apply transformation to the specified surface's vertices
-	m_model_matrices[surface_id] = transform;
+	// Apply transformation to the specified mesh.s vertices
+	m_model_matrices[mesh_id] = transform;
 	m_transforms_outdated = true;
 	return 0; // Success
 }
 
-void RotatableMeshSatellite::apply_transform(std::span<const float> coordinates, int num_entries_per_triangle, std::vector<float>& target) const {
+void RotatableMeshGeometry::apply_transform(std::span<const float> coordinates, int num_entries_per_triangle, std::vector<float>& target) const {
 	size_t offset = 0;
 	for (size_t mesh_id = 0; mesh_id < m_model_matrices.size(); ++mesh_id) {
 		const glm::mat4& transform = m_model_matrices[mesh_id];
@@ -96,7 +95,7 @@ void RotatableMeshSatellite::apply_transform(std::span<const float> coordinates,
 	}
 }
 
-void RotatableMeshSatellite::apply_normal_transform(std::span<const float> normals, int num_entries_per_triangle, std::vector<float>& target) const {
+void RotatableMeshGeometry::apply_normal_transform(std::span<const float> normals, int num_entries_per_triangle, std::vector<float>& target) const {
 	size_t offset = 0;
 	for (size_t mesh_id = 0; mesh_id < m_model_matrices.size(); ++mesh_id) {
 		glm::mat3 normal_transform = glm::transpose(glm::inverse(glm::mat3(m_model_matrices[mesh_id])));
@@ -114,4 +113,4 @@ void RotatableMeshSatellite::apply_normal_transform(std::span<const float> norma
 	}
 }
 
-} // namespace vat::satellites
+} // namespace vat::geometry

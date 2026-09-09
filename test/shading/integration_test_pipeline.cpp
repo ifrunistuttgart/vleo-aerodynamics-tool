@@ -10,10 +10,10 @@
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
 #include "geometries/tetraeder_vector.h"
-#include "static_mesh_satellite.h"
+#include "static_mesh_geometry.h"
 
 using namespace vat;
-using namespace vat::satellites;
+using namespace vat::geometry;
 using namespace vat::shading;
 
 
@@ -24,22 +24,22 @@ std::string GetTestDataPath(const std::string& filename) {
     return data_file.string();
 }
 
-// Test class for StaticMeshSatellite
+// Test class for StaticMeshGeometry
 class ShadingPipelineIntegrationTest : public ::testing::Test {
 protected:
-    std::unique_ptr<StaticMeshSatellite> satellite;
+    std::unique_ptr<StaticMeshGeometry> geometry;
 
     void SetUp() override {
         std::string obj_path = GetTestDataPath("../geometries/tetraeder.obj");
 		SPDLOG_INFO("[TEST] Loading OBJ from: {}", obj_path);
-        satellite = std::make_unique<StaticMeshSatellite>(obj_path);
-		SPDLOG_INFO("[TEST] Loaded {} triangles", satellite->get_num_triangles());
+        geometry = std::make_unique<StaticMeshGeometry>(obj_path);
+		SPDLOG_INFO("[TEST] Loaded {} triangles", geometry->get_num_triangles());
     }
 };
 
 
 TEST_F(ShadingPipelineIntegrationTest, TestShading) {
-    ShadingPipeline pipeline(*satellite, ShadingAlgorithmType::Binary, 800);
+    ShadingPipeline pipeline(*geometry, ShadingAlgorithmType::Binary, 800);
 
     std::vector<float> isTriangleVisible = pipeline.shade(glm::vec3(1.0f, 0.0f, 0.0f));
 

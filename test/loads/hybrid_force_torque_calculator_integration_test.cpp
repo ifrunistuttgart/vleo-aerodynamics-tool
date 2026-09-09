@@ -10,11 +10,11 @@
 #include "core.h"
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
-#include "static_mesh_satellite.h"
+#include "static_mesh_geometry.h"
 
 using namespace vat;
 using namespace vat::gsi_models;
-using namespace vat::satellites;
+using namespace vat::geometry;
 using namespace vat::shading;
 using namespace vat::loads;
 
@@ -26,10 +26,10 @@ std::string GetTestDataPath(const std::string& filename) {
     return data_file.string();
 }
 
-// Test class for StaticMeshSatellite
+// Test class for StaticMeshGeometry
 class HybridForceTorqueIntegrationTest : public ::testing::Test {
 protected:
-    std::unique_ptr<StaticMeshSatellite> satellite;
+    std::unique_ptr<StaticMeshGeometry> geometry;
 	std::unique_ptr<Sentman> sentman;
 	std::unique_ptr<HybridForceTorqueCalculator> force_torque_calculator;
 	std::unique_ptr<ShadingPipeline> shading_pipeline;
@@ -47,11 +47,11 @@ protected:
         std::string obj_path = GetTestDataPath("../geometries/tetraeder.obj");
         //std::string obj_path = GetTestDataPath("International Space Station.obj");
 		SPDLOG_INFO("[TEST] loading Test data from: {}", obj_path);
-        satellite = std::make_unique<StaticMeshSatellite>(obj_path);
-        SPDLOG_INFO("[TEST] Loaded {} triangles", satellite->get_num_triangles());
+        geometry = std::make_unique<StaticMeshGeometry>(obj_path);
+        SPDLOG_INFO("[TEST] Loaded {} triangles", geometry->get_num_triangles());
 		sentman = std::make_unique<Sentman>(1, 0.9f);
-		shading_pipeline = std::make_unique<ShadingPipeline>(*satellite, ShadingAlgorithmType::Binary, 800);
-		force_torque_calculator = std::make_unique<HybridForceTorqueCalculator>(*satellite, *shading_pipeline, *sentman);
+		shading_pipeline = std::make_unique<ShadingPipeline>(*geometry, ShadingAlgorithmType::Binary, 800);
+		force_torque_calculator = std::make_unique<HybridForceTorqueCalculator>(*geometry, *shading_pipeline, *sentman);
     }
 };
 

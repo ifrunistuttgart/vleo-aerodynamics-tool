@@ -3,23 +3,23 @@
 #include <string>
 #include <span>
 #include <glm/glm.hpp>
-#include "static_mesh_satellite.h"
+#include "static_mesh_geometry.h"
 
-namespace vat::satellites {
+namespace vat::geometry {
 
 /*
- * A satellite class that allows for rotation of its surfaces. It inherits from StaticMeshSatellite and implements the ISatelliteManipulator interface.
- * This class maintains transformed vertices, normals, and centroids to reflect the changes in the satellite's configuration after rotations.
+ * A geometry class that allows rotation of its meshes. It inherits from StaticMeshGeometry and implements the IGeometryManipulator interface.
+ * This class maintains transformed vertices, normals, and centroids to reflect the changes in the geometry's configuration after rotations.
  */
-class RotatableMeshSatellite : public StaticMeshSatellite {
+class RotatableMeshGeometry : public StaticMeshGeometry {
 protected:
 	std::vector<float> m_transformed_vertices;
 	std::vector<float> m_transformed_normals;
 	std::vector<float> m_transformed_centroids;
 	bool m_transforms_outdated = true;
 public:
-    RotatableMeshSatellite(std::string file);
-    ~RotatableMeshSatellite() = default;
+    RotatableMeshGeometry(std::string file);
+    ~RotatableMeshGeometry() = default;
 
     std::span<const float> get_vertices() override;
 
@@ -31,11 +31,11 @@ public:
 
     float get_bounding_sphere_radius() override;
 
-    int turn_surface_around_axis(const int surface_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) override;
+    int turn_mesh_around_axis(const int mesh_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) override;
 
 private:
 	/**
-	 * Recomputes the transformed geometry and the bounding sphere, but only if a surface
+	 * Recomputes the transformed geometry and the bounding sphere, but only if a mesh
 	 * has been turned since the last call.
 	 *
 	 * All three arrays and the radius are refreshed together because one force/torque
@@ -67,4 +67,4 @@ private:
 	void apply_normal_transform(std::span<const float> normals, int num_entries_per_triangle, std::vector<float>& target) const;
 };
 
-} // namespace vat::satellites
+} // namespace vat::geometry

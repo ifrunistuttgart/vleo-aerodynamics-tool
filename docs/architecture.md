@@ -11,7 +11,7 @@ geometry source without touching the rest of the pipeline.
 classDiagram
     direction TB
 
-    class ISatelliteShadingData {
+    class IGeometryShadingData {
         <<interface>>
         +get_vertices()
         +get_raw_vertices()
@@ -22,12 +22,12 @@ classDiagram
         +get_model_matrices()
         +get_bounding_sphere_radius()
     }
-    class ISatelliteManipulator {
+    class IGeometryManipulator {
         <<interface>>
-        +turn_surface_around_axis()
+        +turn_mesh_around_axis()
     }
-    class StaticMeshSatellite
-    class RotatableMeshSatellite
+    class StaticMeshGeometry
+    class RotatableMeshGeometry
 
     class IShadingPipeline {
         <<interface>>
@@ -39,7 +39,7 @@ classDiagram
     class IShadingAlgorithm {
         <<interface>>
         +set_vertices()
-        +shade_satellite()
+        +shade_geometry()
     }
     class BinaryShader
     class CoPShader
@@ -63,9 +63,9 @@ classDiagram
     class Storch
     class Newton
 
-    ISatelliteShadingData <|.. StaticMeshSatellite
-    ISatelliteManipulator <|.. StaticMeshSatellite
-    StaticMeshSatellite   <|-- RotatableMeshSatellite
+    IGeometryShadingData <|.. StaticMeshGeometry
+    IGeometryManipulator <|.. StaticMeshGeometry
+    StaticMeshGeometry   <|-- RotatableMeshGeometry
 
     IShadingPipeline  <|.. ShadingPipeline
     IShadingAlgorithm <|.. BinaryShader
@@ -82,25 +82,25 @@ classDiagram
 
     ShadingPipeline *-- GlfwOpenGLContext : owns
     ShadingPipeline *-- IShadingAlgorithm : owns
-    ShadingPipeline o-- ISatelliteShadingData : ref
+    ShadingPipeline o-- IGeometryShadingData : ref
 
-    HybridForceTorqueCalculator o-- ISatelliteShadingData : ref
+    HybridForceTorqueCalculator o-- IGeometryShadingData : ref
     HybridForceTorqueCalculator o-- IShadingPipeline : ref
     HybridForceTorqueCalculator o-- IGSIModel : ref
 ```
 
 Solid diamonds are ownership (`unique_ptr`); open diamonds are non-owning references. Every
 object the calculator and the pipeline use must therefore outlive them — the caller owns the
-satellite, the pipeline and the GSI model, and passes them in by reference.
+geometry, the pipeline and the GSI model, and passes them in by reference.
 
 ## The four interfaces
 
-**`ISatelliteShadingData`** ([core/Isatellite_shading_data.h](../src/core/Isatellite_shading_data.h))
+**`IGeometryShadingData`** ([core/Igeometry_shading_data.h](../src/core/Igeometry_shading_data.h))
 supplies geometry: vertices, per-triangle normals, areas, centroids, triangle IDs, per-mesh
 model matrices, and the bounding sphere radius. It is the only thing the rest of the pipeline
 knows about geometry.
 
-**`ISatelliteManipulator`** ([core/Isatellite_manipulator.h](../src/core/Isatellite_manipulator.h))
+**`IGeometryManipulator`** ([core/Igeometry_manipulator.h](../src/core/Igeometry_manipulator.h))
 is deliberately separate. Articulating a part — deflecting a solar array, feathering a panel —
 writes a per-mesh model matrix; it never touches vertex data.
 
@@ -110,7 +110,7 @@ answers one question: given a flow direction, which fraction of each triangle is
 delegating the actual rendering to an `IShadingAlgorithm`.
 
 **`IGSIModel`** ([aero_load_calculator/Igsi_model.h](../src/loads/Igsi_model.h))
-computes force and torque for a *single* surface element from its area, normal, centroid, the
+computes force and torque for a *single* triangle from its area, normal, centroid, the
 flow vector, the surface temperature and the atmospheric conditions. It knows nothing about
 occlusion — that is the pipeline's job.
 
@@ -129,7 +129,7 @@ is the composition point that turns per-element physics into a total load.
 Back-facing triangles — those with `dot(normal, v_rel) <= 0` — bypass the shading result and are
 assigned visibility 1.0. This is safe because the GSI model is itself responsible for returning
 approximately zero force on a leeward element, and it avoids paying for a visibility lookup on
-surfaces that cannot be loaded anyway.
+triangles that cannot be loaded anyway.
 
 ## The two shading algorithms
 
@@ -149,14 +149,14 @@ Both render under an orthographic projection along the flow direction, and both 
 
 Two details are easy to get wrong and worth stating explicitly.
 
-**Vertices are de-indexed.** `StaticMeshSatellite` loads through assimp with
+**Vertices are de-indexed.** `StaticMeshGeometry` loads through assimp with
 `aiProcess_Triangulate | aiProcess_JoinIdenticalVertices`, then expands the result so that
 `m_vertices` holds nine floats per triangle — three explicit vertices. Consequently
 `get_triangle_ids()` is **not** an index buffer. It is a per-vertex `uint32` attribute carrying
 the same value three times, used as a render-target colour. IDs are **1-based**, so a `0` in the
 ID framebuffer means background.
 
-**Raw versus transformed vertices.** `RotatableMeshSatellite` overrides the getters to apply the
+**Raw versus transformed vertices.** `RotatableMeshGeometry` overrides the getters to apply the
 per-mesh model matrices, so `get_vertices()` returns already-transformed geometry. The shading
 pipeline instead uploads `get_raw_vertices()`, because the GPU path applies the model matrices
 itself — uploading the transformed vertices would apply the rotation twice. Positions are
@@ -178,9 +178,9 @@ module gets a nested namespace named after its folder and CMake target:
 
 | namespace | holds |
 |---|---|
-| `vat` | `AeroConditions` and the five interfaces every module speaks: `IGSIModel`, `IShadingPipeline`, `IAeroLoadCalculator`, `ISatelliteShadingData`, `ISatelliteManipulator` |
+| `vat` | `AeroConditions` and the five interfaces every module speaks: `IGSIModel`, `IShadingPipeline`, `IAeroLoadCalculator`, `IGeometryShadingData`, `IGeometryManipulator` |
 | `vat::gsi_models` | `Sentman`, `Cook`, `Maxwell`, `Newton`, `SchaafChambre`, `Storch` |
-| `vat::satellites` | `StaticMeshSatellite`, `RotatableMeshSatellite` |
+| `vat::geometry` | `StaticMeshGeometry`, `RotatableMeshGeometry` |
 | `vat::shading` | `ShadingPipeline`, `ShadingAlgorithmType`, `IShadingAlgorithm`, `BinaryShader`, `CoPShader` |
 | `vat::loads` | `HybridForceTorqueCalculator` |
 | `vat::visualization` | `ShowMeshWithShadingAndWind` |

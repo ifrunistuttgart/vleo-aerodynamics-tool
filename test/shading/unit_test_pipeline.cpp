@@ -5,7 +5,7 @@
 
 #include "shading_pipeline.h"
 #include "binary_shader/binary_shader.h"
-#include "Isatellite_shading_data.h"
+#include "Igeometry_shading_data.h"
 #include "geometries/tetraeder_vector.h"
 #include "shading_algorithm_factory.h"
 
@@ -13,7 +13,7 @@ using namespace vat;
 using namespace vat::shading;
 
 
-class FakeSatelliteData final : public ISatelliteShadingData {
+class FakeGeometryData final : public IGeometryShadingData {
 private:
     std::vector<glm::mat4> m_model_matrices{ glm::mat4(1.0f) };
     std::vector<unsigned int> m_num_triangles_per_mesh{ static_cast<unsigned int>(triangleIDs.size() / 3) };
@@ -61,7 +61,7 @@ public:
 };
 
 TEST(ShadingPipelineTests, TestShading) {
-    FakeSatelliteData sat;
+    FakeGeometryData sat;
     ShadingPipeline pipeline(sat, ShadingAlgorithmType::Binary, 800);
 
     std::vector<float> isTriangleVisible = pipeline.shade(glm::vec3(1.0f, 0.0f, 0.0f));

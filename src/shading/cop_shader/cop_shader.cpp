@@ -113,7 +113,7 @@ int CoPShader::set_vertices(std::span<const float> vertices, std::span<const std
     return 0;
 }
 
-std::vector<float> CoPShader::shade_satellite(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) {
+std::vector<float> CoPShader::shade_geometry(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) {
     //projection matrices
     glm::vec3 camera_position = v_rel_hat * bounding_sphere_radius;
 
