@@ -1,4 +1,4 @@
-add_subdirectory(aero_load_calculators)
-add_subdirectory(gsi)
-add_subdirectory(satellite)
-add_subdirectory(shading_pipeline)
+add_subdirectory(loads)
+add_subdirectory(gsi_models)
+add_subdirectory(satellites)
+add_subdirectory(shading)

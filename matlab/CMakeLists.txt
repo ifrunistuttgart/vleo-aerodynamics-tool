@@ -7,7 +7,7 @@ matlab_add_mex(
     NAME MexGateway
     SRC mex_gateway.cpp
     LINK_TO ${Matlab_MX_LIBRARY} ${Matlab_MEX_LIBRARY} ${Matlab_ENG_LIBRARY}
-            glm::glm gsi core satellite shading_pipeline aero_load_calculator visualization
+            glm::glm gsi_models core satellites shading loads visualization
 )
 
 set(AEROSAT_MATLAB_BIN_DIR "${PROJECT_SOURCE_DIR}/matlab/bin")

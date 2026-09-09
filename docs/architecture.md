@@ -95,32 +95,32 @@ satellite, the pipeline and the GSI model, and passes them in by reference.
 
 ## The four interfaces
 
-**`ISatelliteShadingData`** ([core/Isatellite_shading_data.h](../aero_sat/core/Isatellite_shading_data.h))
+**`ISatelliteShadingData`** ([core/Isatellite_shading_data.h](../src/core/Isatellite_shading_data.h))
 supplies geometry: vertices, per-triangle normals, areas, centroids, triangle IDs, per-mesh
 model matrices, and the bounding sphere radius. It is the only thing the rest of the pipeline
 knows about geometry.
 
-**`ISatelliteManipulator`** ([core/Isatellite_manipulator.h](../aero_sat/core/Isatellite_manipulator.h))
+**`ISatelliteManipulator`** ([core/Isatellite_manipulator.h](../src/core/Isatellite_manipulator.h))
 is deliberately separate. Articulating a part — deflecting a solar array, feathering a panel —
 writes a per-mesh model matrix; it never touches vertex data.
 
-**`IShadingPipeline`** ([aero_load_calculator/Ishading_pipeline.h](../aero_sat/aero_load_calculator/Ishading_pipeline.h))
+**`IShadingPipeline`** ([aero_load_calculator/Ishading_pipeline.h](../src/loads/Ishading_pipeline.h))
 answers one question: given a flow direction, which fraction of each triangle is exposed?
 `ShadingPipeline` implements it by owning a hidden GLFW window for the OpenGL context and
 delegating the actual rendering to an `IShadingAlgorithm`.
 
-**`IGSIModel`** ([aero_load_calculator/Igsi_model.h](../aero_sat/aero_load_calculator/Igsi_model.h))
+**`IGSIModel`** ([aero_load_calculator/Igsi_model.h](../src/loads/Igsi_model.h))
 computes force and torque for a *single* surface element from its area, normal, centroid, the
 flow vector, the surface temperature and the atmospheric conditions. It knows nothing about
 occlusion — that is the pipeline's job.
 
-**`IAeroLoadCalculator`** ([core/Iaero_load_calculator.h](../aero_sat/core/Iaero_load_calculator.h))
+**`IAeroLoadCalculator`** ([core/Iaero_load_calculator.h](../src/core/Iaero_load_calculator.h))
 is the composition point that turns per-element physics into a total load.
 
 ## How one evaluation flows
 
 `HybridForceTorqueCalculator::calc_aero_torque_force` is the whole story in one loop
-([hybrid_aero_load_calculator.cpp](../aero_sat/aero_load_calculator/hybrid_aero_load_calculator.cpp)):
+([hybrid_aero_load_calculator.cpp](../src/loads/hybrid_aero_load_calculator.cpp)):
 
 1. Shade once for the given flow direction, producing one visibility factor per triangle.
 2. For each triangle, ask the GSI model for its force and torque contribution.
@@ -165,8 +165,8 @@ they never pick up the model matrix's translation column.
 
 ## Target layout
 
-One CMake target per `aero_sat/` subdirectory, each with an `AeroSat::` alias and its own
+One CMake target per `src/` subdirectory, each with an `AeroSat::` alias and its own
 `target_include_directories`. Headers are therefore included flat — `#include "sentman.h"` —
 never by relative path. `core` is header-only (INTERFACE). The subdirectories under
-`shading_pipeline/` (`opengl/`, `binary_shader/`, `cop_shader/`) define no targets of their own;
+`shading/` (`gl/`, `binary_shader/`, `cop_shader/`) define no targets of their own;
 they `target_sources(...)` into the parent.
