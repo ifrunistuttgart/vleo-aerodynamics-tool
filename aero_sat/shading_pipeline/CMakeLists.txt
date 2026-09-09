@@ -1,6 +1,13 @@
 find_package(glm REQUIRED CONFIG)
 
-add_library(shading_pipeline shading_pipeline.h shading_pipeline.cpp shading_algorithm_factory.h shading_algorithm_factory.cpp)
+add_library(shading_pipeline
+		shading_pipeline.h
+		shading_pipeline.cpp
+		shading_algorithm_factory.h
+		shading_algorithm_factory.cpp
+		visibility_reducer.h
+		visibility_reducer.cpp)
+
 
 target_compile_features(shading_pipeline PRIVATE cxx_std_20)
 target_include_directories(shading_pipeline
@@ -8,9 +15,8 @@ target_include_directories(shading_pipeline
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 		$<INSTALL_INTERFACE:include>
 )
-target_link_libraries(shading_pipeline PUBLIC core glm::glm aero_load_calculator)
+target_link_libraries(shading_pipeline PUBLIC core glm::glm aero_load_calculator opengl_abstractions)
 
-add_subdirectory(opengl)
 add_subdirectory(binary_shader)
 add_subdirectory(cop_shader)
 

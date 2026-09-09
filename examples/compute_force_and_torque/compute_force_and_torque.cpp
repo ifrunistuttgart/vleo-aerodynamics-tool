@@ -3,11 +3,9 @@
 #include <source_location>
 #include <string>
 #include <vector>
-
 #define FMT_UNICODE 0 // avoid error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
-
-#include "sentman.h"
+#include "gsi.h"
 #include "rotatable_mesh_satellite.h"
 #include "shading_pipeline.h"
 #include "hybrid_aero_load_calculator.h"
@@ -27,7 +25,7 @@ int main() {
 	SPDLOG_INFO("Loaded {} triangles", satellite->get_num_triangles());
 
 	// 2. Gas-surface interaction model
-	std::unique_ptr<Sentman> gsi_model = std::make_unique<Sentman>(1,0.9);
+	std::unique_ptr<gsi::cpu::Sentman> gsi_model = std::make_unique<gsi::cpu::Sentman>(1,0.9);
 	SPDLOG_INFO("Initialized Sentman GSI model");
 
 	// 3. Shading pipeline: determines which triangles face the incoming flow

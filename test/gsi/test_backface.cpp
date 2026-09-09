@@ -1,11 +1,6 @@
 #include <gtest/gtest.h>
 #include <glm/glm.hpp>
-#include "cook.h"
-#include "maxwell.h"
-#include "newton.h"
-#include "schaaf_chambre.h"
-#include "storch.h"
-#include "sentman.h"
+#include "gsi.h"
 #include "core.h"
 
 // HybridForceTorqueCalculator hands EVERY triangle to the GSI model and assigns
@@ -40,7 +35,7 @@ const glm::vec3 centroid__m(0.0f, 0.0f, 0.0f);
 const glm::vec3 windward = glm::normalize(glm::vec3(1.0f, 0.4f, 0.0f));
 const glm::vec3 leeward = -windward;
 
-float force_magnitude(IGSIModel& model, const glm::vec3& normal) {
+float force_magnitude(IGSIModelCPU& model, const glm::vec3& normal) {
     AeroConditions cond = leo_conditions();
     glm::vec3 force__N(0.0f);
     glm::vec3 torque__Nm(0.0f);
@@ -50,7 +45,7 @@ float force_magnitude(IGSIModel& model, const glm::vec3& normal) {
 }
 
 // A leeward panel must contribute negligibly next to the same panel facing the flow.
-void expect_leeward_negligible(IGSIModel& model, const char* name) {
+void expect_leeward_negligible(IGSIModelCPU& model, const char* name) {
     const float windward_load = force_magnitude(model, windward);
     const float leeward_load = force_magnitude(model, leeward);
 
@@ -62,12 +57,12 @@ void expect_leeward_negligible(IGSIModel& model, const char* name) {
 
 } // namespace
 
-TEST(BackFaceTest, Cook) { Cook m(0.9f); expect_leeward_negligible(m, "Cook"); }
-TEST(BackFaceTest, Maxwell) { Maxwell m(0.9f); expect_leeward_negligible(m, "Maxwell"); }
-TEST(BackFaceTest, Newton) { Newton m; expect_leeward_negligible(m, "Newton"); }
-TEST(BackFaceTest, SchaafChambre) { SchaafChambre m(0.9f, 0.9f); expect_leeward_negligible(m, "SchaafChambre"); }
-TEST(BackFaceTest, Storch) { Storch m(100.0f, 0.9f, 0.9f); expect_leeward_negligible(m, "Storch"); }
+TEST(BackFaceTest, Cook) { gsi::cpu::Cook m(0.9f); expect_leeward_negligible(m, "Cook"); }
+TEST(BackFaceTest, Maxwell) { gsi::cpu::Maxwell m(0.9f); expect_leeward_negligible(m, "Maxwell"); }
+TEST(BackFaceTest, Newton) { gsi::cpu::Newton m; expect_leeward_negligible(m, "Newton"); }
+TEST(BackFaceTest, SchaafChambre) { gsi::cpu::SchaafChambre m(0.9f, 0.9f); expect_leeward_negligible(m, "SchaafChambre"); }
+TEST(BackFaceTest, Storch) { gsi::cpu::Storch m(100.0f, 0.9f, 0.9f); expect_leeward_negligible(m, "Storch"); }
 
 // Sentman carries no explicit guard: its erfc(-s*cos_delta) factor decays to zero on
 // its own. Included as a control -- it should pass the same bar without one.
-TEST(BackFaceTest, Sentman) { Sentman m(1, 0.9f); expect_leeward_negligible(m, "Sentman"); }
+TEST(BackFaceTest, Sentman) { gsi::cpu::Sentman m(1, 0.9f); expect_leeward_negligible(m, "Sentman"); }

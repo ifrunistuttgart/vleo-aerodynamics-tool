@@ -28,6 +28,9 @@ public:
         return std::span<const std::uint32_t>(triangleIDs.data(), triangleIDs.size());
     }
 
+    std::span<const float> get_raw_normals() override {
+        return std::span<const float>();
+    }
     std::span<const float> get_normals() override {
         return std::span<const float>();
     }

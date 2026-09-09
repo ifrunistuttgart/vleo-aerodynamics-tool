@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <glm/glm.hpp>
-#include "sentman.h"
+#include "gsi.h"
 #include "core.h"
 
 
@@ -19,13 +19,13 @@ protected:
 
 // Constructor Tests
 TEST_F(SentmanTest, Constructor_ValidMethods_Construct) {
-    EXPECT_NO_THROW({ Sentman s(1, 0.9f); });
-    EXPECT_NO_THROW({ Sentman s(2, 0.9f); });
-    EXPECT_NO_THROW({ Sentman s(3, 0.9f); });
+    EXPECT_NO_THROW({ gsi::cpu::Sentman s(1, 0.9f); });
+    EXPECT_NO_THROW({ gsi::cpu::Sentman s(2, 0.9f); });
+    EXPECT_NO_THROW({ gsi::cpu::Sentman s(3, 0.9f); });
 }
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
     // Arrange
-    Sentman sentman{ 1, 0.9f };
+    gsi::cpu::Sentman sentman{ 1, 0.9f };
     glm::vec3 normal(0.0f, 0.0f, -1.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(-0.166667f, 0.0f, 0.0f);
@@ -53,7 +53,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
 
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
     // Arrange
-    Sentman sentman{ 1, 0.9f };
+    gsi::cpu::Sentman sentman{ 1, 0.9f };
     glm::vec3 normal(1.0f, 0.0f, 0.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(0.0f, 0.0f, 0.1666667f);
@@ -80,7 +80,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
 }
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
     // Arrange
-    Sentman sentman{ 2, 0.9f };
+    gsi::cpu::Sentman sentman{ 2, 0.9f };
     glm::vec3 normal(1.0f, 1.0f, 0.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(1.0f, 1.0f, 1.0f);
@@ -108,7 +108,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
 
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod3) {
     // Arrange
-    Sentman sentman{ 3, 0.9f };
+    gsi::cpu::Sentman sentman{ 3, 0.9f };
     glm::vec3 normal(1.0f, 1.0f, 0.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(1.0f, 1.0f, 1.0f);

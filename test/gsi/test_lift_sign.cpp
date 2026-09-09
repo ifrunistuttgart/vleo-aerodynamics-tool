@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <glm/glm.hpp>
-#include "schaaf_chambre.h"
-#include "storch.h"
+#include "gsi.h"
 #include "core.h"
 
 // Pins down the sign of the tangential (shear) term in the lift coefficient for the
@@ -43,7 +42,7 @@ glm::vec3 lift_direction() {
     return -glm::normalize(glm::cross(glm::cross(v_rel__m_per_s, normal), v_rel__m_per_s));
 }
 
-float lift_component(IGSIModel& model) {
+float lift_component(IGSIModelCPU& model) {
     AeroConditions cond = leo_conditions();
     glm::vec3 force__N(0.0f);
     glm::vec3 torque__Nm(0.0f);
@@ -55,8 +54,8 @@ float lift_component(IGSIModel& model) {
 } // namespace
 
 TEST(LiftSignTest, SchaafChambre_ShearReducesLift) {
-    SchaafChambre no_shear(0.9f, 0.0f);
-    SchaafChambre full_shear(0.9f, 1.0f);
+    gsi::cpu::SchaafChambre no_shear(0.9f, 0.0f);
+    gsi::cpu::SchaafChambre full_shear(0.9f, 1.0f);
 
     const float lift_no_shear = lift_component(no_shear);
     const float lift_full_shear = lift_component(full_shear);
@@ -70,8 +69,8 @@ TEST(LiftSignTest, SchaafChambre_ShearReducesLift) {
 }
 
 TEST(LiftSignTest, Storch_ShearReducesLift) {
-    Storch no_shear(100.0f, 0.9f, 0.0f);
-    Storch full_shear(100.0f, 0.9f, 1.0f);
+    gsi::cpu::Storch no_shear(100.0f, 0.9f, 0.0f);
+    gsi::cpu::Storch full_shear(100.0f, 0.9f, 1.0f);
 
     const float lift_no_shear = lift_component(no_shear);
     const float lift_full_shear = lift_component(full_shear);

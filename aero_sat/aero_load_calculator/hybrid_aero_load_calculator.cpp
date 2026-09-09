@@ -12,7 +12,7 @@
 HybridForceTorqueCalculator::HybridForceTorqueCalculator(
 	ISatelliteShadingData& satellite,
 	IShadingPipeline& shading_pipeline,
-	IGSIModel& gsi_model)
+	IGSIModelCPU& gsi_model)
 	: m_shading_pipeline(shading_pipeline),
 	m_satellite(satellite),
 	m_gsi_model(gsi_model)
