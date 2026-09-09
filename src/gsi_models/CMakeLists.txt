@@ -13,7 +13,8 @@ add_library(gsi_models
 		newton.cpp
 		newton.h
 		storch.cpp
-		storch.h)
+		storch.h
+        gsi.h)
 
 target_compile_features(gsi_models PRIVATE cxx_std_20)
 target_include_directories(gsi_models

@@ -2,7 +2,8 @@ find_package(glm REQUIRED CONFIG)
 find_package(spdlog REQUIRED CONFIG)
 find_package(assimp REQUIRED CONFIG)
 
-add_library(geometry static_mesh_geometry.h static_mesh_geometry.cpp rotatable_mesh_geometry.h rotatable_mesh_geometry.cpp)
+add_library(geometry static_mesh_geometry.h static_mesh_geometry.cpp rotatable_mesh_geometry.h rotatable_mesh_geometry.cpp
+        geometry.h)
 
 target_compile_features(geometry PRIVATE cxx_std_20)
 target_include_directories(geometry

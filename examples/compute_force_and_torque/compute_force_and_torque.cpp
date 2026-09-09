@@ -7,8 +7,8 @@
 #define FMT_UNICODE 0 // avoid error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
-#include "sentman.h"
-#include "rotatable_mesh_geometry.h"
+#include "gsi.h"
+#include "geometry.h"
 #include "shading_pipeline.h"
 #include "hybrid_aero_load_calculator.h"
 #include "show_mesh.h"

@@ -6,7 +6,7 @@
 
 #include <glm/vec3.hpp>
 #include <spdlog/spdlog.h>
-#include "rotatable_mesh_geometry.h"
+#include "geometry.h"
 #include "show_mesh.h"
 
 // Resolves a filename relative to this source file's own location on disk.

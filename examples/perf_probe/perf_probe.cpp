@@ -20,8 +20,8 @@
 #define FMT_UNICODE 0
 #include <spdlog/spdlog.h>
 
-#include "sentman.h"
-#include "rotatable_mesh_geometry.h"
+#include "gsi.h"
+#include "geometry.h"
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
 #include "hybrid_aero_load_calculator.h"
