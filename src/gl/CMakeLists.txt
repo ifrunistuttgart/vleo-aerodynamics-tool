@@ -13,8 +13,6 @@ add_library(gl
 	gl_helpers.h
 	glfw_opengl_context.cpp
 	glfw_opengl_context.h
-	index_buffer.cpp
-	index_buffer.h
 	shader.cpp
 	shader.h
 	vertex_array.cpp
