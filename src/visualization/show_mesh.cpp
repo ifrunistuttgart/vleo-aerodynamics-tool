@@ -338,15 +338,19 @@ vtkSmartPointer<vtkActor> CreateMeshActor(vtkPolyData* polydata, const glm::vec3
     return actor;
 }
 
-// "[<mesh_id>] <name>" for every mesh. mesh_id is both the index into the mesh arrays
-// and the argument turn_mesh_around_axis() takes, so the legend doubles as a lookup
-// table for rotating a mesh.
+// 'id <mesh_id>  "<name>"' for every mesh. mesh_id is both the index into the mesh
+// arrays and the argument turn_mesh_around_axis() takes, so the legend doubles as a
+// lookup table for rotating a mesh.
+//
+// The id is spelled out and the name quoted because a model may well name its meshes
+// with bare numbers, and "[4] 3" gives the reader no way to tell which number is
+// which. 'id 4  "3"' does.
 std::vector<std::string> MeshLabels(IGeometryShadingData& geometry) {
     const std::span<const std::string> names = geometry.get_mesh_names();
     std::vector<std::string> labels;
     labels.reserve(names.size());
     for (std::size_t i = 0; i < names.size(); ++i) {
-        labels.push_back(std::format("[{}] {}", i, names[i]));
+        labels.push_back(std::format("id {}  \"{}\"", i, names[i]));
     }
     return labels;
 }

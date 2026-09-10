@@ -41,7 +41,7 @@ void ShowShading(
 /**
  * Displays a geometry with each mesh in its own color, plus a legend naming them.
  *
- * Every legend entry is labelled "[<mesh_id>] <name>", where mesh_id is the value
+ * Every legend entry is labelled 'id <mesh_id>  "<name>"', where mesh_id is the value
  * turn_mesh_around_axis() expects and name comes from the model file. This is the view
  * to reach for when working out which mesh is which.
  *

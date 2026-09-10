@@ -2,7 +2,7 @@ function show_meshes(geometry)
     % SHOW_MESHES Visualizes the geometry with each mesh in its own color.
     %   This function displays the geometry in a 3D plot, coloring each mesh
     %   differently and adding a legend that names them. Every legend entry reads
-    %   "[mesh_id] name", where mesh_id is the value turn_mesh_around_axis expects
+    %   'id <mesh_id>  "<name>"', where mesh_id is the value turn_mesh_around_axis expects
     %   and name is the mesh name stored in the model file. Use this view to work
     %   out which mesh_id belongs to which part of the model.
     %

@@ -28,7 +28,7 @@ satellite.verts    = satellite.geometry.get_vertices;
 
 n_tri = satellite.geometry.get_num_triangles;
 
-% Which mesh_id belongs to which part? The legend reads "[mesh_id] name".
+% Which mesh_id belongs to which part? The legend reads: id <mesh_id>  "<name>".
 vat.visualization.show_meshes(satellite.geometry)
 
 % Check a hinge before using it: the fields are exactly the arguments
