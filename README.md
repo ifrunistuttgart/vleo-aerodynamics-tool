@@ -60,7 +60,7 @@ pixi run clean                                 # remove out/ and matlab/bin
 
 ![The satellite, the flow vector, and the raster grid used for the visibility test](docs/figures/toolbox-visualized-annotated.png)
 
-An orthographic camera is placed along the flow direction, looking at the satellite, and the
+An orthographic camera is placed along the flow direction, looking at the geometry, and the
 mesh is rendered into an `n_pixels × n_pixels` buffer in which each triangle draws its own ID.
 Any triangle whose ID survives to the final image is exposed to the flow; anything hidden behind
 another part of the spacecraft is not. The GSI model is then evaluated per triangle, weighted by
@@ -69,7 +69,7 @@ that visibility, and summed into a total force and torque.
 `num_pixel` is the accuracy knob: higher resolution resolves finer geometry, at the cost of
 render time.
 
-**Flow direction convention.** `v_rel_B__m_per_s` is the velocity of the *satellite relative to
+**Flow direction convention.** `v_rel_B__m_per_s` is the velocity of the *geometry relative to
 the atmosphere*, expressed in the body frame — the orange vector above.
 
 **Architecture.** Geometry, shading pipeline, shading algorithm and GSI model sit behind four
@@ -80,15 +80,17 @@ single evaluation flows through them.
 ## Minimal example (C++)
 
 ```cpp
-auto satellite = std::make_unique<RotatableMeshSatellite>("shuttlecock_15k.obj");
-auto gsi_model = std::make_unique<Sentman>(1, 0.9f);   // temperature ratio method, alpha_e
+using namespace vat;   // or qualify each name: vat::gsi_models::Sentman, ...
+
+auto geometry = std::make_unique<geometry::RotatableMeshGeometry>("shuttlecock_15k.obj");
+auto gsi_model = std::make_unique<gsi_models::Sentman>(1, 0.9f);   // temperature ratio method, alpha_e
 
 // The pipeline is built once; shading any further direction is then cheap.
-auto pipeline = std::make_unique<ShadingPipeline>(
-    *satellite, ShadingAlgorithmType::CoP, /*num_pixel=*/4000);
+auto pipeline = std::make_unique<shading::ShadingPipeline>(
+    *geometry, shading::ShadingAlgorithmType::CoP, /*num_pixel=*/4000);
 
-auto calculator = std::make_unique<HybridForceTorqueCalculator>(
-    *satellite, *pipeline, *gsi_model);
+auto calculator = std::make_unique<loads::HybridForceTorqueCalculator>(
+    *geometry, *pipeline, *gsi_model);
 
 AeroConditions conditions{
     .density__kg_per_m3 = 1.2482e-11f,
@@ -122,7 +124,7 @@ addpath('<repo_root>\matlab\bin')
 
 Check out the Matlab examples:
 - [quickstart.m](matlab/examples/quickstart.m) walks through the whole path — atmosphere, GSI
-model, geometry, shading, force and torque — and ends by visualizing which surfaces the flow
+model, geometry, shading, force and torque — and ends by visualizing which triangles the flow
 reached. 
 - [soar_rotatable.m](matlab/examples/soar_rotatable.m) goes further, sweeping the
 aerodynamic torque over a full sphere of flow directions with one panel deflected.
@@ -186,9 +188,12 @@ after a successful rebuild too, or the changes will not be visible in that sessi
 ### How do I turn down the logging?
 
 Logging defaults to DEBUG, which is slow because every message crosses into the MATLAB engine.
-Turn it down with `setLogLevel("warn")` before benchmarking.
+Turn it down with `vat.setLogLevel("warn")` before benchmarking.
 
 ### How do I give the toolbox to someone without a checkout?
+
+`matlab/` holds only MATLAB code — the `vat` package, the examples and the staged binaries.
+The gateway's C++ sources live in `bindings/matlab/` so they stay out of what you ship.
 
 `matlab/` is self-contained on purpose: `matlab/bin` holds `MexGateway.mexw64` plus every DLL it
 resolves, including the MSVC runtime, so the target machine needs neither a pixi environment nor

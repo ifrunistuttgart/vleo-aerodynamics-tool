@@ -20,11 +20,17 @@
 #define FMT_UNICODE 0
 #include <spdlog/spdlog.h>
 
-#include "sentman.h"
-#include "rotatable_mesh_satellite.h"
+#include "gsi.h"
+#include "geometry.h"
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
 #include "hybrid_aero_load_calculator.h"
+
+using namespace vat;
+using namespace vat::gsi_models;
+using namespace vat::geometry;
+using namespace vat::shading;
+using namespace vat::loads;
 
 namespace {
 
@@ -84,15 +90,15 @@ double time_ms(int reps, F&& f) {
 // pose identically. They do not if the model matrices are applied both on the CPU
 // (baked into the uploaded vertices) and again on the GPU. Holding two pipelines
 // at once also exercises the GLFW context reference counting.
-void report_construction_order_invariant(RotatableMeshSatellite& sat) {
+void report_construction_order_invariant(RotatableMeshGeometry& sat) {
     constexpr unsigned int P = 512;
     constexpr float ANGLE__RAD = 0.785398163f;
     const glm::vec3 direction = flow_directions()[1];
 
-    sat.turn_surface_around_axis(0, 0.0f, HINGE_ORIGIN, HINGE_AXIS);
+    sat.turn_mesh_around_axis(0, 0.0f, HINGE_ORIGIN, HINGE_AXIS);
     ShadingPipeline built_before_rotation(sat, ShadingAlgorithmType::CoP, P);
 
-    sat.turn_surface_around_axis(0, ANGLE__RAD, HINGE_ORIGIN, HINGE_AXIS);
+    sat.turn_mesh_around_axis(0, ANGLE__RAD, HINGE_ORIGIN, HINGE_AXIS);
     ShadingPipeline built_after_rotation(sat, ShadingAlgorithmType::CoP, P);
 
     const std::uint64_t before = hash_visibility(built_before_rotation.shade(direction));
@@ -100,7 +106,7 @@ void report_construction_order_invariant(RotatableMeshSatellite& sat) {
     std::printf("# construction-order invariant: %s\n", before == after ? "MATCH" : "DIFFER");
 }
 
-void run_fingerprint(RotatableMeshSatellite& sat) {
+void run_fingerprint(RotatableMeshGeometry& sat) {
     AeroConditions aero = make_conditions();
     Sentman gsi(1, ALPHA_E);
 
@@ -111,7 +117,7 @@ void run_fingerprint(RotatableMeshSatellite& sat) {
     for (int rotated = 0; rotated <= 1; ++rotated) {
         // Sentman divides only by |v_rel|, so it requires unit normals. Report how far
         // the transformed normals drift from unit length in this pose.
-        sat.turn_surface_around_axis(0, rotated ? 0.785398163f : 0.0f, HINGE_ORIGIN, HINGE_AXIS);
+        sat.turn_mesh_around_axis(0, rotated ? 0.785398163f : 0.0f, HINGE_ORIGIN, HINGE_AXIS);
         const auto normals = sat.get_normals();
         float max_norm_error = 0.0f;
         for (std::size_t i = 0; i < normals.size(); i += 3) {
@@ -123,7 +129,7 @@ void run_fingerprint(RotatableMeshSatellite& sat) {
         for (unsigned int P : {512u, 1024u}) {
             for (int alg = 0; alg <= 1; ++alg) {
                 // Set the pose before the pipeline is built, mirroring soar_rotatable.m.
-                sat.turn_surface_around_axis(0, rotated ? 0.785398163f : 0.0f, HINGE_ORIGIN, HINGE_AXIS);
+                sat.turn_mesh_around_axis(0, rotated ? 0.785398163f : 0.0f, HINGE_ORIGIN, HINGE_AXIS);
 
                 const auto type = alg == 0 ? ShadingAlgorithmType::Binary : ShadingAlgorithmType::CoP;
                 ShadingPipeline pipeline(sat, type, P);
@@ -147,10 +153,10 @@ void run_fingerprint(RotatableMeshSatellite& sat) {
             }
         }
     }
-    sat.turn_surface_around_axis(0, 0.0f, HINGE_ORIGIN, HINGE_AXIS);
+    sat.turn_mesh_around_axis(0, 0.0f, HINGE_ORIGIN, HINGE_AXIS);
 }
 
-void run_timings(RotatableMeshSatellite& sat, const std::vector<unsigned int>& resolutions) {
+void run_timings(RotatableMeshGeometry& sat, const std::vector<unsigned int>& resolutions) {
     const unsigned int N = sat.get_num_triangles();
     AeroConditions aero = make_conditions();
     Sentman gsi(1, ALPHA_E);
@@ -212,7 +218,7 @@ int main(int argc, char** argv) {
     const std::string mesh = argv[1];
     const std::string mode = argv[2];
 
-    RotatableMeshSatellite sat(mesh);
+    RotatableMeshGeometry sat(mesh);
     if (sat.get_num_triangles() == 0) {
         std::printf("mesh failed to load: %s\n", mesh.c_str());
         return 1;

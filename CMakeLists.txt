@@ -6,7 +6,7 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
-project (AeroSat)
+project (Vat)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,14 +16,14 @@ option(BUILD_MATLAB_BINDINGS "Build MATLAB bindings" OFF)
 # Keep SPDLOG_DEBUG active in all build configurations (including Release)
 add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
 
-add_subdirectory("aero_sat")
+add_subdirectory("src")
 add_subdirectory("examples")
 
 if(BUILD_MATLAB_BINDINGS)
-    add_subdirectory("matlab")
+    add_subdirectory("bindings/matlab")
 endif()
 
-if(CMAKE_PROJECT_NAME STREQUAL AeroSat AND BUILD_TESTING)
+if(CMAKE_PROJECT_NAME STREQUAL Vat AND BUILD_TESTING)
     enable_testing()
     add_subdirectory("test")
 endif()
