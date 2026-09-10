@@ -32,7 +32,7 @@ satellite.verts    = satellite.geometry.get_vertices;
 
 % Rotate the upper panel
 p1.angle  = deg2rad(45);
-p1.origin = [-0.15; 0.00; 0.05];
+p1.origin = [-0.15; 0.00; -0.05];
 p1.axis   = [0; 0; -1];
 p1.mesh_id = 0;
 
