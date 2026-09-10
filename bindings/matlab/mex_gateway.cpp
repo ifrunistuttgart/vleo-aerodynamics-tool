@@ -44,7 +44,7 @@ using vat::loads::HybridForceTorqueCalculator;
 using vat::geometry::RotatableMeshGeometry;
 using vat::shading::ShadingAlgorithmType;
 using vat::shading::ShadingPipeline;
-using vat::visualization::ShowMeshWithShadingAndWind;
+using vat::visualization::ShowShading;
 
 
 class MexFunction : public matlab::mex::Function {
@@ -479,7 +479,7 @@ public:
                     std::vector<float> triangle_visibility(typed_array.begin(), typed_array.end());
                     glm::vec3 velocity__m_per_s(inputs[3][0], inputs[3][1], inputs[3][2]);
 
-                    ShowMeshWithShadingAndWind(geometry, triangle_visibility, velocity__m_per_s);
+                    ShowShading(geometry, triangle_visibility, velocity__m_per_s);
                     return;
                 }
             }
