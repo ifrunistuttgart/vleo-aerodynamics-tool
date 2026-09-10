@@ -32,10 +32,19 @@ satellite.verts    = satellite.geometry.get_vertices;
 
 % Rotate the upper panel
 p1.angle  = deg2rad(45);
-p1.center = [-0.15; 0.00; 0.05];
+p1.origin = [0.15; 0.00; 0.05];
 p1.axis   = [0; 0; -1];
+p1.mesh_id = 0;
+
+% Show colored meshes for identification
+vat.visualization.show_meshes(satellite.geometry)
+
+% Show hinge definition for rotating a wing
+vat.visualization.show_hinges(satellite.geometry, p1)
+
+% Turn the mesh
 satellite.geometry.turn_mesh_around_axis( ...
-    0, p1.angle, p1.center, p1.axis);
+    p1.mesh_id, p1.angle, p1.origin, p1.axis);
 
 %% Setup Shading Pipeline
 shader = vat.shading.ShadingPipeline(satellite.geometry, 0, 4000);
@@ -54,7 +63,7 @@ v_rel   = rot_mat * [v_orbital__m_per_s; 0; 0];
 panel_visibility = shader.shade(v_rel);
 
 %% Visualize Panel Visibility Result
-vat.visualization.show_mesh(satellite.geometry, panel_visibility, v_rel);
+vat.visualization.show_shading(satellite.geometry, panel_visibility, v_rel);
 
 %% Torque Sweep Over Full Sphere (Unrotated Panel)
 % Demonstrates why a fast per-direction shading pipeline matters: the
