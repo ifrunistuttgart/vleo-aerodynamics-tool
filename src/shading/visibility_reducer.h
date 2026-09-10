@@ -5,7 +5,7 @@
 
 #include "compute_shader.h"
 
-namespace vat::gl {
+namespace vat::shading {
 
 /**
  * Reduces a rendered triangle-ID image to one visibility value per triangle.
@@ -35,10 +35,10 @@ public:
 	std::vector<float> reduce(unsigned int id_texture, unsigned int num_pixel);
 
 private:
-	std::unique_ptr<ComputeShader> m_shader;
+	std::unique_ptr<gl::ComputeShader> m_shader;
 	unsigned int m_visibility_buffer = 0;
 	unsigned int m_num_triangles = 0;
 	std::vector<std::uint32_t> m_flags; // reused staging buffer for the readback
 };
 
-} // namespace vat::gl
+} // namespace vat::shading

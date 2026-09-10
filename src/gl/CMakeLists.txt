@@ -21,9 +21,7 @@ add_library(gl
 	vertex_array.h
 	vertex_buffer.cpp
 	vertex_buffer.h
-	vertex_buffer_layout.h
-	visibility_reducer.cpp
-	visibility_reducer.h)
+	vertex_buffer_layout.h)
 
 target_compile_features(gl PRIVATE cxx_std_20)
 target_include_directories(gl

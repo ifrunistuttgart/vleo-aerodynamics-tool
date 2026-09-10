@@ -21,7 +21,7 @@ private:
 	size_t m_lenVertices = 0;
 	unsigned int m_numTriangles = 0;
 	unsigned int m_ID_texture = 0;
-	std::unique_ptr<gl::VisibilityReducer> m_visibility_reducer;
+	std::unique_ptr<VisibilityReducer> m_visibility_reducer;
 	const unsigned int NUM_PIXEL = 800;
 public:
 	BinaryShader(unsigned int num_pixel);

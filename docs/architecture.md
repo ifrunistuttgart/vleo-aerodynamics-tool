@@ -181,10 +181,10 @@ module gets a nested namespace named after its folder and CMake target:
 | `vat` | `AeroConditions` and the five interfaces every module speaks: `IGSIModel`, `IShadingPipeline`, `IAeroLoadCalculator`, `IGeometryShadingData`, `IGeometryManipulator` |
 | `vat::gsi_models` | `Sentman`, `Cook`, `Maxwell`, `Newton`, `SchaafChambre`, `Storch` |
 | `vat::geometry` | `StaticMeshGeometry`, `RotatableMeshGeometry` |
-| `vat::shading` | `ShadingPipeline`, `ShadingAlgorithmType`, `IShadingAlgorithm`, `BinaryShader`, `CoPShader` |
+| `vat::shading` | `ShadingPipeline`, `ShadingAlgorithmType`, `IShadingAlgorithm`, `BinaryShader`, `CoPShader`, `VisibilityReducer` |
 | `vat::loads` | `HybridForceTorqueCalculator` |
 | `vat::visualization` | `ShowMeshWithShadingAndWind` |
-| `vat::gl` | the OpenGL wrappers — `Shader`, `VertexArray`, `FrameBuffer`, `VisibilityReducer`, … |
+| `vat::gl` | the OpenGL wrappers — `Shader`, `ComputeShader`, `VertexArray`, `VertexBuffer`, `FrameBuffer`, … |
 
 One deliberate exception to "namespace == folder":
 

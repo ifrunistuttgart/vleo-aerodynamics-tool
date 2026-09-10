@@ -4,7 +4,11 @@
 #include "gl_helpers.h"
 #include "visibility_reducer.h"
 
-namespace vat::gl {
+namespace vat::shading {
+
+// The gl:: wrappers are this layer's own building blocks; unqualified use keeps
+// the OpenGL call sites readable. TU-local, so it never leaks through a header.
+using namespace gl;
 
 namespace {
 
@@ -47,7 +51,7 @@ void main()
 } // namespace
 
 VisibilityReducer::VisibilityReducer(unsigned int num_triangles)
-	: m_shader(std::make_unique<ComputeShader>(VISIBILITY_REDUCTION_SHADER, true)),
+	: m_shader(std::make_unique<gl::ComputeShader>(VISIBILITY_REDUCTION_SHADER, true)),
 	  m_num_triangles(num_triangles),
 	  m_flags(static_cast<size_t>(num_triangles) + 1, 0) {
 	GLCall(glGenBuffers(1, &m_visibility_buffer));
@@ -96,4 +100,4 @@ std::vector<float> VisibilityReducer::reduce(unsigned int id_texture, unsigned i
 	return triangle_visibility;
 }
 
-} // namespace vat::gl
+} // namespace vat::shading
