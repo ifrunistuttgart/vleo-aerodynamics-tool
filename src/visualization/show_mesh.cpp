@@ -128,14 +128,19 @@ Scene CreateScene(const std::string& window_name, bool enable_depth_peeling = fa
 void RunScene(Scene& scene) {
     scene.render_window->Render();
 
-    // VTK's default camera looks straight down -z, which shows a satellite edge-on and
-    // makes all three body axes hard to tell apart. Swing round to a three-quarter view
-    // so the model reads as a solid and x, y and z all point somewhere distinct.
-    scene.renderer->ResetCamera();
+    /*
+     * Open on the view an attitude-control engineer expects of a nadir-pointing
+     * spacecraft: +x along the direction of travel, +y to the right of it, +z down
+     * towards the Earth. 
+     */
     vtkCamera* camera = scene.renderer->GetActiveCamera();
-    camera->Azimuth(45.0);
-    camera->Elevation(25.0);
+    camera->SetFocalPoint(0.0, 0.0, 0.0);
+    camera->SetPosition(-1.0, 0.55, -0.75); // -x behind, +y right, -z above
+    camera->SetViewUp(0.0, 0.0, -1.0);
     camera->OrthogonalizeViewUp();
+
+    // Slides the camera along that direction until the model fits, leaving the
+    // orientation and the view-up alone.
     scene.renderer->ResetCamera();
 
     scene.render_window->Render();
