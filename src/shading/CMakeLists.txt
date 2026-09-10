@@ -8,9 +8,8 @@ target_include_directories(shading
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 		$<INSTALL_INTERFACE:include>
 )
-target_link_libraries(shading PUBLIC core glm::glm loads)
+target_link_libraries(shading PUBLIC core glm::glm loads AeroSat::gl)
 
-add_subdirectory(gl)
 add_subdirectory(binary_shader)
 add_subdirectory(cop_shader)
 

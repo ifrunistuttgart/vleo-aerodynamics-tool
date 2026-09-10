@@ -6,7 +6,7 @@
 #include "Igeometry_shading_data.h"
 #include "Ishading_algorithm.h"
 #include "shading_algorithm_factory.h"
-#include "gl/glfw_opengl_context.h"
+#include "glfw_opengl_context.h"
 
 namespace vat::shading {
 

@@ -4,10 +4,10 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 
-#include "gl/frame_buffer.h"
-#include "gl/shader.h"
-#include "gl/visibility_reducer.h"
-#include "gl/vertex_array.h"
+#include "frame_buffer.h"
+#include "shader.h"
+#include "visibility_reducer.h"
+#include "vertex_array.h"
 #include "Ishading_algorithm.h"
 
 namespace vat::shading {

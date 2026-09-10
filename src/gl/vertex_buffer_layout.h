@@ -2,7 +2,7 @@
 #include <vector>
 #include <type_traits>
 #include <GL/glew.h>
-#include "gl/gl_helpers.h"
+#include "gl_helpers.h"
 
 namespace vat::gl {
 

@@ -3,10 +3,10 @@
 #include <memory>
 
 #include "Ishading_algorithm.h"
-#include "gl/frame_buffer.h"
-#include "gl/shader.h"
-#include "gl/visibility_reducer.h"
-#include "gl/vertex_array.h"
+#include "frame_buffer.h"
+#include "shader.h"
+#include "visibility_reducer.h"
+#include "vertex_array.h"
 
 namespace vat::shading {
 

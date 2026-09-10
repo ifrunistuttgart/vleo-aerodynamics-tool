@@ -168,7 +168,7 @@ they never pick up the model matrix's translation column.
 One CMake target per `src/` subdirectory, each with an `AeroSat::` alias and its own
 `target_include_directories`. Headers are therefore included flat — `#include "sentman.h"` —
 never by relative path. `core` is header-only (INTERFACE). The subdirectories under
-`shading/` (`gl/`, `binary_shader/`, `cop_shader/`) define no targets of their own;
+`shading/` (`binary_shader/`, `cop_shader/`) define no targets of their own;
 they `target_sources(...)` into the parent.
 
 ## Namespaces
@@ -186,16 +186,18 @@ module gets a nested namespace named after its folder and CMake target:
 | `vat::visualization` | `ShowMeshWithShadingAndWind` |
 | `vat::gl` | the OpenGL wrappers — `Shader`, `VertexArray`, `FrameBuffer`, `VisibilityReducer`, … |
 
-Two deliberate exceptions to "namespace == folder":
+One deliberate exception to "namespace == folder":
 
 - The root-namespace contracts are spread across `core/` and `loads/` rather than living in
   one folder, because a header's folder decides which CMake target owns it. `IGSIModel` and
   `IShadingPipeline` are compiled into `loads` but are named `vat::IGSIModel` and
   `vat::IShadingPipeline`, not `vat::loads::…`.
-- `vat::gl` is a top-level namespace even though its files sit in `src/shading/gl/`. The
-  wrappers are generic — `Shader` and `VertexBuffer` would collide with any other renderer
-  linked into the same program — and they are not conceptually part of the shading algorithm.
-  They live under `shading/` only because they compile into the `shading` target.
+
+`gl` is a module in its own right, at `src/gl/`, not a part of shading. Its wrappers carry
+generic names — `Shader`, `VertexBuffer` and `FrameBuffer` would collide with any other
+renderer linked into the same program — which is what the namespace is for. Shading is
+simply its first consumer; anything else that moves work onto the GPU links `gl` the same
+way, without depending on shading.
 
 `.cpp` files inside `vat::shading` open with a TU-local `using namespace gl;` so the OpenGL
 call sites stay readable. That directive never appears in a header.

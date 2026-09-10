@@ -8,12 +8,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 //custom abstractions
-#include "gl/vertex_buffer.h"
-#include "gl/gl_helpers.h"
+#include "vertex_buffer.h"
+#include "gl_helpers.h"
 
 // embedded shader headers
 #include "binary_shader/shaders/id_shader.h"
-#include "gl/vertex_buffer_layout.h"
+#include "vertex_buffer_layout.h"
 
 namespace vat::shading {
 

@@ -1,8 +1,8 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
-#include "gl/frame_buffer.h"
-#include "gl/gl_helpers.h"
+#include "frame_buffer.h"
+#include "gl_helpers.h"
 
 namespace vat::gl {
 
