@@ -27,18 +27,18 @@ fp.current_folder = fileparts(mfilename('fullpath'));
 fp.obj_file       = fullfile(fp.current_folder, ...
     "geometries/soar_satellite.obj");
 
-geometry.geometry = vat.geometry.RotatableMeshGeometry(fp.obj_file);
-geometry.verts    = geometry.geometry.get_vertices;
+satellite.geometry = vat.geometry.RotatableMeshGeometry(fp.obj_file);
+satellite.verts    = satellite.geometry.get_vertices;
 
 % Rotate the upper panel
 p1.angle  = deg2rad(45);
 p1.center = [-0.15; 0.00; 0.05];
 p1.axis   = [0; 0; -1];
-geometry.geometry.turn_mesh_around_axis( ...
+satellite.geometry.turn_mesh_around_axis( ...
     0, p1.angle, p1.center, p1.axis);
 
 %% Setup Shading Pipeline
-shader = vat.shading.ShadingPipeline(geometry.geometry, 0, 4000);
+shader = vat.shading.ShadingPipeline(satellite.geometry, 0, 4000);
 
 %% Wind Direction
 % Angle of attack (rotation in the body x-z plane) and sideslip angle
@@ -54,7 +54,7 @@ v_rel   = rot_mat * [v_orbital__m_per_s; 0; 0];
 panel_visibility = shader.shade(v_rel);
 
 %% Visualize Panel Visibility Result
-vat.visualization.show_mesh(geometry.geometry, panel_visibility, v_rel);
+vat.visualization.show_mesh(satellite.geometry, panel_visibility, v_rel);
 
 %% Torque Sweep Over Full Sphere (Unrotated Panel)
 % Demonstrates why a fast per-direction shading pipeline matters: the
