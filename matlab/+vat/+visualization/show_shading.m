@@ -1,4 +1,4 @@
-function show_shading(geometry, triangle_visbility, velocity__m_per_s)
+function show_shading(geometry, triangle_visbility, velocity__m_per_s, options)
     % SHOW_SHADING Visualizes the geometry coloured by its shading.
     %   This function displays the geometry in a 3D plot, coloring each triangle
     %   based on its visibility factor (shading) relative to the incoming flow direction.
@@ -13,7 +13,9 @@ function show_shading(geometry, triangle_visbility, velocity__m_per_s)
         geometry (1,1) vat.geometry.RotatableMeshGeometry
         triangle_visbility (:,1) single
         velocity__m_per_s (1,3) double
+        options.ShowTriangleEdges (1,1) logical = true
     end
     
-    MexGateway("visualization.show_shading", int32(geometry.handle_), triangle_visbility, velocity__m_per_s);
+    MexGateway("visualization.show_shading", int32(geometry.handle_), ...
+        triangle_visbility, velocity__m_per_s, logical(options.ShowTriangleEdges));
 end

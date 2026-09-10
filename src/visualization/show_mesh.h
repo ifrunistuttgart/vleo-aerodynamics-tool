@@ -23,6 +23,23 @@ struct Hinge {
 };
 
 /**
+ * Settings shared by every view.
+ */
+struct ViewOptions {
+    /**
+     * Whether the triangle-edge overlay starts switched on.
+     *
+     * The overlay shows how the model is discretised, which is what the shading pass
+     * actually rasterises. It can also be toggled in the window with the T key, so this
+     * only chooses the state the window opens in.
+     *
+     * The edges additionally fade out on their own as the camera pulls back and the
+     * triangles become too small on screen for the outlines to mean anything.
+     */
+    bool show_triangle_edges = true;
+};
+
+/**
  * Displays a geometry with its triangles colored according to their visibility to the
  * surrounding gas, based on the shading data and relative velocity.
  *
@@ -31,11 +48,14 @@ struct Hinge {
  * @param geometry - Reference to the geometry shading data.
  * @param triangle_visibility - Vector containing the visibility values for each triangle.
  * @param v_rel__m_per_s - relative velocity vector of the geometry with respect to the surrounding gas, in the satellite's body frame.
+ * @param options - Shared view settings.
+ * @throws std::invalid_argument if triangle_visibility does not have one entry per triangle.
  */
 void ShowShading(
     IGeometryShadingData& geometry,
     const std::vector<float>& triangle_visibility,
-    const glm::vec3& v_rel__m_per_s
+    const glm::vec3& v_rel__m_per_s,
+    const ViewOptions& options = {}
 );
 
 /**
@@ -48,8 +68,10 @@ void ShowShading(
  * Blocks until the user closes the window.
  *
  * @param geometry - Reference to the geometry shading data.
+ * @param options - Shared view settings.
+ * @throws std::invalid_argument if the geometry contains no meshes.
  */
-void ShowMeshes(IGeometryShadingData& geometry);
+void ShowMeshes(IGeometryShadingData& geometry, const ViewOptions& options = {});
 
 /**
  * Displays the given hinges on top of the geometry, so hinge definitions can be checked
@@ -65,7 +87,11 @@ void ShowMeshes(IGeometryShadingData& geometry);
  *
  * @param geometry - Reference to the geometry shading data.
  * @param hinges - The hinge definitions to display. Each mesh_id must be a valid mesh index.
+ * @param options - Shared view settings.
+ * @throws std::invalid_argument if the geometry has no meshes, or a hinge has an out-of-range
+ *         mesh_id or a zero-length axis.
  */
-void ShowHinges(IGeometryShadingData& geometry, const std::vector<Hinge>& hinges);
+void ShowHinges(IGeometryShadingData& geometry, const std::vector<Hinge>& hinges,
+    const ViewOptions& options = {});
 
 } // namespace vat::visualization

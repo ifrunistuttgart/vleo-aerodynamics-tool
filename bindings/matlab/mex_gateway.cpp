@@ -469,10 +469,11 @@ public:
             }
             if (cls == "visualization") {
                 if (cmd == "show_shading") {
-                    validate_input_size(inputs, 4);
+                    validate_input_size(inputs, 5);
                     validate_output_size(outputs, 0);
                     validate_argument(inputs, 1, "int", 1);
                     validate_argument(inputs, 3, "double", 3);
+                    validate_argument(inputs, 4, "logical", 1);
 
                     const int geometry_id = inputs[1][0];
                     RotatableMeshGeometry& geometry = *geometry_map.at(geometry_id);
@@ -482,24 +483,27 @@ public:
                     std::vector<float> triangle_visibility(typed_array.begin(), typed_array.end());
                     glm::vec3 velocity__m_per_s(inputs[3][0], inputs[3][1], inputs[3][2]);
 
-                    ShowShading(geometry, triangle_visibility, velocity__m_per_s);
+                    ShowShading(geometry, triangle_visibility, velocity__m_per_s,
+                        view_options(inputs, 4));
                     return;
                 }
                 if (cmd == "show_meshes") {
-                    validate_input_size(inputs, 2);
+                    validate_input_size(inputs, 3);
                     validate_output_size(outputs, 0);
                     validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 2, "logical", 1);
 
                     const int geometry_id = inputs[1][0];
                     RotatableMeshGeometry& geometry = *geometry_map.at(geometry_id);
 
-                    ShowMeshes(geometry);
+                    ShowMeshes(geometry, view_options(inputs, 2));
                     return;
                 }
                 if (cmd == "show_hinges") {
-                    validate_input_size(inputs, 5);
+                    validate_input_size(inputs, 6);
                     validate_output_size(outputs, 0);
                     validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 5, "logical", 1);
 
                     const int geometry_id = inputs[1][0];
                     RotatableMeshGeometry& geometry = *geometry_map.at(geometry_id);
@@ -535,7 +539,7 @@ public:
                         hinges.push_back(hinge);
                     }
 
-                    ShowHinges(geometry, hinges);
+                    ShowHinges(geometry, hinges, view_options(inputs, 5));
                     return;
                 }
             }
@@ -594,6 +598,19 @@ private:
 
     };
 
+    // Every view takes the same trailing options argument, so build it in one place.
+    static vat::visualization::ViewOptions view_options(matlab::mex::ArgumentList& inputs, int idx) {
+        matlab::data::TypedArray<bool> const flags = inputs[idx];
+        vat::visualization::ViewOptions options;
+        options.show_triangle_edges = flags[0];
+        return options;
+    };
+
+    static bool is_logical(matlab::mex::ArgumentList& inputs, int idx) {
+        return inputs[idx].getType() == matlab::data::ArrayType::LOGICAL;
+
+    };
+
     void validate_argument(matlab::mex::ArgumentList& inputs,
                            int idx,
                            const std::string& expected_type,
@@ -613,6 +630,10 @@ private:
         if (expected_type == "uint" && !is_uint(inputs, idx)) {
             matlab_logger->log(LEVEL_ERROR, std::format("Expected argument at index {} to be an unsigned integer.", idx),"mex_gateway.cpp",__LINE__);
             throw std::invalid_argument("Argument type mismatch: expected unsigned integer.");
+        }
+        if (expected_type == "logical" && !is_logical(inputs, idx)) {
+            matlab_logger->log(LEVEL_ERROR, std::format("Expected argument at index {} to be a logical.", idx),"mex_gateway.cpp",__LINE__);
+            throw std::invalid_argument("Argument type mismatch: expected logical.");
         }
         if (expected_type == "string" && !is_string(inputs, idx)) {
             matlab_logger->log(LEVEL_ERROR, std::format("Expected argument at index {} to be a string.", idx),"mex_gateway.cpp",__LINE__);
