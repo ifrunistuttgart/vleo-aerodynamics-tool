@@ -188,7 +188,7 @@ after a successful rebuild too, or the changes will not be visible in that sessi
 ### How do I turn down the logging?
 
 Logging defaults to DEBUG, which is slow because every message crosses into the MATLAB engine.
-Turn it down with `setLogLevel("warn")` before benchmarking.
+Turn it down with `vat.setLogLevel("warn")` before benchmarking.
 
 ### How do I give the toolbox to someone without a checkout?
 
