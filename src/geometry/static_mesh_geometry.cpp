@@ -32,7 +32,8 @@ StaticMeshGeometry::StaticMeshGeometry(std::string file)
     // Extract mesh data
     for (unsigned int mesh_idx = 0; mesh_idx < scene->mNumMeshes; ++mesh_idx) {
         const aiMesh* mesh = scene->mMeshes[mesh_idx];
-        SPDLOG_DEBUG("Processing mesh {} with {} faces and {} vertices", mesh_idx, mesh->mNumFaces, mesh->mNumVertices);
+        SPDLOG_DEBUG("Processing mesh {} (\"{}\") with {} faces and {} vertices",
+            mesh_idx, mesh->mName.C_Str(), mesh->mNumFaces, mesh->mNumVertices);
         unsigned int mesh_triangle_count = 0;
         // Extract triangles and normals
         for (unsigned int face_idx = 0; face_idx < mesh->mNumFaces; ++face_idx) {
@@ -81,6 +82,12 @@ StaticMeshGeometry::StaticMeshGeometry(std::string file)
         }
 
         m_num_triangles_per_mesh.push_back(mesh_triangle_count);
+        // Keep the author's name for the mesh so the visualization can label it. Not
+        // every format carries names, in which case the index has to do.
+        const std::string mesh_name = mesh->mName.length > 0
+            ? std::string(mesh->mName.C_Str())
+            : "Mesh " + std::to_string(mesh_idx);
+        m_mesh_names.push_back(mesh_name);
         // Add identity model matrix for each mesh
         m_model_matrices.push_back(glm::mat4(1.0f));
     }
@@ -124,6 +131,10 @@ std::span<const float> StaticMeshGeometry::get_centroids() {
 
 std::span<const glm::mat4> StaticMeshGeometry::get_model_matrices() {
     return std::span<const glm::mat4>(m_model_matrices.data(), m_model_matrices.size());
+}
+
+std::span<const std::string> StaticMeshGeometry::get_mesh_names() {
+    return std::span<const std::string>(m_mesh_names.data(), m_mesh_names.size());
 }
 
 std::span<const unsigned int> StaticMeshGeometry::get_num_triangles_per_mesh() {
