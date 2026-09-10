@@ -11,4 +11,4 @@ target_include_directories(loads
 )
 target_link_libraries(loads PUBLIC glm::glm spdlog::spdlog core)
 
-add_library(AeroSat::loads ALIAS loads)
+add_library(Vat::loads ALIAS loads)

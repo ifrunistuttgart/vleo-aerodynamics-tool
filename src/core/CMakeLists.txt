@@ -8,4 +8,4 @@ target_include_directories(core INTERFACE
 )
 target_link_libraries(core INTERFACE glm::glm)
 
-add_library(AeroSat::core ALIAS core)
+add_library(Vat::core ALIAS core)

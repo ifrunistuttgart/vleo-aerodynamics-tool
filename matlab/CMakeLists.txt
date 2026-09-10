@@ -10,7 +10,7 @@ matlab_add_mex(
             glm::glm gsi_models core geometry shading loads visualization
 )
 
-set(AEROSAT_MATLAB_BIN_DIR "${PROJECT_SOURCE_DIR}/matlab/bin")
+set(VAT_MATLAB_BIN_DIR "${PROJECT_SOURCE_DIR}/matlab/bin")
 
 # MexGateway deliberately links into the build tree, NOT into matlab/bin.
 # matlab/bin is a staging directory populated entirely by the step below. Keeping
@@ -34,12 +34,12 @@ if (WIN32 AND DEFINED ENV{CONDA_PREFIX})
     #
     # Staging costs ~6 s (it content-compares ~170 MB), which is why it is skipped
     # when nothing relevant changed rather than run unconditionally.
-    set(stage_stamp "${AEROSAT_MATLAB_BIN_DIR}/.aerosat_staged")
+    set(stage_stamp "${VAT_MATLAB_BIN_DIR}/.vat_staged")
     add_custom_command(
         OUTPUT "${stage_stamp}"
         COMMAND ${CMAKE_COMMAND}
             "-DTARGET_FILE=$<TARGET_FILE:MexGateway>"
-            "-DDEST_DIR=${AEROSAT_MATLAB_BIN_DIR}"
+            "-DDEST_DIR=${VAT_MATLAB_BIN_DIR}"
             "-DSEARCH_DIR=$ENV{CONDA_PREFIX}/Library/bin"
             -P "${PROJECT_SOURCE_DIR}/cmake/stage_matlab_bin.cmake"
         COMMAND ${CMAKE_COMMAND} -E touch "${stage_stamp}"
@@ -48,7 +48,7 @@ if (WIN32 AND DEFINED ENV{CONDA_PREFIX})
         VERBATIM
     )
     add_custom_target(stage_matlab_bin ALL DEPENDS "${stage_stamp}")
-    message(STATUS "Mex file will be staged into ${AEROSAT_MATLAB_BIN_DIR}")
+    message(STATUS "Mex file will be staged into ${VAT_MATLAB_BIN_DIR}")
 else ()
     # Without the pixi environment we cannot find the DLLs to vendor, so matlab/bin
     # would hold a mex file MATLAB cannot load. Warn rather than fail silently.

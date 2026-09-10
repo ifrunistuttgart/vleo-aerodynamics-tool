@@ -36,4 +36,4 @@ target_link_libraries(visualization
 		VTK::RenderingFreeType   # <--- Added
 )
 
-add_library(AeroSat::visualization ALIAS visualization)
+add_library(Vat::visualization ALIAS visualization)

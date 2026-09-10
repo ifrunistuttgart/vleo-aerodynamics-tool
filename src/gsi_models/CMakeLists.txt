@@ -25,4 +25,4 @@ target_include_directories(gsi_models
 target_link_libraries(gsi_models PUBLIC loads)
 target_link_libraries(gsi_models PRIVATE glm::glm spdlog::spdlog)
 
-add_library(AeroSat::gsi_models ALIAS gsi_models)
+add_library(Vat::gsi_models ALIAS gsi_models)

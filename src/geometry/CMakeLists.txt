@@ -15,4 +15,4 @@ target_include_directories(geometry
 target_link_libraries(geometry PUBLIC glm::glm core)
 target_link_libraries(geometry PRIVATE spdlog::spdlog assimp::assimp)
 
-add_library(AeroSat::geometry ALIAS geometry)
+add_library(Vat::geometry ALIAS geometry)

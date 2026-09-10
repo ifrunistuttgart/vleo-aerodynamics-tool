@@ -165,7 +165,7 @@ they never pick up the model matrix's translation column.
 
 ## Target layout
 
-One CMake target per `src/` subdirectory, each with an `AeroSat::` alias and its own
+One CMake target per `src/` subdirectory, each with a `Vat::` alias and its own
 `target_include_directories`. Headers are therefore included flat — `#include "sentman.h"` —
 never by relative path. `core` is header-only (INTERFACE). The subdirectories under
 `shading/` (`binary_shader/`, `cop_shader/`) define no targets of their own;

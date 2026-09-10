@@ -20,7 +20,7 @@
 # there and was then copied onto itself -- so the staged DLLs were frozen at
 # whatever the first build produced and never picked up a `pixi update` again.
 # MexGateway is now linked into the build tree (which contains no DLLs, since
-# all AeroSat libraries are static) and staged here. The check below enforces it.
+# all Vat libraries are static) and staged here. The check below enforces it.
 #
 # Invoked in script mode (see matlab/CMakeLists.txt):
 #   cmake -DTARGET_FILE=... -DDEST_DIR=... -DSEARCH_DIR=... -P stage_matlab_bin.cmake

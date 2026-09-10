@@ -36,4 +36,4 @@ target_include_directories(gl
 target_link_libraries(gl PUBLIC OpenGL::GL glfw GLEW::GLEW glm::glm)
 target_link_libraries(gl PRIVATE spdlog::spdlog)
 
-add_library(AeroSat::gl ALIAS gl)
+add_library(Vat::gl ALIAS gl)

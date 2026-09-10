@@ -185,7 +185,7 @@ void ShowMeshWithShadingAndWind(
     renderer->SetBackground(0.08, 0.08, 0.1);
 
     render_window->SetSize(1200, 900);
-    render_window->SetWindowName("AeroSat Mesh Visibility + Wind");
+    render_window->SetWindowName("VAT Mesh Visibility + Wind");
     render_window->Render();
 
     renderer->ResetCamera();
