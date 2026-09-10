@@ -20,7 +20,7 @@ add_subdirectory("src")
 add_subdirectory("examples")
 
 if(BUILD_MATLAB_BINDINGS)
-    add_subdirectory("matlab")
+    add_subdirectory("bindings/matlab")
 endif()
 
 if(CMAKE_PROJECT_NAME STREQUAL Vat AND BUILD_TESTING)

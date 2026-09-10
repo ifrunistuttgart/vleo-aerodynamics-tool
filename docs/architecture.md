@@ -209,6 +209,6 @@ made that legal, but the moment one backend's GLSL was edited alone it would hav
 silent ODR violation, with the linker keeping one definition and one backend rendering with
 the other's shader. Separate namespaces let the two diverge freely.
 
-`MexFunction` in [mex_gateway.cpp](../matlab/mex_gateway.cpp) stays in the global namespace —
+`MexFunction` in [mex_gateway.cpp](../bindings/matlab/mex_gateway.cpp) stays in the global namespace —
 MATLAB resolves the entry point by that exact name — so that file pulls in the toolbox types
 with individual `using` declarations instead of being wrapped.

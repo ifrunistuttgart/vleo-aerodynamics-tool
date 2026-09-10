@@ -12,6 +12,10 @@ matlab_add_mex(
 
 set(VAT_MATLAB_BIN_DIR "${PROJECT_SOURCE_DIR}/matlab/bin")
 
+# The mex sources live here in bindings/, but the staging destination stays in
+# matlab/, which is the shippable toolbox folder: matlab/ plus matlab/bin can be
+# copied to a machine with no checkout and no compiler.
+#
 # MexGateway deliberately links into the build tree, NOT into matlab/bin.
 # matlab/bin is a staging directory populated entirely by the step below. Keeping
 # the two apart matters twice over:

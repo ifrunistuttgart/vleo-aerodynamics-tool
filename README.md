@@ -192,6 +192,9 @@ Turn it down with `setLogLevel("warn")` before benchmarking.
 
 ### How do I give the toolbox to someone without a checkout?
 
+`matlab/` holds only MATLAB code — the `vat` package, the examples and the staged binaries.
+The gateway's C++ sources live in `bindings/matlab/` so they stay out of what you ship.
+
 `matlab/` is self-contained on purpose: `matlab/bin` holds `MexGateway.mexw64` plus every DLL it
 resolves, including the MSVC runtime, so the target machine needs neither a pixi environment nor
 the VC++ redistributable. It does still need MATLAB and a GPU driver offering OpenGL 4.3. Copy
