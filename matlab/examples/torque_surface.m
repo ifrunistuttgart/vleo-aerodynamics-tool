@@ -25,7 +25,7 @@ alpha__deg   = 45;    % angle of attack
 beta__deg    = 25;     % sideslip angle
 eta_max__deg = 90;    % panel travel
 n_grid       = 20;    % samples per eta, so n_grid^2 load evaluations
-num_pixel    = 1000;  % shading resolution
+num_pixel    = 3000;  % shading resolution
 
 v__m_per_s        = 7800;
 surface_temp__K   = 300.0;
@@ -91,8 +91,7 @@ end
 axis equal; grid on; view(3); colormap(parula);
 c = colorbar; c.Label.String = 'eta_1 [deg]';
 xlabel('T_x [\muNm]'); ylabel('T_y [\muNm]'); zlabel('T_z [\muNm]');
-title(sprintf('Achievable torques at \alpha = %g deg, \beta = %g deg', ...
-    alpha__deg, beta__deg));
+title(['Achievable torques at \alpha = ' num2str(alpha__deg) ' deg, \beta = ' num2str(beta__deg) ' deg']);
 
 %% Helpers
 function set_panels(geometry, wings, eta1__rad, eta2__rad)
