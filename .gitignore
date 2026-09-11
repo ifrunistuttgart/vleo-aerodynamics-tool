@@ -76,3 +76,6 @@ Testing/
 
 # MATLAB autosave files
 *.asv
+
+# cached parameter sweeps written by matlab/examples/*.m
+matlab/examples/*.mat
