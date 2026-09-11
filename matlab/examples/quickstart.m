@@ -62,4 +62,4 @@ fprintf('Torque [Nm] : %+.4e %+.4e %+.4e\n', torque__Nm);
 % pipeline is initialized once and can be re-shaded cheaply for any number
 % of further flow directions, which is what makes attitude sweeps practical.
 visibility = pipeline.shade(v_rel__m_per_s);
-vat.visualization.show_mesh(geometry, visibility, v_rel__m_per_s);
+vat.visualization.show_shading(geometry, visibility, v_rel__m_per_s);

@@ -62,6 +62,6 @@ int main() {
 	SPDLOG_INFO("Torque: {}, {}, {} Nm", torque__Nm.x, torque__Nm.y, torque__Nm.z);
 
 	// 7. Visualize the shaded mesh together with the wind direction
-	vat::visualization::ShowMeshWithShadingAndWind(*geometry, triangle_visibility, velocity__m_per_s);
+	vat::visualization::ShowShading(*geometry, triangle_visibility, velocity__m_per_s);
 	return 0;
 }

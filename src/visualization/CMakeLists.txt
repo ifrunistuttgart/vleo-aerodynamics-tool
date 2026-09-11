@@ -3,6 +3,7 @@ find_package(spdlog CONFIG REQUIRED)
 find_package(VTK REQUIRED COMPONENTS
 		CommonCore
 		CommonDataModel
+		FiltersCore          # <--- For vtkTubeFilter
 		FiltersSources
 		FiltersModeling
 		RenderingCore
@@ -26,6 +27,7 @@ target_link_libraries(visualization
 		PRIVATE
 		VTK::CommonCore
 		VTK::CommonDataModel
+		VTK::FiltersCore
 		VTK::FiltersSources
 		VTK::FiltersModeling
 		VTK::RenderingCore

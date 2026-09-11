@@ -32,10 +32,19 @@ satellite.verts    = satellite.geometry.get_vertices;
 
 % Rotate the upper panel
 p1.angle  = deg2rad(45);
-p1.center = [-0.15; 0.00; 0.05];
+p1.origin = [-0.15; 0.00; -0.05];
 p1.axis   = [0; 0; -1];
+p1.mesh_id = 0;
+
+% Show colored meshes for identification
+% vat.visualization.show_meshes(satellite.geometry)
+
+% Show hinge definition for rotating a wing
+vat.visualization.show_hinges(satellite.geometry, p1)
+
+% Turn the mesh
 satellite.geometry.turn_mesh_around_axis( ...
-    0, p1.angle, p1.center, p1.axis);
+    p1.mesh_id, p1.angle, p1.origin, p1.axis);
 
 %% Setup Shading Pipeline
 shader = vat.shading.ShadingPipeline(satellite.geometry, 0, 4000);
@@ -54,75 +63,75 @@ v_rel   = rot_mat * [v_orbital__m_per_s; 0; 0];
 panel_visibility = shader.shade(v_rel);
 
 %% Visualize Panel Visibility Result
-vat.visualization.show_mesh(satellite.geometry, panel_visibility, v_rel);
+vat.visualization.show_shading(satellite.geometry, panel_visibility, v_rel);
 
-%% Torque Sweep Over Full Sphere (Unrotated Panel)
-% Demonstrates why a fast per-direction shading pipeline matters: the
-% aerodynamic torque is evaluated for hundreds of wind directions,
-% covering the full sphere. The geometry's left-right symmetry means
-% alpha in [0, 90] deg combined with beta in [0, 180] deg is sufficient
-% to cover every distinct relative-wind direction.
-flat.geometry         = vat.geometry.RotatableMeshGeometry(fp.obj_file);
-flat.shader           = vat.shading.ShadingPipeline(flat.geometry, 1, 1000);
-flat.load_calculator  = vat.loads.HybridForceTorqueCalculator(flat.geometry, flat.shader, aero.model);
-
-surface_temp__K = 300;
-
-sweep.alpha_deg = 0:5:90;
-sweep.beta_deg  = 0:5:180;
-[sweep.ALPHA_deg, sweep.BETA_deg] = meshgrid(sweep.alpha_deg, sweep.beta_deg);
-
-sweep.torque_x__Nm = zeros(size(sweep.ALPHA_deg));
-sweep.torque_y__Nm = zeros(size(sweep.ALPHA_deg));
-sweep.torque_z__Nm = zeros(size(sweep.ALPHA_deg));
-
-disp(div);
-fprintf("Sweeping %d wind directions over the unrotated panel...\n", ...
-    numel(sweep.ALPHA_deg));
-
-tic;
-for i = 1:size(sweep.ALPHA_deg, 1)
-    for j = 1:size(sweep.ALPHA_deg, 2)
-        sweep_rot_mat = wind_relative_dcm( ...
-            deg2rad(sweep.ALPHA_deg(i, j)), deg2rad(sweep.BETA_deg(i, j)));
-        sweep_v_rel = sweep_rot_mat * [v_orbital__m_per_s; 0; 0];
-
-        [~, torque__Nm] = flat.load_calculator.calc_aero_load( ...
-            sweep_v_rel, surface_temp__K, aero.conditions);
-
-        sweep.torque_x__Nm(i, j) = torque__Nm(1);
-        sweep.torque_y__Nm(i, j) = torque__Nm(2);
-        sweep.torque_z__Nm(i, j) = torque__Nm(3);
-    end
-end
-sweep.total_time__s = toc;
-sweep.avg_time_per_call__s = sweep.total_time__s / numel(sweep.ALPHA_deg);
-
-fprintf("Swept %d directions in %.3f s (%.2f ms/direction).\n", ...
-    numel(sweep.ALPHA_deg), sweep.total_time__s, ...
-    1e3 * sweep.avg_time_per_call__s);
-disp(div);
-
-%% Visualize Torque Map
-figure;
-
-subplot(1, 3, 1);
-surf(sweep.ALPHA_deg, sweep.BETA_deg, sweep.torque_x__Nm);
-xlabel('\alpha [deg]'); ylabel('\beta [deg]'); zlabel('T_x [Nm]');
-title('Torque X'); shading interp;
-
-subplot(1, 3, 2);
-surf(sweep.ALPHA_deg, sweep.BETA_deg, sweep.torque_y__Nm);
-xlabel('\alpha [deg]'); ylabel('\beta [deg]'); zlabel('T_y [Nm]');
-title('Torque Y'); shading interp;
-
-subplot(1, 3, 3);
-surf(sweep.ALPHA_deg, sweep.BETA_deg, sweep.torque_z__Nm);
-xlabel('\alpha [deg]'); ylabel('\beta [deg]'); zlabel('T_z [Nm]');
-title('Torque Z'); shading interp;
-
-sgtitle('Aerodynamic Torque vs. Wind Direction (Unrotated Panel)');
-
+% %% Torque Sweep Over Full Sphere (Unrotated Panel)
+% % Demonstrates why a fast per-direction shading pipeline matters: the
+% % aerodynamic torque is evaluated for hundreds of wind directions,
+% % covering the full sphere. The geometry's left-right symmetry means
+% % alpha in [0, 90] deg combined with beta in [0, 180] deg is sufficient
+% % to cover every distinct relative-wind direction.
+% flat.geometry         = vat.geometry.RotatableMeshGeometry(fp.obj_file);
+% flat.shader           = vat.shading.ShadingPipeline(flat.geometry, 1, 1000);
+% flat.load_calculator  = vat.loads.HybridForceTorqueCalculator(flat.geometry, flat.shader, aero.model);
+% 
+% surface_temp__K = 300;
+% 
+% sweep.alpha_deg = 0:5:90;
+% sweep.beta_deg  = 0:5:180;
+% [sweep.ALPHA_deg, sweep.BETA_deg] = meshgrid(sweep.alpha_deg, sweep.beta_deg);
+% 
+% sweep.torque_x__Nm = zeros(size(sweep.ALPHA_deg));
+% sweep.torque_y__Nm = zeros(size(sweep.ALPHA_deg));
+% sweep.torque_z__Nm = zeros(size(sweep.ALPHA_deg));
+% 
+% disp(div);
+% fprintf("Sweeping %d wind directions over the unrotated panel...\n", ...
+%     numel(sweep.ALPHA_deg));
+% 
+% tic;
+% for i = 1:size(sweep.ALPHA_deg, 1)
+%     for j = 1:size(sweep.ALPHA_deg, 2)
+%         sweep_rot_mat = wind_relative_dcm( ...
+%             deg2rad(sweep.ALPHA_deg(i, j)), deg2rad(sweep.BETA_deg(i, j)));
+%         sweep_v_rel = sweep_rot_mat * [v_orbital__m_per_s; 0; 0];
+% 
+%         [~, torque__Nm] = flat.load_calculator.calc_aero_load( ...
+%             sweep_v_rel, surface_temp__K, aero.conditions);
+% 
+%         sweep.torque_x__Nm(i, j) = torque__Nm(1);
+%         sweep.torque_y__Nm(i, j) = torque__Nm(2);
+%         sweep.torque_z__Nm(i, j) = torque__Nm(3);
+%     end
+% end
+% sweep.total_time__s = toc;
+% sweep.avg_time_per_call__s = sweep.total_time__s / numel(sweep.ALPHA_deg);
+% 
+% fprintf("Swept %d directions in %.3f s (%.2f ms/direction).\n", ...
+%     numel(sweep.ALPHA_deg), sweep.total_time__s, ...
+%     1e3 * sweep.avg_time_per_call__s);
+% disp(div);
+% 
+% %% Visualize Torque Map
+% figure;
+% 
+% subplot(1, 3, 1);
+% surf(sweep.ALPHA_deg, sweep.BETA_deg, sweep.torque_x__Nm);
+% xlabel('\alpha [deg]'); ylabel('\beta [deg]'); zlabel('T_x [Nm]');
+% title('Torque X'); shading interp;
+% 
+% subplot(1, 3, 2);
+% surf(sweep.ALPHA_deg, sweep.BETA_deg, sweep.torque_y__Nm);
+% xlabel('\alpha [deg]'); ylabel('\beta [deg]'); zlabel('T_y [Nm]');
+% title('Torque Y'); shading interp;
+% 
+% subplot(1, 3, 3);
+% surf(sweep.ALPHA_deg, sweep.BETA_deg, sweep.torque_z__Nm);
+% xlabel('\alpha [deg]'); ylabel('\beta [deg]'); zlabel('T_z [Nm]');
+% title('Torque Z'); shading interp;
+% 
+% sgtitle('Aerodynamic Torque vs. Wind Direction (Unrotated Panel)');
+% 
 %% Local Functions
 function rot_mat = wind_relative_dcm(alpha, beta)
     % WIND_RELATIVE_DCM DCM mapping the nominal +x flow to a wind
