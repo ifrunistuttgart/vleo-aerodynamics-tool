@@ -39,7 +39,7 @@ obj_file = fullfile(fileparts(mfilename('fullpath')), ...
 geometry = vat.geometry.RotatableMeshGeometry(obj_file);
 
 conditions = vat.AeroConditions(rho__kg_per_m3, T_atmospheric__K, particle_mass__kg);
-pipeline   = vat.shading.ShadingPipeline(geometry, 1, num_pixel);
+pipeline   = vat.shading.ShadingPipeline(geometry, 0, num_pixel);
 calculator = vat.loads.HybridForceTorqueCalculator( ...
     geometry, pipeline, vat.gsi_models.Sentman(1, 0.9));
 
