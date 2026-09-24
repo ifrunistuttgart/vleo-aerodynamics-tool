@@ -32,7 +32,7 @@ AeroConditions leo_conditions() {
 
 } // namespace
 
-// Smoke test for the end-to-end pipeline. The accuracy tests are phase 3.
+// Smoke tests for the end-to-end pipeline; accuracy is in pixel_force_torque_accuracy_test.cpp.
 TEST(PixelForceTorqueCalculatorTest, NewtonTetrahedronAgreesWithHybrid) {
     StaticMeshGeometry geometry(tetrahedron_path());
     Newton newton;

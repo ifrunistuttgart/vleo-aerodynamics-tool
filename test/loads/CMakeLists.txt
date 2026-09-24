@@ -5,7 +5,7 @@ add_executable(calculator_test hybrid_force_torque_calculator_integration_test.c
 
 target_link_libraries(calculator_test PRIVATE GTest::gtest_main spdlog::spdlog loads core gsi_models shading geometry)
 
-add_executable(pixel_calculator_test pixel_force_torque_calculator_test.cpp)
+add_executable(pixel_calculator_test pixel_force_torque_calculator_test.cpp pixel_force_torque_accuracy_test.cpp in_memory_geometry.h)
 
 target_link_libraries(pixel_calculator_test PRIVATE GTest::gtest_main spdlog::spdlog loads core gsi_models shading geometry)
 
