@@ -119,6 +119,9 @@ std::vector<float> CoPShader::shade_geometry(glm::vec3 v_rel_hat, float bounding
     const glm::mat4& view = camera.view;
 
     m_frame_buffer->Bind();
+    // The default viewport is the hidden window's size, which the OS may clamp to
+    // the screen; without this, num_pixel above the screen size is silently lost.
+    GLCall(glViewport(0, 0, static_cast<GLsizei>(NUM_PIXEL), static_cast<GLsizei>(NUM_PIXEL)));
     m_frame_buffer->Clear();
 
 	//render triangles and cops to Framebuffer
