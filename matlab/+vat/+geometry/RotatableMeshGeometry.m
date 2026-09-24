@@ -162,7 +162,8 @@ classdef RotatableMeshGeometry < handle
             %   than 1M; use predict_remesh to try sizes first.
             %
             %   report holds before/after mesh quality, the area change in percent,
-            %   what repair changed, and suggested_num_pixel for the new mesh.
+            %   what repair changed, and suggested_num_pixel.cop / .binary for the
+            %   new mesh -- what ShadingPipeline picks when num_pixel is omitted.
             %
             %   Name-Value Arguments:
             %       TriangleCount - Approximate number of triangles.

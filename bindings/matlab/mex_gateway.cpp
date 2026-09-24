@@ -409,8 +409,14 @@ public:
                          "after", "triangles_per_mesh_before", "triangles_per_mesh_after", "repair"});
                     report[0]["target_edge_length__m"] = factory.createScalar<double>(r.target_edge_length__m);
                     report[0]["area_change__percent"] = factory.createScalar<double>(r.area_change__percent);
-                    report[0]["suggested_num_pixel"] = factory.createScalar<double>(
-                        vat::shading::suggest_num_pixel(*result.geometry));
+                    // Per algorithm: CoP gains accuracy from pixels well past the point
+                    // where Binary stops gaining anything.
+                    matlab::data::StructArray num_pixel = factory.createStructArray({1, 1}, {"cop", "binary"});
+                    num_pixel[0]["cop"] = factory.createScalar<double>(
+                        vat::shading::suggest_num_pixel(*result.geometry, ShadingAlgorithmType::CoP));
+                    num_pixel[0]["binary"] = factory.createScalar<double>(
+                        vat::shading::suggest_num_pixel(*result.geometry, ShadingAlgorithmType::Binary));
+                    report[0]["suggested_num_pixel"] = std::move(num_pixel);
                     report[0]["before"] = quality_struct(r.before);
                     report[0]["after"] = quality_struct(r.after);
                     report[0]["triangles_per_mesh_before"] = row_vector(r.triangles_per_mesh_before);

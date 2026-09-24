@@ -29,46 +29,51 @@ StaticMeshGeometry ThinTriangle(float width__m) {
 
 } // namespace
 
-TEST(PixelSizingTest, NumPixelPutsThreePixelsAcrossTheWidth) {
-    // Binary-exact values: 2 * 0.5 * 3 / 0.25 = 12 and 2 * 0.5 * 3 / 2^-7 = 384.
-    EXPECT_EQ(num_pixel_for_triangle_width(0.5f, 0.25f), 12u);
-    EXPECT_EQ(num_pixel_for_triangle_width(0.5f, 0.0078125f), 384u);
+TEST(PixelSizingTest, NumPixelPutsKPixelsAcrossTheWidth) {
+    EXPECT_EQ(pixels_per_triangle_width(ShadingAlgorithmType::Binary), 3.0f);
+    EXPECT_EQ(pixels_per_triangle_width(ShadingAlgorithmType::CoP), 7.0f);
+    // Binary-exact values: 2 * 0.5 * k / 0.25 and 2 * 0.5 * k / 2^-7.
+    EXPECT_EQ(num_pixel_for_triangle_width(0.5f, 0.25f, ShadingAlgorithmType::Binary), 12u);
+    EXPECT_EQ(num_pixel_for_triangle_width(0.5f, 0.25f, ShadingAlgorithmType::CoP), 28u);
+    EXPECT_EQ(num_pixel_for_triangle_width(0.5f, 0.0078125f, ShadingAlgorithmType::Binary), 384u);
     // Rounds up, so the width is never under-resolved.
-    EXPECT_EQ(num_pixel_for_triangle_width(0.5f, 0.26f), 12u);
-    EXPECT_EQ(num_pixel_for_triangle_width(0.5f, 0.24f), 13u);
+    EXPECT_EQ(num_pixel_for_triangle_width(0.5f, 0.26f, ShadingAlgorithmType::Binary), 12u);
+    EXPECT_EQ(num_pixel_for_triangle_width(0.5f, 0.24f, ShadingAlgorithmType::Binary), 13u);
 }
 
 TEST(PixelSizingTest, InvalidLengthsAreRejected) {
-    EXPECT_THROW(num_pixel_for_triangle_width(0.0f, 0.01f), std::invalid_argument);
-    EXPECT_THROW(num_pixel_for_triangle_width(0.5f, 0.0f), std::invalid_argument);
-    EXPECT_THROW(num_pixel_for_triangle_width(0.5f, -0.01f), std::invalid_argument);
-    EXPECT_THROW(num_pixel_for_triangle_width(NAN, 0.01f), std::invalid_argument);
+    const auto cop = ShadingAlgorithmType::CoP;
+    EXPECT_THROW(num_pixel_for_triangle_width(0.0f, 0.01f, cop), std::invalid_argument);
+    EXPECT_THROW(num_pixel_for_triangle_width(0.5f, 0.0f, cop), std::invalid_argument);
+    EXPECT_THROW(num_pixel_for_triangle_width(0.5f, -0.01f, cop), std::invalid_argument);
+    EXPECT_THROW(num_pixel_for_triangle_width(NAN, 0.01f, cop), std::invalid_argument);
 }
 
 TEST(PixelSizingTest, SliverMeshIsSizedForItsNarrowSide) {
-    // shuttlecock_960: R = 0.3582 m, 5th-percentile width 0.749 mm -> 2*0.3582*3/0.000749.
+    // shuttlecock_960: R = 0.3582 m, 5th-percentile width 0.749 mm -> 2*0.3582*k/0.000749.
     StaticMeshGeometry geometry(DataPath("../../matlab/examples/geometries/shuttlecock_960.obj"));
-    EXPECT_EQ(suggest_num_pixel(geometry), 2869u);
+    EXPECT_EQ(suggest_num_pixel(geometry, ShadingAlgorithmType::Binary), 2869u);
+    EXPECT_EQ(suggest_num_pixel(geometry, ShadingAlgorithmType::CoP), 6694u);
 }
 
 TEST(PixelSizingTest, CoarseMeshGetsTheMinimum) {
     StaticMeshGeometry tetra(DataPath("../geometries/tetraeder.obj"));
-    EXPECT_EQ(suggest_num_pixel(tetra), MIN_AUTO_NUM_PIXEL);
+    EXPECT_EQ(suggest_num_pixel(tetra, ShadingAlgorithmType::CoP), MIN_AUTO_NUM_PIXEL);
 }
 
 TEST(PixelSizingTest, HopelesslyThinMeshIsCapped) {
     StaticMeshGeometry thin = ThinTriangle(1e-6f);
-    EXPECT_EQ(suggest_num_pixel(thin), MAX_AUTO_NUM_PIXEL);
+    EXPECT_EQ(suggest_num_pixel(thin, ShadingAlgorithmType::Binary), MAX_AUTO_NUM_PIXEL);
 
     StaticMeshGeometry degenerate = ThinTriangle(0.0f);
-    EXPECT_EQ(suggest_num_pixel(degenerate), MAX_AUTO_NUM_PIXEL);
+    EXPECT_EQ(suggest_num_pixel(degenerate, ShadingAlgorithmType::Binary), MAX_AUTO_NUM_PIXEL);
 }
 
 TEST(PixelSizingTest, PipelineWithoutNumPixelUsesTheSuggestion) {
     StaticMeshGeometry geometry(DataPath("../../matlab/examples/geometries/shuttlecock_960.obj"));
     ShadingPipeline pipeline(geometry, ShadingAlgorithmType::CoP);
 
-    EXPECT_EQ(pipeline.get_num_pixel(), suggest_num_pixel(geometry));
+    EXPECT_EQ(pipeline.get_num_pixel(), suggest_num_pixel(geometry, ShadingAlgorithmType::CoP));
     EXPECT_EQ(pipeline.shade(glm::vec3(1.0f, 0.0f, 0.0f)).size(), geometry.get_num_triangles());
 }
 

@@ -11,25 +11,36 @@
 
 namespace vat::shading {
 
-unsigned int num_pixel_for_triangle_width(float bounding_sphere_radius__m, float triangle_width__m) {
+float pixels_per_triangle_width(ShadingAlgorithmType type) {
+    switch (type) {
+    case ShadingAlgorithmType::Binary:
+        return 3.0f;
+    case ShadingAlgorithmType::CoP:
+        return 7.0f;
+    }
+    throw std::invalid_argument("unknown ShadingAlgorithmType");
+}
+
+unsigned int num_pixel_for_triangle_width(float bounding_sphere_radius__m, float triangle_width__m,
+    ShadingAlgorithmType type) {
     if (!(std::isfinite(bounding_sphere_radius__m) && bounding_sphere_radius__m > 0.0f)) {
         throw std::invalid_argument("bounding sphere radius must be positive and finite");
     }
     if (!(std::isfinite(triangle_width__m) && triangle_width__m > 0.0f)) {
         throw std::invalid_argument("triangle width must be positive and finite");
     }
-    const double num_pixel = std::ceil(2.0 * bounding_sphere_radius__m * PIXELS_PER_TRIANGLE_WIDTH
+    const double num_pixel = std::ceil(2.0 * bounding_sphere_radius__m * pixels_per_triangle_width(type)
         / triangle_width__m);
     return static_cast<unsigned int>(std::min(num_pixel, 4294967295.0));
 }
 
-unsigned int suggest_num_pixel(IGeometryShadingData& geometry) {
+unsigned int suggest_num_pixel(IGeometryShadingData& geometry, ShadingAlgorithmType type) {
     const geometry::MeshQuality quality = geometry::compute_mesh_quality(geometry);
     const float width__m = quality.min_altitude__m.p05;
 
     // A mesh whose thinnest 5 % have zero width cannot be sized from them at all.
     const unsigned int wanted = width__m > 0.0f
-        ? num_pixel_for_triangle_width(quality.bounding_sphere_radius__m, width__m)
+        ? num_pixel_for_triangle_width(quality.bounding_sphere_radius__m, width__m, type)
         : MAX_AUTO_NUM_PIXEL + 1;
     const unsigned int num_pixel = std::clamp(wanted, MIN_AUTO_NUM_PIXEL, MAX_AUTO_NUM_PIXEL);
 

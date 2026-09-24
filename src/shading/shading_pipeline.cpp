@@ -61,7 +61,7 @@ ShadingPipeline::ShadingPipeline(
 ShadingPipeline::ShadingPipeline(
 	IGeometryShadingData& geometry,
 	ShadingAlgorithmType algorithm_type)
-	: ShadingPipeline(geometry, algorithm_type, suggest_num_pixel(geometry)) {
+	: ShadingPipeline(geometry, algorithm_type, suggest_num_pixel(geometry, algorithm_type)) {
 }
 
 ShadingPipeline::~ShadingPipeline() {

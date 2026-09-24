@@ -30,8 +30,10 @@ classdef ShadingPipeline < handle
             %       num_pixel         - The resolution (number of pixels)
             %                           used for the visibility analysis.
             %                           Optional: if omitted, it is chosen from
-            %                           the mesh so that each triangle spans
-            %                           about three pixels (see get_num_pixel).
+            %                           the mesh so that each triangle spans about
+            %                           7 pixels for CoP, where more pixels keep
+            %                           improving accuracy, or 3 for Binary, where
+            %                           they do not (see get_num_pixel).
             %                           Build the pipeline in the geometry's most
             %                           extended pose, since num_pixel is fixed
             %                           here.
