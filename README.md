@@ -157,6 +157,8 @@ hybrid one does not.
 wing out into the flow and shows the pressure images and the pitch torque.
 - [pixel_timing.m](matlab/examples/pixel_timing.m) times one evaluation of the hybrid and the
 per-pixel calculator for several resolutions.
+- [pixel_smoothness.m](matlab/examples/pixel_smoothness.m) sweeps the yaw angle in small steps
+and shows how large the pixel jumps in the pitch torque are for several resolutions.
 
 ## Gas–surface interaction models
 
