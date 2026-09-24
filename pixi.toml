@@ -19,6 +19,7 @@ glfw = "*"
 glm = "*"
 gtest = "*"
 spdlog = "*"
+cgal-cpp = "*"
 
 # conda-forge's compiler activation exports VS-generator defaults that override
 # the Ninja generator in our presets.
