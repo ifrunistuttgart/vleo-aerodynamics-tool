@@ -27,23 +27,6 @@ MeshData HandBuiltTetra(std::string name = "") {
     };
 }
 
-template <typename T>
-std::vector<T> ToVector(std::span<const T> s) {
-    return std::vector<T>(s.begin(), s.end());
-}
-
-void ExpectSameGeometry(StaticMeshGeometry& a, StaticMeshGeometry& b) {
-    EXPECT_EQ(a.get_num_triangles(), b.get_num_triangles());
-    EXPECT_EQ(ToVector(a.get_vertices()), ToVector(b.get_vertices()));
-    EXPECT_EQ(ToVector(a.get_triangle_ids()), ToVector(b.get_triangle_ids()));
-    EXPECT_EQ(ToVector(a.get_normals()), ToVector(b.get_normals()));
-    EXPECT_EQ(ToVector(a.get_centroids()), ToVector(b.get_centroids()));
-    EXPECT_EQ(ToVector(a.get_areas()), ToVector(b.get_areas()));
-    EXPECT_EQ(ToVector(a.get_num_triangles_per_mesh()), ToVector(b.get_num_triangles_per_mesh()));
-    EXPECT_EQ(ToVector(a.get_mesh_names()), ToVector(b.get_mesh_names()));
-    EXPECT_EQ(a.get_bounding_sphere_radius(), b.get_bounding_sphere_radius());
-}
-
 } // namespace
 
 TEST(MeshDataTest, LoaderKeepsIndexedConnectivity) {
@@ -101,9 +84,9 @@ TEST(MeshDataTest, UnnamedMeshesGetTheirIndexAsName) {
     std::vector<MeshData> meshes{HandBuiltTetra(), HandBuiltTetra("named")};
     StaticMeshGeometry geometry(std::move(meshes));
 
-    EXPECT_EQ(geometry.get_mesh_names()[0], "Mesh 0");
+    EXPECT_EQ(geometry.get_mesh_names()[0], "Mesh_0");
     EXPECT_EQ(geometry.get_mesh_names()[1], "named");
-    EXPECT_EQ(geometry.get_mesh_data()[0].name, "Mesh 0");
+    EXPECT_EQ(geometry.get_mesh_data()[0].name, "Mesh_0");
 }
 
 TEST(MeshDataTest, MalformedMeshesAreRejected) {

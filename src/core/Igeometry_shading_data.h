@@ -78,7 +78,7 @@ public:
     /**
      * Retrieves the name of each mesh of the geometry, as stored in the model file.
      *
-     * Meshes without a name in the file fall back to "Mesh <index>", so the returned
+     * Meshes without a name in the file fall back to "Mesh_<index>", so the returned
      * span always has one non-empty entry per mesh, in the same order as
      * get_num_triangles_per_mesh() and get_model_matrices(). The index into this span
      * is the mesh_id accepted by IGeometryManipulator::turn_mesh_around_axis().

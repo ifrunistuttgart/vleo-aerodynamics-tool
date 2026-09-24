@@ -80,9 +80,10 @@ StaticMeshGeometry::StaticMeshGeometry(std::vector<MeshData> meshes)
 
         m_num_triangles_per_mesh.push_back(mesh_triangle_count);
         // Not every format carries mesh names, in which case the index has to do. Stored
-        // back into the MeshData too, so an exported file keeps the same labels.
+        // back into the MeshData too, so an exported file keeps the same labels. No space
+        // in the default: an .obj `o` name ends at the first whitespace on reload.
         if (mesh.name.empty()) {
-            mesh.name = "Mesh " + std::to_string(mesh_idx);
+            mesh.name = "Mesh_" + std::to_string(mesh_idx);
         }
         m_mesh_names.push_back(mesh.name);
         // Add identity model matrix for each mesh

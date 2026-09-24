@@ -36,7 +36,7 @@ public:
      * Builds a geometry from meshes already in memory, e.g. the output of remeshing.
      *
      * @param meshes One entry per mesh, in the order that defines each mesh_id. A mesh
-     *               with an empty name is named "Mesh <index>".
+     *               with an empty name is named "Mesh_<index>".
      * @throws std::invalid_argument if a mesh's positions or indices do not come in
      *         triples, or an index is out of range.
      */
