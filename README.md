@@ -155,6 +155,8 @@ shuttlecock meshed with 96 up to 61440 triangles: the per-pixel drag stays the s
 hybrid one does not.
 - [pixel_wing_deflection.m](matlab/examples/pixel_wing_deflection.m) turns the upper and the lower
 wing out into the flow and shows the pressure images and the pitch torque.
+- [pixel_timing.m](matlab/examples/pixel_timing.m) times one evaluation of the hybrid and the
+per-pixel calculator for several resolutions.
 
 ## Gas–surface interaction models
 
