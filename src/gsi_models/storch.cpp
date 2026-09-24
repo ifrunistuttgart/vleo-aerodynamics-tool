@@ -1,4 +1,6 @@
 #include "storch.h"
+#include "shaders/common_glsl.h"
+#include "shaders/storch_glsl.h"
 #include <spdlog/spdlog.h>
 
 namespace vat::gsi_models {
@@ -11,14 +13,17 @@ Storch::Storch(const float V_w, const float sigma_n, const float sigma_t) {
 
 
 int Storch::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, const glm::vec3 &centroid__m,
-    const glm::vec3 &v_rel__m_per_s, float surf_temp__K, AeroConditions &aero, glm::vec3 &aero_force__N,
-    glm::vec3 &aero_torque__Nm) {
-        // Initialize outputs
-    aero_force__N = glm::vec3(0.0f);
-    aero_torque__Nm = glm::vec3(0.0f);
+                                     const glm::vec3 &v_rel__m_per_s, float surf_temp__K, AeroConditions &aero, glm::vec3 &aero_force__N,
+                                     glm::vec3 &aero_torque__Nm) {
+    aero_force__N = force_per_area(normal, v_rel__m_per_s, surf_temp__K, aero) * area__m2;
+    aero_torque__Nm = glm::cross(centroid__m, aero_force__N);
+    return 0;
+}
 
+glm::vec3 Storch::force_per_area(const glm::vec3 &normal, const glm::vec3 &v_rel__m_per_s, float surf_temp__K,
+                                 const AeroConditions &aero) const {
     if(glm::dot(v_rel__m_per_s, normal)< 0.0f) {
-        return 0; // No aerodynamic force if the surface is facing away from the flow
+        return glm::vec3(0.0f); // No aerodynamic force if the surface is facing away from the flow
     }
 
     // Extract aerodynamic conditions
@@ -28,7 +33,7 @@ int Storch::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, 
     const float v_rel_magnitude__m_per_s = glm::length(v_rel_inv__m_per_s);
     if (v_rel_magnitude__m_per_s < 1e-10f) {
         SPDLOG_WARN("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.", v_rel_magnitude__m_per_s);
-        return 0; // No relative velocity, no force
+        return glm::vec3(0.0f); // No relative velocity, no force
     }
 
     // Direction of lift: perpendicular to velocity, in the plane of normal and velocity
@@ -56,13 +61,20 @@ int Storch::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, 
 
     const float q = 0.5f * density__kg_per_m3 * v_rel_magnitude__m_per_s * v_rel_magnitude__m_per_s;
 
-    const glm::vec3 fl = q * area__m2 * cl * lift_dir;
-    const glm::vec3 fd = q * area__m2 * cd * drag_dir;
+    return q * cl * lift_dir + q * cd * drag_dir;
+}
 
-    aero_force__N = fl + fd;
-    aero_torque__Nm = glm::cross(centroid__m, aero_force__N);
+std::string Storch::glsl_force_per_projected_area() const {
+    return std::string(common_glsl::helpers) + storch_glsl::force_per_projected_area;
+}
 
-    return 0;
+std::vector<GlslUniform> Storch::glsl_uniforms(const AeroConditions &aero) const {
+    return {
+        {"u_gsi_density", aero.density__kg_per_m3},
+        {"u_gsi_V_w", m_V_w},
+        {"u_gsi_sigma_n", m_sigma_n},
+        {"u_gsi_sigma_t", m_sigma_t},
+    };
 }
 
 void Storch::set_gsi_parameter(std::string name, const float value) {

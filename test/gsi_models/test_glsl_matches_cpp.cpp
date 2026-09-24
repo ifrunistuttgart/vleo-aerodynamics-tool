@@ -20,6 +20,7 @@
 #include "sentman.h"
 #include "storch.h"
 #include "core.h"
+#include "shaders/common_glsl.h"
 
 using namespace vat;
 using namespace vat::gsi_models;
@@ -181,6 +182,51 @@ TEST_P(GlslMatchesCpp, OnRandomWindwardInputs) {
         }
         std::printf("[          ] %s: max relative error %.3e over %d samples\n", GetParam().name.c_str(), max_error, NUM_SAMPLES);
     }
+}
+
+// The GLSL erfc against std::erfc. Absolute accuracy is what the models need: they
+// only use erfc(x) and erf(x) as O(1) factors next to other O(1) terms. The fit itself
+// is good to 1.2e-7; float arithmetic adds about one ulp of erfc in [1, 2], 1.2e-7.
+TEST_F(GlslMatchesCpp, ErfcApproximation) {
+    s_context->make_current();
+    const char* source = R"GLSL(
+layout(std430, binding = 0) buffer Values { float values[]; };
+void main()
+{
+    uint i = gl_GlobalInvocationID.x;
+    if (i < uint(values.length())) values[i] = vat_erfc(values[i]);
+}
+)GLSL";
+    gl::ComputeShader shader(std::string("#version 430\nlayout(local_size_x = 64) in;\n") + common_glsl::helpers + source, true);
+
+    std::vector<float> x;
+    for (float v = -9.0f; v <= 9.0f; v += 1.0f / 512.0f) x.push_back(v);
+    std::vector<float> result = x;
+
+    GLuint buffer;
+    GLCall(glGenBuffers(1, &buffer));
+    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer));
+    GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER, static_cast<GLsizeiptr>(result.size() * sizeof(float)), result.data(), GL_DYNAMIC_READ));
+    GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer));
+    shader.Bind();
+    GLCall(glDispatchCompute(static_cast<GLuint>((result.size() + 63) / 64), 1, 1));
+    GLCall(glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT));
+    GLCall(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, static_cast<GLsizeiptr>(result.size() * sizeof(float)), result.data()));
+    shader.Unbind();
+    GLCall(glDeleteBuffers(1, &buffer));
+
+    double max_absolute = 0.0, max_relative_negative = 0.0;
+    for (size_t i = 0; i < x.size(); ++i) {
+        const double expected = std::erfc(static_cast<double>(x[i]));
+        const double absolute = std::abs(result[i] - expected);
+        max_absolute = std::max(max_absolute, absolute);
+        if (x[i] <= 0.0f) {
+            // erfc in [1, 2]: the branch Sentman uses, where relative == absolute.
+            max_relative_negative = std::max(max_relative_negative, absolute / expected);
+        }
+        ASSERT_LT(absolute, 4e-7) << "x=" << x[i];
+    }
+    std::printf("[          ] vat_erfc: max absolute error %.3e, max relative error for x <= 0 %.3e\n", max_absolute, max_relative_negative);
 }
 
 INSTANTIATE_TEST_SUITE_P(AllModels, GlslMatchesCpp, ::testing::Values(

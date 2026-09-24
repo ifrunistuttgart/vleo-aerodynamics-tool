@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <glm/glm.hpp>
 #include "sentman.h"
+#include "shaders/common_glsl.h"
+#include "shaders/sentman_glsl.h"
 
 namespace vat::gsi_models {
 
@@ -23,10 +25,16 @@ Sentman::Sentman(int temperature_ratio_method,float alpha_e){
 
 
 int Sentman::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal, const glm::vec3& centroid__m, const glm::vec3& v_rel__m_per_s, float surf_temp__K, AeroConditions& aero, glm::vec3& aero_force__N, glm::vec3& aero_torque__Nm){
-    // Initialize outputs
-    aero_force__N = glm::vec3(0.0f);
-    aero_torque__Nm = glm::vec3(0.0f);
+    // Force = pressure * area
+    aero_force__N = force_per_area(normal, v_rel__m_per_s, surf_temp__K, aero) * area__m2;
 
+    // Torque = centroid x force
+    aero_torque__Nm = glm::cross(centroid__m, aero_force__N);
+
+    return 0; // Success
+}
+
+glm::vec3 Sentman::force_per_area(const glm::vec3& normal, const glm::vec3& v_rel__m_per_s, float surf_temp__K, const AeroConditions& aero) const {
     // Extract aerodynamic conditions
     const float density__kg_per_m3 = aero.density__kg_per_m3;
     const float temperature_i__K = aero.T_atmospheric__K;
@@ -38,7 +46,7 @@ int Sentman::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal,
     const float v_rel_magnitude__m_per_s = glm::length(v_rel_inv__m_per_s);
     if (v_rel_magnitude__m_per_s < 1e-10f) {
         SPDLOG_WARN("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.", v_rel_magnitude__m_per_s);
-        return 0; // No relative velocity, no force
+        return glm::vec3(0.0f); // No relative velocity, no force
     }
 
     // Most probable thermal velocity of the gas
@@ -81,7 +89,7 @@ int Sentman::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal,
         break;
     }
     default:
-        return -1; // Should not reach here
+        return glm::vec3(0.0f); // Should not reach here, the constructor validates the method
     }
 
     // Momentum flux calculation
@@ -97,16 +105,23 @@ int Sentman::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal,
 
     // Pressure vector
     const glm::vec3 pressure__n_per_m2 = pressure_coeff * (term_1 * normal + term_2 * (v_rel_normalized + cos_delta * normal));
-
-    // Force = pressure * area
-    aero_force__N = pressure__n_per_m2 * area__m2;
-
-    // Torque = centroid x force
-    aero_torque__Nm = glm::cross(centroid__m, aero_force__N);
-
-    return 0; // Success
-
+    return pressure__n_per_m2;
 }
+
+std::string Sentman::glsl_force_per_projected_area() const {
+    return std::string(common_glsl::helpers) + sentman_glsl::force_per_projected_area;
+}
+
+std::vector<GlslUniform> Sentman::glsl_uniforms(const AeroConditions& aero) const {
+    return {
+        {"u_gsi_density", aero.density__kg_per_m3},
+        {"u_gsi_T_inf", aero.T_atmospheric__K},
+        {"u_gsi_particle_mass", aero.particle_mass__kg},
+        {"u_gsi_alpha_e", m_alpha_e},
+        {"u_gsi_temperature_ratio_method", m_temperature_ratio_method},
+    };
+}
+
 void Sentman::set_gsi_parameter(std::string name, float value) {
     if (name == "alpha_e") {
         set_alpha_e(value);
