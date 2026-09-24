@@ -9,7 +9,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-#include "newton.h"
+#include "gsi.h"
 #include "hybrid_aero_load_calculator.h"
 #include "pixel_force_torque_calculator.h"
 #include "core.h"
@@ -152,6 +152,42 @@ TEST(PixelAccuracyTest, ConvexBodiesAgreeWithHybrid) {
                 EXPECT_LT(e.force, 4.0 / num_pixel) << name;
                 EXPECT_LT(e.torque, 4.0 / num_pixel) << name;
             }
+        }
+    }
+}
+
+// (b) for every GSI model. The thermal models (Sentman, SchaafChambre, Maxwell) load
+// surfaces seen almost edge-on, which the pixels sample with weight 1/cos(delta), and
+// Sentman and SchaafChambre also load the leeward faces evaluated on the CPU.
+TEST(PixelAccuracyTest, ConvexBodiesAgreeWithHybridForEveryModel) {
+    Newton newton;
+    Cook cook(0.9f);
+    Maxwell maxwell(0.9f);
+    SchaafChambre schaaf_chambre(0.9f, 0.9f);
+    Storch storch(500.0f, 0.9f, 0.9f);
+    Sentman sentman(1, 0.9f);
+    const std::vector<std::pair<const char*, IGSIModel*>> models{
+        {"Newton", &newton}, {"Cook", &cook}, {"Maxwell", &maxwell},
+        {"SchaafChambre", &schaaf_chambre}, {"Storch", &storch}, {"Sentman", &sentman}};
+
+    InMemoryGeometry box;
+    box.add_box({-0.3f, -0.2f, -0.1f}, {0.5f, 0.4f, 0.3f});
+    InMemoryGeometry sphere;
+    sphere.add_sphere(0.5f, 4);
+    const std::vector<std::pair<const char*, IGeometryShadingData*>> bodies{{"box", &box}, {"sphere", &sphere}};
+    const glm::vec3 v = glm::normalize(glm::vec3(1.0f, 0.3f, -0.2f)) * SPEED__M_PER_S;
+    constexpr unsigned int N = 1024;
+
+    for (const auto& [body_name, geometry] : bodies) {
+        const double radius = geometry->get_bounding_sphere_radius();
+        ShadingPipeline pipeline(*geometry, ShadingAlgorithmType::Binary, 2048);
+        for (const auto& [model_name, model] : models) {
+            HybridForceTorqueCalculator hybrid(*geometry, pipeline, *model);
+            PixelForceTorqueCalculator pixel(*geometry, *model, N);
+            const Errors e = relative_errors(evaluate(pixel, v), evaluate(hybrid, v), radius);
+            std::printf("[          ] %-6s %-13s force %.2e torque %.2e\n", body_name, model_name, e.force, e.torque);
+            EXPECT_LT(e.force, 4.0 / N) << body_name << " " << model_name;
+            EXPECT_LT(e.torque, 4.0 / N) << body_name << " " << model_name;
         }
     }
 }
