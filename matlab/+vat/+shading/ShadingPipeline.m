@@ -9,6 +9,7 @@ classdef ShadingPipeline < handle
     % ShadingPipeline methods:
     %   ShadingPipeline - Constructor to initialize the shading pipeline.
     %   shade           - Calculates visibility for all triangles.
+    %   get_num_pixel   - The render resolution in use.
     %
     properties %(Access = private, Hidden = true)
         % store handle as int32 to match MexGateway expectations
@@ -26,17 +27,27 @@ classdef ShadingPipeline < handle
             %       shading_algorithm - An integer specifying the algorithm:
             %                           0 = Binary Shader (Simple on/off)
             %                           1 = COP Shader (test visibility of centroid)
-            %       num_pixel         - The resolution (number of pixels) 
+            %       num_pixel         - The resolution (number of pixels)
             %                           used for the visibility analysis.
+            %                           Optional: if omitted, it is chosen from
+            %                           the mesh so that each triangle spans
+            %                           about three pixels (see get_num_pixel).
+            %                           Build the pipeline in the geometry's most
+            %                           extended pose, since num_pixel is fixed
+            %                           here.
             %
             arguments
                 geometry (1,1) vat.geometry.RotatableMeshGeometry
                 shading_algorithm (1,1) {mustBeInteger, mustBeMember(shading_algorithm, [0, 1])} = 0
-                num_pixel (1,1) {mustBeInteger, mustBePositive} = 800
+                num_pixel double {mustBeScalarOrEmpty, mustBeInteger, mustBePositive} = []
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             try
-                this.handle_ = MexGateway("shading.ShadingPipeline.new", int32(geometry.handle_), int32(shading_algorithm), int32(num_pixel));
+                if isempty(num_pixel)
+                    this.handle_ = MexGateway("shading.ShadingPipeline.new", int32(geometry.handle_), int32(shading_algorithm));
+                else
+                    this.handle_ = MexGateway("shading.ShadingPipeline.new", int32(geometry.handle_), int32(shading_algorithm), int32(num_pixel));
+                end
             catch ME
                 error("Failed to create Shading pipeline: %s", ME.message);
             end
@@ -76,6 +87,18 @@ classdef ShadingPipeline < handle
                 velocity (1,3) double
             end
             visibility = MexGateway("shading.ShadingPipeline.shade", int32(this.handle_), velocity);
+        end
+
+        function num_pixel = get_num_pixel(this)
+            % GET_NUM_PIXEL The render resolution this pipeline uses.
+            %
+            %   num_pixel = get_num_pixel(this) returns the value given to the
+            %   constructor, or the one chosen from the mesh if it was omitted.
+            %
+            arguments
+                this (1,1) vat.shading.ShadingPipeline
+            end
+            num_pixel = MexGateway("shading.ShadingPipeline.get_num_pixel", int32(this.handle_));
         end
     end
 end
