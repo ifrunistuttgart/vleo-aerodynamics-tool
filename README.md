@@ -153,8 +153,8 @@ and plots the pressure image.
 - [pixel_mesh_independence.m](matlab/examples/pixel_mesh_independence.m) evaluates the same
 shuttlecock meshed with 96 up to 61440 triangles: the per-pixel drag stays the same, the
 hybrid one does not.
-- [pixel_wing_deflection.m](matlab/examples/pixel_wing_deflection.m) sweeps one wing through its
-deflection range and shows the pressure images and the pitch torque.
+- [pixel_wing_deflection.m](matlab/examples/pixel_wing_deflection.m) turns the upper and the lower
+wing out into the flow and shows the pressure images and the pitch torque.
 
 ## Gas–surface interaction models
 

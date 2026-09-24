@@ -1,8 +1,8 @@
-%% Pressure images of a deflected wing
-% Turns the upper wing of the shuttlecock about its hinge and shows, for a
-% few deflections, where the flow pushes on the geometry, together with the
-% resulting pitch torque. The calculator is built once; turning a wing
-% only changes a model matrix, so each evaluation is cheap.
+%% Pressure images of deflected wings
+% Turns the upper and, separately, the lower wing of the shuttlecock out
+% into the flow and shows where the flow pushes on the geometry, together
+% with the resulting pitch torque. The calculator is built once; turning a
+% wing only changes a model matrix, so each evaluation is cheap.
 %
 % Prerequisites, from the repository root:
 %   pixi run build-matlab
@@ -21,56 +21,72 @@ obj_file = fullfile(fileparts(mfilename('fullpath')), ...
     'geometries', 'shuttlecock_15k.obj');
 geometry = vat.geometry.RotatableMeshGeometry(obj_file);
 
-% Hinge of the upper wing (mesh 4), as in rotate_wings.m
-wing.mesh_id = 4;
-wing.origin  = [-0.15, -0.1, -0.05];
-wing.axis    = [0, -1, 0];
+% Hinges of the two opposite wings, as in rotate_wings.m. A positive angle
+% turns either wing out into the flow.
+hinges(1).name    = 'upper wing';
+hinges(1).mesh_id = 4;
+hinges(1).origin  = [-0.15, -0.1, -0.05];
+hinges(1).axis    = [0, -1, 0];
+
+hinges(2).name    = 'lower wing';
+hinges(2).mesh_id = 1;
+hinges(2).origin  = [-0.15, 0.1, 0.05];
+hinges(2).axis    = [0, 1, 0];
 
 calculator = vat.loads.PixelForceTorqueCalculator( ...
     geometry, gsi_model, num_pixel, KeepPressureImage=true);
 
-%% Torque over the deflection angle
-angles = -40:5:40;   % [deg]
-torque = zeros(numel(angles), 3);
-for i = 1:numel(angles)
-    geometry.turn_mesh_around_axis(wing.mesh_id, deg2rad(angles(i)), wing.origin, wing.axis);
-    [~, torque(i, :)] = calculator.calc_aero_load(v_rel, T_wall, aero_cond);
+%% Pitch torque over the deflection angle
+% One wing at a time; the other one stays at 0 deg. The two wings push the
+% nose in opposite directions, so the curves mirror each other.
+angles = 0:5:40;   % [deg]
+pitch  = zeros(numel(angles), numel(hinges));
+for h = 1:numel(hinges)
+    for i = 1:numel(angles)
+        deflect(geometry, hinges(h), angles(i));
+        [~, T] = calculator.calc_aero_load(v_rel, T_wall, aero_cond);
+        pitch(i, h) = T(2);
+    end
+    deflect(geometry, hinges(h), 0);
 end
 
-% Deflected one way, the wing turns into the flow and the torque grows.
-% Deflected the other way, the body hides most of it from the flow, so the
-% torque hardly changes until the wing tip comes out of the body's shadow.
 figure('Name', 'Torque over deflection');
-plot(angles, torque * 1e6, '-o', 'LineWidth', 1.5);
+plot(angles, pitch * 1e6, '-o', 'LineWidth', 1.5);
 grid on;
 xlabel('wing deflection [deg]');
-ylabel('torque [\muNm]');
-legend('T_x', 'T_y', 'T_z', 'Location', 'best');
-title('Upper wing deflected, flow along +x');
+ylabel('pitch torque T_y [\muNm]');
+legend({hinges.name}, 'Location', 'best');
+title('One wing turned out into the flow along +x');
 
-%% Pressure images for three deflections
+%% Pressure images: no deflection, upper wing out, lower wing out
 % All three share one colour scale, so the images compare directly.
-shown  = [-30, 0, 30];   % [deg]
-images = cell(size(shown));
-for i = 1:numel(shown)
-    geometry.turn_mesh_around_axis(wing.mesh_id, deg2rad(shown(i)), wing.origin, wing.axis);
+cases  = {'no deflection', 0, 0; ...
+          'upper wing 30 deg', 1, 30; ...
+          'lower wing 30 deg', 2, 30};
+images = cell(size(cases, 1), 1);
+for c = 1:size(cases, 1)
+    if cases{c, 2} > 0
+        deflect(geometry, hinges(cases{c, 2}), cases{c, 3});
+    end
     calculator.calc_aero_load(v_rel, T_wall, aero_cond);
     % pressure_image returns the top row first; flip it so y points up.
-    images{i} = flipud(calculator.pressure_image());
+    images{c} = flipud(calculator.pressure_image());
+    if cases{c, 2} > 0
+        deflect(geometry, hinges(cases{c, 2}), 0);
+    end
 end
-geometry.turn_mesh_around_axis(wing.mesh_id, 0, wing.origin, wing.axis);
 
 p_max = max(cellfun(@(p) max(p(:)), images));
 figure('Name', 'Pressure images', 'Position', [100 100 1200 400]);
-layout = tiledlayout(1, numel(shown), 'TileSpacing', 'compact');
-for i = 1:numel(shown)
+layout = tiledlayout(1, numel(images), 'TileSpacing', 'compact');
+for c = 1:numel(images)
     nexttile;
-    p = images{i};
+    p = images{c};
     imagesc(p, 'AlphaData', p > 0);
     set(gca, 'YDir', 'normal', 'Color', [0.95 0.95 0.95], 'XTick', [], 'YTick', []);
     axis image;
     clim([0, p_max]);
-    title(sprintf('%+d deg', shown(i)));
+    title(cases{c, 1});
     zoom_to_surface(images);
 end
 cb = colorbar;
@@ -79,6 +95,10 @@ cb.Label.String = 'pressure [N/m^2]';
 title(layout, 'Seen from upstream, looking along the flow');
 
 %% Local functions
+function deflect(geometry, hinge, angle_deg)
+    geometry.turn_mesh_around_axis(hinge.mesh_id, deg2rad(angle_deg), hinge.origin, hinge.axis);
+end
+
 function zoom_to_surface(images)
     % One common window around every pixel that carries a load in any image.
     covered = false(size(images{1}));
