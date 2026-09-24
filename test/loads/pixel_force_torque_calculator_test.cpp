@@ -6,7 +6,6 @@
 #include <glm/glm.hpp>
 
 #include "newton.h"
-#include "sentman.h"
 #include "hybrid_aero_load_calculator.h"
 #include "pixel_force_torque_calculator.h"
 #include "core.h"
@@ -85,8 +84,22 @@ TEST(PixelForceTorqueCalculatorTest, PressureImageIsReadBackOnRequest) {
     EXPECT_LE(max_pressure, aero.density__kg_per_m3 * 7800.0f * 7800.0f * 1.0001f);
 }
 
+// A model may leave its GPU implementation empty; the calculator must refuse it.
+class CpuOnlyModel final : public IGSIModel {
+public:
+    int calc_aero_force_and_torque(float, const glm::vec3&, const glm::vec3&, const glm::vec3&, float, AeroConditions&, glm::vec3& force, glm::vec3& torque) override {
+        force = torque = glm::vec3(0.0f);
+        return 0;
+    }
+    glm::vec3 force_per_area(const glm::vec3&, const glm::vec3&, float, const AeroConditions&) const override { return glm::vec3(0.0f); }
+    std::string glsl_force_per_projected_area() const override { return {}; }
+    std::vector<GlslUniform> glsl_uniforms(const AeroConditions&) const override { return {}; }
+    void set_gsi_parameter(std::string, float) override {}
+    float get_gsi_parameter(std::string) const override { return 0.0f; }
+};
+
 TEST(PixelForceTorqueCalculatorTest, RejectsModelWithoutGpuImplementation) {
     StaticMeshGeometry geometry(tetrahedron_path());
-    Sentman sentman(1, 0.9f);
-    EXPECT_THROW(PixelForceTorqueCalculator(geometry, sentman, 256), std::invalid_argument);
+    CpuOnlyModel model;
+    EXPECT_THROW(PixelForceTorqueCalculator(geometry, model, 256), std::invalid_argument);
 }
