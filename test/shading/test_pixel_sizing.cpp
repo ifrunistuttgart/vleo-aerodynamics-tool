@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <cstdint>
 #include <filesystem>
 #include <stdexcept>
 #include <vector>
@@ -68,6 +70,42 @@ TEST(PixelSizingTest, PipelineWithoutNumPixelUsesTheSuggestion) {
 
     EXPECT_EQ(pipeline.get_num_pixel(), suggest_num_pixel(geometry));
     EXPECT_EQ(pipeline.shade(glm::vec3(1.0f, 0.0f, 0.0f)).size(), geometry.get_num_triangles());
+}
+
+TEST(PixelSizingTest, PipelineRendersAtTheRequestedResolutionBeyondTheScreen) {
+    // A 1 m square of strips 1.2 mm tall and 20 mm long: 83300 triangles about 1.2 mm wide.
+    // At num_pixel = 4000 the frustum (2R = 1.414 m) gives 0.35 mm pixels, 3.4 across each
+    // triangle, so CoP must see all of them. Rendered instead at screen size -- which the
+    // viewport silently was, e.g. 1924 x 1175, until it was set explicitly -- the strips are
+    // about one pixel tall and neighbouring centroids overwrite each other.
+    const int nx = 50;
+    const int ny = 833;
+    MeshData panel{"strips", {}, {}};
+    for (int j = 0; j <= ny; ++j) {
+        for (int i = 0; i <= nx; ++i) {
+            panel.positions.insert(panel.positions.end(),
+                {-0.5f + static_cast<float>(i) / nx, -0.5f + static_cast<float>(j) / ny, 0.0f});
+        }
+    }
+    for (int j = 0; j < ny; ++j) {
+        for (int i = 0; i < nx; ++i) {
+            const std::uint32_t a = j * (nx + 1) + i, b = a + 1, c = a + (nx + 1), d = c + 1;
+            panel.indices.insert(panel.indices.end(), {a, b, d, a, d, c}); // facing +z
+        }
+    }
+    StaticMeshGeometry geometry(std::vector<MeshData>{panel});
+
+    const unsigned int num_pixel = 4000;
+    ShadingPipeline pipeline(geometry, ShadingAlgorithmType::CoP, num_pixel);
+    const std::vector<float> visibility = pipeline.shade(glm::vec3(0.0f, 0.0f, 1.0f));
+
+    GLint viewport[4] = {0, 0, 0, 0};
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    EXPECT_EQ(viewport[2], static_cast<GLint>(num_pixel));
+    EXPECT_EQ(viewport[3], static_cast<GLint>(num_pixel));
+
+    const auto seen = std::count_if(visibility.begin(), visibility.end(), [](float v) { return v > 0.5f; });
+    EXPECT_EQ(static_cast<std::size_t>(seen), visibility.size());
 }
 
 TEST(PixelSizingTest, PipelineRejectsZeroPixels) {

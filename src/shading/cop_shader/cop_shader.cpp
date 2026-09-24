@@ -142,6 +142,10 @@ std::vector<float> CoPShader::shade_geometry(glm::vec3 v_rel_hat, float bounding
     );
 
     m_frame_buffer->Bind();
+    // The viewport does not follow the bound framebuffer: it starts out as the window's
+    // size, and the OS clamps a window to roughly the screen. Without this, every num_pixel
+    // above the screen height renders at screen resolution, squashed non-uniformly.
+    GLCall(glViewport(0, 0, NUM_PIXEL, NUM_PIXEL));
     m_frame_buffer->Clear();
 
 	//render triangles and cops to Framebuffer
