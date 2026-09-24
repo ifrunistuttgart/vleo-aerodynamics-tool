@@ -13,7 +13,14 @@ find_package(VTK REQUIRED COMPONENTS
 		InteractionWidgets   # <--- For vtkOrientationMarkerWidget
 		RenderingFreeType    # <--- For VTK_MODULE_INIT(vtkRenderingFreeType)
 )
-add_library(visualization show_mesh.h show_mesh.cpp)
+add_library(visualization
+	show_mesh.h show_mesh.cpp
+	viewer.h viewer.cpp
+	edge_overlay.h edge_overlay.cpp
+	actors.h actors.cpp
+	edge_style.h
+	palette.h
+)
 
 target_compile_features(visualization PRIVATE cxx_std_20)
 target_include_directories(visualization
