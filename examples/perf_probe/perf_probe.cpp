@@ -1,7 +1,9 @@
-// Development tool for the aero-load pipeline. Two modes:
+// Development tool for the aero-load pipeline. Three modes:
 //
 //   perf_probe <mesh.obj> --fingerprint   deterministic results, for before/after diffing
 //   perf_probe <mesh.obj> --timings [P..] per-phase timings
+//   perf_probe <mesh.obj> --pixel [P..]   PixelForceTorqueCalculator against Hybrid:
+//                                         runtime and deviation from a converged result
 //
 // The fingerprint matrix deliberately contains both an unrotated and a rotated
 // configuration. Correctness work on the rotation path may change the rotated
@@ -25,6 +27,7 @@
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
 #include "hybrid_aero_load_calculator.h"
+#include "pixel_force_torque_calculator.h"
 
 using namespace vat;
 using namespace vat::gsi_models;
@@ -205,6 +208,77 @@ void run_timings(RotatableMeshGeometry& sat, const std::vector<unsigned int>& re
     std::printf("\n");
 }
 
+// Hybrid (both shaders) and the pixel calculator at the same resolutions, all against
+// one reference: the pixel calculator at twice the highest resolution. Deviations are
+// the worst over the flow directions, force relative to |F_ref| and torque relative to
+// |F_ref| * R, R the bounding sphere radius.
+void run_pixel_comparison(RotatableMeshGeometry& sat, const std::vector<unsigned int>& resolutions) {
+    AeroConditions aero = make_conditions();
+    Sentman gsi(1, ALPHA_E);
+    const double radius = sat.get_bounding_sphere_radius();
+    const auto& dirs = flow_directions();
+
+    struct Loads { glm::dvec3 force, torque; };
+    auto evaluate_all = [&](IAeroLoadCalculator& calc) {
+        std::vector<Loads> loads;
+        for (const glm::vec3& d : dirs) {
+            glm::vec3 force__N, torque__Nm;
+            calc.calc_aero_torque_force(d * SPEED__M_PER_S, SURFACE_TEMP__K, aero, torque__Nm, force__N);
+            loads.push_back({glm::dvec3(force__N), glm::dvec3(torque__Nm)});
+        }
+        return loads;
+    };
+
+    const unsigned int P_ref = 2 * *std::max_element(resolutions.begin(), resolutions.end());
+    std::vector<Loads> reference;
+    {
+        PixelForceTorqueCalculator calc(sat, gsi, P_ref);
+        reference = evaluate_all(calc);
+    }
+
+    // std::max drops a NaN, which would report Hybrid on a mesh with degenerate
+    // triangles as a perfect match.
+    auto worst = [](double a, double b) {
+        return std::isnan(a) || std::isnan(b) ? std::nan("") : std::max(a, b);
+    };
+    auto report = [&](unsigned int P, const char* method, IAeroLoadCalculator& calc) {
+        const std::vector<Loads> loads = evaluate_all(calc);
+        double dF = 0.0, dT = 0.0;
+        for (std::size_t d = 0; d < dirs.size(); ++d) {
+            const double scale = glm::length(reference[d].force);
+            dF = worst(dF, glm::length(loads[d].force - reference[d].force) / scale);
+            dT = worst(dT, glm::length(loads[d].torque - reference[d].torque) / (scale * radius));
+        }
+        const int reps = P >= 4000 ? 3 : 5;
+        const glm::vec3 v = dirs[0] * SPEED__M_PER_S;
+        const double t = time_ms(reps, [&] {
+            glm::vec3 f, tq;
+            calc.calc_aero_torque_force(v, SURFACE_TEMP__K, aero, tq, f);
+        });
+        std::printf("    %6u %-12s %11.3f %11.3e %11.3e\n", P, method, t, dF, dT);
+    };
+
+    std::printf("[D] Pixel vs Hybrid, Sentman, %zu flow directions, reference: pixel at P=%u\n", dirs.size(), P_ref);
+    std::printf("    %6s %-12s %11s %11s %11s\n", "P", "method", "ms/call", "max dF", "max dT");
+    for (unsigned int P : resolutions) {
+        {
+            ShadingPipeline pipeline(sat, ShadingAlgorithmType::Binary, P);
+            HybridForceTorqueCalculator calc(sat, pipeline, gsi);
+            report(P, "hybrid-bin", calc);
+        }
+        {
+            ShadingPipeline pipeline(sat, ShadingAlgorithmType::CoP, P);
+            HybridForceTorqueCalculator calc(sat, pipeline, gsi);
+            report(P, "hybrid-cop", calc);
+        }
+        {
+            PixelForceTorqueCalculator calc(sat, gsi, P);
+            report(P, "pixel", calc);
+        }
+    }
+    std::printf("\n");
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -212,7 +286,7 @@ int main(int argc, char** argv) {
     spdlog::set_level(spdlog::level::off);
 
     if (argc < 3) {
-        std::printf("usage: perf_probe <mesh.obj> --fingerprint | --timings [P ...]\n");
+        std::printf("usage: perf_probe <mesh.obj> --fingerprint | --timings [P ...] | --pixel [P ...]\n");
         return 1;
     }
     const std::string mesh = argv[1];
@@ -228,6 +302,11 @@ int main(int argc, char** argv) {
 
     if (mode == "--fingerprint") {
         run_fingerprint(sat);
+    } else if (mode == "--pixel") {
+        std::vector<unsigned int> resolutions;
+        for (int i = 3; i < argc; ++i) resolutions.push_back(static_cast<unsigned int>(std::atoi(argv[i])));
+        if (resolutions.empty()) resolutions = {500u, 1000u, 2000u, 4000u};
+        run_pixel_comparison(sat, resolutions);
     } else if (mode == "--timings") {
         std::vector<unsigned int> resolutions;
         for (int i = 3; i < argc; ++i) resolutions.push_back(static_cast<unsigned int>(std::atoi(argv[i])));
