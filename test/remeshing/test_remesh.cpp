@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
@@ -221,4 +222,60 @@ TEST(RemeshTest, UnrepairableMeshIsRejected) {
     RemeshOptions options;
     options.target_triangle_count = 100;
     EXPECT_THROW(remesh(flipped, options), std::invalid_argument);
+}
+
+TEST(RemeshPredictionTest, EdgeLengthGivesTheIdealTilingCount) {
+    StaticMeshGeometry panel = SquarePanel();
+    RemeshOptions options;
+    options.target_edge_length__m = 0.05f;
+    const RemeshPrediction p = predict_remesh(panel, options);
+
+    // 1 m^2 / (sqrt(3)/4 * 0.05^2) = 923.8
+    EXPECT_EQ(p.predicted_triangles, 924u);
+    EXPECT_FLOAT_EQ(p.target_edge_length__m, 0.05f);
+    EXPECT_FLOAT_EQ(p.total_area__m2, 1.0f);
+    EXPECT_EQ(p.predicted_memory__bytes, 924u * 154u);
+}
+
+TEST(RemeshPredictionTest, TriangleCountIsPredictedAsGiven) {
+    StaticMeshGeometry geometry(Shuttlecock());
+    RemeshOptions options;
+    options.target_triangle_count = 20000;
+    const RemeshPrediction p = predict_remesh(geometry, options);
+
+    EXPECT_EQ(p.predicted_triangles, 20000u);
+    EXPECT_NEAR(p.total_area__m2, 0.274726f, 1e-6f);
+}
+
+TEST(RemeshPredictionTest, PredictionUsesTheSameEdgeLengthAsRemesh) {
+    StaticMeshGeometry geometry(Shuttlecock());
+    RemeshOptions options;
+    options.target_triangle_count = 3000;
+
+    EXPECT_EQ(predict_remesh(geometry, options).target_edge_length__m,
+        remesh(geometry, options).report.target_edge_length__m);
+}
+
+TEST(RemeshPredictionTest, OversizedRequestIsReportedByPredictionAndRefusedByRemesh) {
+    StaticMeshGeometry geometry(Shuttlecock());
+
+    RemeshOptions too_many;
+    too_many.target_triangle_count = REMESH_MAX_TRIANGLES + 1;
+    EXPECT_EQ(predict_remesh(geometry, too_many).predicted_triangles, REMESH_MAX_TRIANGLES + 1);
+    EXPECT_THROW(remesh(geometry, too_many), std::invalid_argument);
+
+    // 0.2 mm edges on the shuttlecock: the 2.2-million-triangle case.
+    RemeshOptions too_fine;
+    too_fine.target_edge_length__m = 0.0002f;
+    EXPECT_GT(predict_remesh(geometry, too_fine).predicted_triangles, 1'500'000u);
+    EXPECT_THROW(remesh(geometry, too_fine), std::invalid_argument);
+}
+
+TEST(RemeshPredictionTest, AbsurdlySmallEdgeSaturatesInsteadOfOverflowing) {
+    StaticMeshGeometry geometry(Shuttlecock());
+    RemeshOptions options;
+    options.target_edge_length__m = 1e-9f;
+
+    EXPECT_EQ(predict_remesh(geometry, options).predicted_triangles, std::numeric_limits<unsigned int>::max());
+    EXPECT_THROW(remesh(geometry, options), std::invalid_argument);
 }

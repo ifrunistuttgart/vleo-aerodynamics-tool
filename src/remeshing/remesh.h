@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <memory>
 #include <vector>
 
@@ -31,6 +32,30 @@ struct RemeshOptions {
     unsigned int iterations = 3;
 };
 
+/**
+ * Above this many triangles remesh() logs a warning: every load evaluation then costs
+ * tens of milliseconds in the per-triangle GSI loop alone.
+ */
+inline constexpr unsigned int REMESH_WARN_TRIANGLES = 250'000;
+/** remesh() never produces more triangles than this. */
+inline constexpr unsigned int REMESH_MAX_TRIANGLES = 1'000'000;
+
+/** What remesh() would produce, worked out without remeshing. */
+struct RemeshPrediction {
+    /** The edge length remesh() would use [m]. */
+    float target_edge_length__m;
+    /**
+     * Triangle count if the surface were tiled with ideal equilateral triangles. The real
+     * count usually lands above it -- by about 5 % on geometry of a few large flat parts,
+     * by 30 % or more with many small parts and sharp edges, which resist coarsening.
+     */
+    unsigned int predicted_triangles;
+    /** Host memory of the resulting geometry at predicted_triangles, roughly [bytes]. */
+    std::size_t predicted_memory__bytes;
+    /** Total surface area after repair [m^2]. */
+    float total_area__m2;
+};
+
 /** What remesh() did, for checking that it did no harm. */
 struct RemeshReport {
     /** The edge length actually used, whichever way the size was given [m]. */
@@ -54,6 +79,16 @@ struct RemeshResult {
 };
 
 /**
+ * Works out what remesh() would produce, without remeshing: cheap enough to try sizes.
+ *
+ * Runs the same repair as remesh(), so a mesh that cannot be remeshed is reported here too.
+ *
+ * @throws std::invalid_argument under the same conditions as remesh(), except that a
+ *         prediction above REMESH_MAX_TRIANGLES is returned rather than refused.
+ */
+RemeshPrediction predict_remesh(geometry::StaticMeshGeometry& geometry, const RemeshOptions& options);
+
+/**
  * Replaces a geometry's triangles with near-equilateral ones of one common size.
  *
  * Each mesh is repaired (see RepairStats) and then remeshed on its own, with the same
@@ -65,8 +100,11 @@ struct RemeshResult {
  * every mesh unturned: turn them again as needed.
  *
  * @throws std::invalid_argument if the options do not give exactly one positive size, if
- *         the geometry has no triangles, or if a mesh cannot be repaired without flipping
- *         triangles (see repair()).
+ *         the geometry has no triangles, if a mesh cannot be repaired without flipping
+ *         triangles (see repair()), or if the predicted triangle count exceeds
+ *         REMESH_MAX_TRIANGLES -- checked before any remeshing is done.
+ * @throws std::runtime_error if the actual count exceeds REMESH_MAX_TRIANGLES after all,
+ *         which the prediction can underestimate (see RemeshPrediction).
  */
 RemeshResult remesh(geometry::StaticMeshGeometry& geometry, const RemeshOptions& options);
 
