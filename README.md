@@ -20,6 +20,9 @@ The VLEO Aerodynamics Tool provides algorithms for fast calculations of panel sh
   Storch, Newton.
 - **Two shading algorithms**, Binary and CoP, with the raster resolution as a single
   accuracy/runtime knob.
+- **Two load calculators**: Hybrid evaluates the GSI model per visible triangle; Pixel
+  integrates it per pixel on the GPU, so partly shaded triangles count with exactly their
+  exposed part and the result does not depend on the meshing.
 - **Articulated geometry** — individual meshes (solar arrays, panels for aerodynamic actuation) can be rotated
   about an arbitrary hinge axis between evaluations.
 - **A C++20 library and MATLAB bindings** over the same pipeline, so exploratory work in MATLAB
@@ -69,6 +72,11 @@ that visibility, and summed into a total force and torque.
 `num_pixel` is the accuracy knob: higher resolution resolves finer geometry, at the cost of
 render time.
 
+`PixelForceTorqueCalculator` goes one step further: it evaluates the GSI model in every pixel
+the flow reaches, on the GPU, and sums force and torque there. Shadow edges then cut through
+triangles instead of switching whole triangles on or off. Surfaces facing away from the flow are
+still evaluated per triangle.
+
 **Flow direction convention.** `v_rel_B__m_per_s` is the velocity of the *geometry relative to
 the atmosphere*, expressed in the body frame — the orange vector above.
 
@@ -107,6 +115,13 @@ calculator->calc_aero_torque_force(
 The full program, including visualization of the shading result, is in
 [examples/compute_force_and_torque/](examples/compute_force_and_torque/).
 
+To integrate per pixel instead, swap the calculator; it needs no shading pipeline:
+
+```cpp
+auto calculator = std::make_unique<loads::PixelForceTorqueCalculator>(
+    *geometry, *gsi_model, /*num_pixel=*/2000);
+```
+
 ## From MATLAB
 
 To use the toolbox in Matlab, you need to build it first (this also automatically builds the C++ toolbox):
@@ -128,6 +143,10 @@ model, geometry, shading, force and torque — and ends by visualizing which tri
 reached. 
 - [soar_rotatable.m](matlab/examples/soar_rotatable.m) goes further, sweeping the
 aerodynamic torque over a full sphere of flow directions with one panel deflected.
+
+The per-pixel calculator is `vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel)`;
+with `KeepPressureImage=true`, `pressure_image()` returns the pressure seen from upstream, ready
+for `imagesc`.
 
 ## Gas–surface interaction models
 
