@@ -19,6 +19,7 @@ protected:
 	bool m_transforms_outdated = true;
 public:
     RotatableMeshGeometry(std::string file);
+    explicit RotatableMeshGeometry(std::vector<MeshData> meshes);
     ~RotatableMeshGeometry() = default;
 
     std::span<const float> get_vertices() override;

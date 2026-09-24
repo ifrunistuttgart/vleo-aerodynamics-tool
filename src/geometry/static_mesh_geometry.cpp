@@ -1,128 +1,90 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
 #include <cmath>
+#include <stdexcept>
 
 #include "static_mesh_geometry.h"
 
 namespace vat::geometry {
-namespace {
-
-/*
- * Warns when a model separates its parts with `g` groups instead of `o` objects. A file
- * whose parts are groups of box faces loads as one mesh per face, so every mesh_id then
- * addresses a fragment and rotating one tears a face off a part.
- *
- * Assimp keeps a group only as an empty node -- no meshes, no children -- which is what
- * this counts. Files using `o` alone, and formats without groups, have none.
- */
-void WarnIfFileUsesGroups(const aiScene* scene, const std::string& file) {
-    const aiNode* root = scene->mRootNode;
-    unsigned int num_group_markers = 0;
-    for (unsigned int i = 0; i < root->mNumChildren; ++i) {
-        const aiNode* child = root->mChildren[i];
-        if (child->mNumMeshes == 0 && child->mNumChildren == 0) {
-            ++num_group_markers;
-        }
-    }
-
-    if (num_group_markers == 0) {
-        return;
-    }
-
-    SPDLOG_WARN("{} appears to separate its parts with groups: found {} group(s) but {} "
-        "mesh(es). Do not use groups in your .obj export -- use the 'o' identifier to "
-        "separate meshes. Each mesh is what turn_mesh_around_axis() rotates, so with "
-        "groups every mesh_id addresses only a fragment of a part.",
-        file, num_group_markers, scene->mNumMeshes);
-}
-
-} // namespace
 
 StaticMeshGeometry::StaticMeshGeometry(std::string file)
-    : IGeometryShadingData(), IGeometryManipulator(), m_total_triangles(0), m_bounding_sphere_radius(0.0f) {
-    
-    SPDLOG_INFO("Loading file {}", file);
-    Assimp::Importer importer;
-    
-    // Load the scene with post-processing flags
-    const aiScene* scene = importer.ReadFile(file,
-        aiProcess_Triangulate |           // Ensure all faces are triangles
-        aiProcess_JoinIdenticalVertices // Join identical vertices
-    ); 
+    : StaticMeshGeometry(load_mesh_data(file)) {
+}
 
-    if (!scene || scene->mNumMeshes == 0) {
-		SPDLOG_ERROR("Failed to load model: {}", file);
-        if (importer.GetErrorString()) {
-			SPDLOG_ERROR("ASSIMP Error: {}", importer.GetErrorString());
+StaticMeshGeometry::StaticMeshGeometry(std::vector<MeshData> meshes)
+    : IGeometryShadingData(), IGeometryManipulator(),
+      m_mesh_data(std::move(meshes)), m_total_triangles(0), m_bounding_sphere_radius(0.0f) {
+
+    for (std::size_t mesh_idx = 0; mesh_idx < m_mesh_data.size(); ++mesh_idx) {
+        MeshData& mesh = m_mesh_data[mesh_idx];
+        const std::size_t num_vertices = mesh.positions.size() / 3;
+        if (mesh.positions.size() % 3 != 0 || mesh.indices.size() % 3 != 0) {
+            throw std::invalid_argument("mesh " + std::to_string(mesh_idx)
+                + ": positions and indices must both come in triples");
         }
-        return;
-    }
-    SPDLOG_DEBUG("Successfully loaded {} meshes", scene->mNumMeshes);
-    WarnIfFileUsesGroups(scene, file);
-
-    // Extract mesh data. One entry of scene->mMeshes is one mesh of the geometry, i.e.
-    // one `o` object of an .obj, and is the unit turn_mesh_around_axis() rotates.
-    for (unsigned int mesh_idx = 0; mesh_idx < scene->mNumMeshes; ++mesh_idx) {
-        const aiMesh* mesh = scene->mMeshes[mesh_idx];
-        SPDLOG_DEBUG("Processing mesh {} (\"{}\") with {} faces and {} vertices",
-            mesh_idx, mesh->mName.C_Str(), mesh->mNumFaces, mesh->mNumVertices);
-        unsigned int mesh_triangle_count = 0;
-        // Extract triangles and normals
-        for (unsigned int face_idx = 0; face_idx < mesh->mNumFaces; ++face_idx) {
-            const aiFace& face = mesh->mFaces[face_idx];
-            
-            // Assume triangulated mesh
-            if (face.mNumIndices == 3) {
-                const std::uint32_t triangle_id = static_cast<std::uint32_t>(m_total_triangles + 1);
-                m_triangle_ids.push_back(triangle_id);
-				m_triangle_ids.push_back(triangle_id);
-				m_triangle_ids.push_back(triangle_id);
-
-                // Extract vertices
-                for (unsigned int vertex_idx = 0; vertex_idx < 3; ++vertex_idx) {
-                    m_vertices.push_back(mesh->mVertices[face.mIndices[vertex_idx]].x);
-                    m_vertices.push_back(mesh->mVertices[face.mIndices[vertex_idx]].y);
-                    m_vertices.push_back(mesh->mVertices[face.mIndices[vertex_idx]].z);
-                }
-
-                // Calculate normal and centroid from vertices
-                const aiVector3D& v0 = mesh->mVertices[face.mIndices[0]];
-                const aiVector3D& v1 = mesh->mVertices[face.mIndices[1]];
-                const aiVector3D& v2 = mesh->mVertices[face.mIndices[2]];
-                    
-                aiVector3D edge1 = v1 - v0;
-                aiVector3D edge2 = v2 - v0;
-                aiVector3D normal = edge1 ^ edge2;
-                normal.Normalize();
-                    
-                m_normals.push_back(normal.x);
-                m_normals.push_back(normal.y);
-                m_normals.push_back(normal.z);
-
-                aiVector3D centroid = (v0 + v1 + v2) / 3.0f;
-                m_centroids.push_back(centroid.x);
-                m_centroids.push_back(centroid.y);
-                m_centroids.push_back(centroid.z);
-
-                // Calculate triangle area using cross product
-                float area = (edge1 ^ edge2).Length() / 2.0f;
-                m_areas.push_back(area);
-
-                mesh_triangle_count++;
-                m_total_triangles++;
+        for (const std::uint32_t index : mesh.indices) {
+            if (index >= num_vertices) {
+                throw std::invalid_argument("mesh " + std::to_string(mesh_idx)
+                    + " references vertex " + std::to_string(index)
+                    + ", but has only " + std::to_string(num_vertices));
             }
         }
 
+        const unsigned int mesh_triangle_count = static_cast<unsigned int>(mesh.indices.size() / 3);
+        for (unsigned int t = 0; t < mesh_triangle_count; ++t) {
+            const std::uint32_t triangle_id = static_cast<std::uint32_t>(m_total_triangles + 1);
+            m_triangle_ids.push_back(triangle_id);
+            m_triangle_ids.push_back(triangle_id);
+            m_triangle_ids.push_back(triangle_id);
+
+            const float* v[3];
+            for (unsigned int corner = 0; corner < 3; ++corner) {
+                v[corner] = &mesh.positions[3 * mesh.indices[3 * t + corner]];
+                m_vertices.push_back(v[corner][0]);
+                m_vertices.push_back(v[corner][1]);
+                m_vertices.push_back(v[corner][2]);
+            }
+
+            // Written out component by component in exactly the operation order of the
+            // aiVector3D arithmetic this replaced (cross product, then scale by 1/|n|;
+            // centroid as sum times 1/3), so results stay bit-identical to before.
+            const float e1[3] = {v[1][0] - v[0][0], v[1][1] - v[0][1], v[1][2] - v[0][2]};
+            const float e2[3] = {v[2][0] - v[0][0], v[2][1] - v[0][1], v[2][2] - v[0][2]};
+            const float cross[3] = {
+                e1[1] * e2[2] - e1[2] * e2[1],
+                e1[2] * e2[0] - e1[0] * e2[2],
+                e1[0] * e2[1] - e1[1] * e2[0],
+            };
+            const float cross_length = std::sqrt(cross[0] * cross[0] + cross[1] * cross[1] + cross[2] * cross[2]);
+
+            float normal[3] = {cross[0], cross[1], cross[2]};
+            if (cross_length != 0.0f) {
+                const float inv_length = 1.0f / cross_length;
+                normal[0] *= inv_length;
+                normal[1] *= inv_length;
+                normal[2] *= inv_length;
+            }
+            m_normals.push_back(normal[0]);
+            m_normals.push_back(normal[1]);
+            m_normals.push_back(normal[2]);
+
+            const float one_third = 1.0f / 3.0f;
+            m_centroids.push_back((v[0][0] + v[1][0] + v[2][0]) * one_third);
+            m_centroids.push_back((v[0][1] + v[1][1] + v[2][1]) * one_third);
+            m_centroids.push_back((v[0][2] + v[1][2] + v[2][2]) * one_third);
+
+            m_areas.push_back(cross_length / 2.0f);
+
+            m_total_triangles++;
+        }
+
         m_num_triangles_per_mesh.push_back(mesh_triangle_count);
-        // Keep the author's name for the mesh so the visualization can label it. Not
-        // every format carries names, in which case the index has to do.
-        const std::string mesh_name = mesh->mName.length > 0
-            ? std::string(mesh->mName.C_Str())
-            : "Mesh " + std::to_string(mesh_idx);
-        m_mesh_names.push_back(mesh_name);
+        // Not every format carries mesh names, in which case the index has to do. Stored
+        // back into the MeshData too, so an exported file keeps the same labels.
+        if (mesh.name.empty()) {
+            mesh.name = "Mesh " + std::to_string(mesh_idx);
+        }
+        m_mesh_names.push_back(mesh.name);
         // Add identity model matrix for each mesh
         m_model_matrices.push_back(glm::mat4(1.0f));
     }
@@ -138,6 +100,10 @@ StaticMeshGeometry::StaticMeshGeometry(std::string file)
     m_bounding_sphere_radius = max_distance;
 
 	SPDLOG_INFO("Finished loading model. Total triangles: {}", m_total_triangles);
+}
+
+std::span<const MeshData> StaticMeshGeometry::get_mesh_data() const {
+    return std::span<const MeshData>(m_mesh_data.data(), m_mesh_data.size());
 }
 
 std::span<const float> StaticMeshGeometry::get_vertices() {

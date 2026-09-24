@@ -16,6 +16,13 @@ RotatableMeshGeometry::RotatableMeshGeometry(std::string file)
 	  m_transformed_centroids(m_centroids.size()) {
 }
 
+RotatableMeshGeometry::RotatableMeshGeometry(std::vector<MeshData> meshes)
+	: StaticMeshGeometry(std::move(meshes)),
+	  m_transformed_vertices(m_vertices.size()),
+	  m_transformed_normals(m_normals.size()),
+	  m_transformed_centroids(m_centroids.size()) {
+}
+
 std::span<const float> RotatableMeshGeometry::get_vertices() {
 	refresh_transforms();
 	return std::span<const float>(m_transformed_vertices.data(), m_transformed_vertices.size());

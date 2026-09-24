@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include "Igeometry_shading_data.h"
 #include "Igeometry_manipulator.h"
+#include "mesh_data.h"
 
 namespace vat::geometry {
 
@@ -16,6 +17,7 @@ namespace vat::geometry {
 */
 class StaticMeshGeometry: public IGeometryShadingData, public IGeometryManipulator {
 protected:
+    std::vector<MeshData> m_mesh_data;
     std::vector<float> m_vertices;
     std::vector<std::uint32_t> m_triangle_ids;
     std::vector<float> m_normals;
@@ -29,6 +31,16 @@ protected:
 
 public:
 	StaticMeshGeometry(std::string file);
+
+    /**
+     * Builds a geometry from meshes already in memory, e.g. the output of remeshing.
+     *
+     * @param meshes One entry per mesh, in the order that defines each mesh_id. A mesh
+     *               with an empty name is named "Mesh <index>".
+     * @throws std::invalid_argument if a mesh's positions or indices do not come in
+     *         triples, or an index is out of range.
+     */
+    explicit StaticMeshGeometry(std::vector<MeshData> meshes);
     ~StaticMeshGeometry() = default;
 
     std::span<const float> get_vertices() override;
@@ -42,6 +54,12 @@ public:
     std::span<const unsigned int> get_num_triangles_per_mesh() override;
     const unsigned int get_num_triangles() override;
     float get_bounding_sphere_radius() override;
+
+    /**
+     * The meshes this geometry was built from, as indexed triangle lists in their own
+     * untransformed frame and with the final (possibly defaulted) names.
+     */
+    std::span<const MeshData> get_mesh_data() const;
 
 	//IGeometryManipulator interface
     int turn_mesh(int mesh_id, float angle__rad) override;
