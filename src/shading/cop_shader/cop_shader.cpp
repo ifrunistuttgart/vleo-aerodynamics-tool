@@ -3,11 +3,11 @@
 #include <spdlog/spdlog.h>
 #include <algorithm>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 //custom abstractions
 #include "vertex_buffer.h"
 #include "gl_helpers.h"
+#include "flow_camera.h"
 #include "vertex_buffer_layout.h"
 
 // embedded shader headers
@@ -114,32 +114,9 @@ int CoPShader::set_vertices(std::span<const float> vertices, std::span<const std
 }
 
 std::vector<float> CoPShader::shade_geometry(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) {
-    //projection matrices
-    glm::vec3 camera_position = v_rel_hat * bounding_sphere_radius;
-
-    glm::mat4 orthoProj = glm::ortho(-bounding_sphere_radius,
-        bounding_sphere_radius,
-        -bounding_sphere_radius,
-        bounding_sphere_radius,
-        0.0f,
-        2 * bounding_sphere_radius
-    );
-
-    glm::vec3 target = glm::vec3(0.0f);
-    glm::vec3 forward = glm::normalize(target - camera_position);
-
-    glm::vec3 ref = (std::abs(forward.y) < 0.99f)
-        ? glm::vec3(0.0f, 1.0f, 0.0f)
-        : glm::vec3(1.0f, 0.0f, 0.0f);
-
-    glm::vec3 right = glm::normalize(glm::cross(forward, ref));
-    glm::vec3 up    = glm::normalize(glm::cross(right, forward));
-
-    glm::mat4 view = glm::lookAt(
-        camera_position,
-        target,
-        up
-    );
+    const FlowCamera camera = make_flow_camera(v_rel_hat, bounding_sphere_radius);
+    const glm::mat4& orthoProj = camera.projection;
+    const glm::mat4& view = camera.view;
 
     m_frame_buffer->Bind();
     m_frame_buffer->Clear();

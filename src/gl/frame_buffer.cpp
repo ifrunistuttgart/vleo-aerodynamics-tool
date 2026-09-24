@@ -1,19 +1,32 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
+#include <vector>
+
 #include "frame_buffer.h"
 #include "gl_helpers.h"
 
 namespace vat::gl {
 
 FrameBuffer::FrameBuffer(unsigned int texture2D, unsigned int width, unsigned int heigth)
+	: FrameBuffer(std::span<const unsigned int>(&texture2D, 1), width, heigth)
+{
+}
+
+FrameBuffer::FrameBuffer(std::span<const unsigned int> colorTextures, unsigned int width, unsigned int heigth)
+	: m_NumColorAttachments(static_cast<unsigned int>(colorTextures.size()))
 {
 	//initialize Framebuffer
 	GLCall(glGenFramebuffers(1, &m_FrameBufferID));
 	GLCall(glBindFramebuffer(GL_FRAMEBUFFER, m_FrameBufferID));
 
-	//attach Texture
-	GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture2D, 0));
+	//attach Textures
+	std::vector<GLenum> drawBuffers;
+	for (unsigned int i = 0; i < m_NumColorAttachments; ++i) {
+		GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorTextures[i], 0));
+		drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + i);
+	}
+	GLCall(glDrawBuffers(static_cast<GLsizei>(drawBuffers.size()), drawBuffers.data()));
 
 	//attach Depthbuffer
 	GLCall(glGenRenderbuffers(1, &m_DepthBufferID));
@@ -47,6 +60,15 @@ void FrameBuffer::Clear() const
 {
 	GLuint clearColor[4] = { 0, 0, 0, 0 };
 	GLCall(glClearBufferuiv(GL_COLOR, 0, clearColor));
+	GLCall(glClear(GL_DEPTH_BUFFER_BIT));
+}
+
+void FrameBuffer::ClearFloat() const
+{
+	const GLfloat clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	for (unsigned int i = 0; i < m_NumColorAttachments; ++i) {
+		GLCall(glClearBufferfv(GL_COLOR, static_cast<GLint>(i), clearColor));
+	}
 	GLCall(glClear(GL_DEPTH_BUFFER_BIT));
 }
 

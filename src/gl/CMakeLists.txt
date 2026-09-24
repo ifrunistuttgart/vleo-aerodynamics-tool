@@ -7,12 +7,15 @@ find_package(glm REQUIRED CONFIG)
 add_library(gl
 	compute_shader.cpp
 	compute_shader.h
+	flow_camera.cpp
+	flow_camera.h
 	frame_buffer.cpp
 	frame_buffer.h
 	gl_helpers.cpp
 	gl_helpers.h
 	glfw_opengl_context.cpp
 	glfw_opengl_context.h
+	scoped_context.h
 	shader.cpp
 	shader.h
 	vertex_array.cpp

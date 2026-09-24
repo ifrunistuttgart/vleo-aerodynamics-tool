@@ -1,4 +1,5 @@
 #include "shading_pipeline.h"
+#include "scoped_context.h"
 #include <glm/glm.hpp>
 #include <span>
 
@@ -37,7 +38,7 @@ ShadingPipeline::~ShadingPipeline() {
 }
 
 std::vector<float> ShadingPipeline::shade( const glm::vec3& v_rel_hat) {
-	m_context->make_current();
+	ScopedCurrentContext current(*m_context);
 
 	float bsr = m_geometry.get_bounding_sphere_radius();
 	std::span<const glm::mat4> model_matrices = m_geometry.get_model_matrices();
