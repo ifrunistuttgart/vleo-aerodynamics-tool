@@ -22,6 +22,8 @@ The VLEO Aerodynamics Tool provides algorithms for fast calculations of panel sh
   accuracy/runtime knob.
 - **Articulated geometry** — individual meshes (solar arrays, panels for aerodynamic actuation) can be rotated
   about an arbitrary hinge axis between evaluations.
+- **Remeshing** of imported models into near-equilateral triangles of one size, keeping every
+  part, sharp edge and panel rim, with the raster resolution then chosen to match.
 - **A C++20 library and MATLAB bindings** over the same pipeline, so exploratory work in MATLAB
   and production sweeps in C++ give identical numbers.
 
@@ -50,6 +52,7 @@ pixi install                                   # one-time: resolve and download 
 pixi run build                                 # build the library and examples
 pixi run run-example compute_force_and_torque  # force/torque on a shuttlecock geometry
 pixi run run-example import_and_visualize      # load a mesh and view it
+pixi run run-example remesh_obj                # remesh a sliver-ridden mesh and save it
 pixi run test                                  # build and run the GoogleTest suites
 pixi run clean                                 # remove out/ and matlab/bin
 ```
@@ -67,7 +70,7 @@ another part of the spacecraft is not. The GSI model is then evaluated per trian
 that visibility, and summed into a total force and torque.
 
 `num_pixel` is the accuracy knob: higher resolution resolves finer geometry, at the cost of
-render time.
+render time. Leave it out and the pipeline picks it from the mesh.
 
 **Flow direction convention.** `v_rel_B__m_per_s` is the velocity of the *geometry relative to
 the atmosphere*, expressed in the body frame — the orange vector above.
@@ -128,6 +131,8 @@ model, geometry, shading, force and torque — and ends by visualizing which tri
 reached. 
 - [soar_rotatable.m](matlab/examples/soar_rotatable.m) goes further, sweeping the
 aerodynamic torque over a full sphere of flow directions with one panel deflected.
+- [remesh_satellite.m](matlab/examples/remesh_satellite.m) remeshes an imported model, saves
+it, and lets the shading pipeline choose `num_pixel` for it.
 
 ## Gas–surface interaction models
 
