@@ -132,7 +132,11 @@ reached.
 - [soar_rotatable.m](matlab/examples/soar_rotatable.m) goes further, sweeping the
 aerodynamic torque over a full sphere of flow directions with one panel deflected.
 - [remesh_satellite.m](matlab/examples/remesh_satellite.m) remeshes an imported model, saves
-it, and lets the shading pipeline choose `num_pixel` for it.
+it, and lets the shading pipeline choose `num_pixel` for it. The other `remesh_*.m` scripts go
+deeper: the mesh [before and after](matlab/examples/remesh_before_after.m),
+[choosing the size](matlab/examples/remesh_choose_size.m),
+[shading and accuracy](matlab/examples/remesh_shading.m), and
+[rotating wings](matlab/examples/remesh_rotating_wings.m) on a remeshed geometry.
 
 ## Gas–surface interaction models
 
