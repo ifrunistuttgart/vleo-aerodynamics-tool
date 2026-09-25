@@ -1,0 +1,18 @@
+# Two single-sided plates facing +x, for the analytic benchmark.
+# back plate:  x = 0, y in [-1, 1],    z in [-1, 1]
+# front plate: x = 1, y in [0.5, 1.5], z in [0, 1]
+# Two triangles per plate.
+o back_plate
+v 0.000000 -1.000000 -1.000000
+v 0.000000 1.000000 -1.000000
+v 0.000000 -1.000000 1.000000
+v 0.000000 1.000000 1.000000
+f 1 2 4
+f 1 4 3
+o front_plate
+v 1.000000 0.500000 0.000000
+v 1.000000 1.500000 0.000000
+v 1.000000 0.500000 1.000000
+v 1.000000 1.500000 1.000000
+f 5 6 8
+f 5 8 7
