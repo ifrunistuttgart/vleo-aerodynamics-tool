@@ -114,6 +114,9 @@ std::vector<float> BinaryShader::shade_geometry(glm::vec3 v_rel_hat, float bound
     );
 
     m_frame_buffer->Bind();
+    // The default viewport is the hidden window's size, which the OS may clamp to
+    // the screen; without this, num_pixel above the screen size is silently lost.
+    GLCall(glViewport(0, 0, static_cast<GLsizei>(NUM_PIXEL), static_cast<GLsizei>(NUM_PIXEL)));
     m_frame_buffer->Clear();
 
 	//render to framebuffer with ID shader
