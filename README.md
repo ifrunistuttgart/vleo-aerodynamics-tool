@@ -20,6 +20,9 @@ The VLEO Aerodynamics Tool provides algorithms for fast calculations of panel sh
   Storch, Newton.
 - **Two shading algorithms**, Binary and CoP, with the raster resolution as a single
   accuracy/runtime knob.
+- **Two load calculators**: Hybrid evaluates the GSI model per visible triangle; Pixel
+  integrates it per pixel on the GPU, so partly shaded triangles count with exactly their
+  exposed part and the result does not depend on the meshing.
 - **Articulated geometry** — individual meshes (solar arrays, panels for aerodynamic actuation) can be rotated
   about an arbitrary hinge axis between evaluations.
 - **A C++20 library and MATLAB bindings** over the same pipeline, so exploratory work in MATLAB
@@ -49,6 +52,7 @@ Geometry and models are initialized once; each subsequent change in flow directi
 pixi install                                   # one-time: resolve and download dependencies
 pixi run build                                 # build the library and examples
 pixi run run-example compute_force_and_torque  # force/torque on a shuttlecock geometry
+pixi run run-example compute_force_and_torque_pixel  # the same with the per-pixel calculator
 pixi run run-example import_and_visualize      # load a mesh and view it
 pixi run test                                  # build and run the GoogleTest suites
 pixi run clean                                 # remove out/ and matlab/bin
@@ -68,6 +72,11 @@ that visibility, and summed into a total force and torque.
 
 `num_pixel` is the accuracy knob: higher resolution resolves finer geometry, at the cost of
 render time.
+
+`PixelForceTorqueCalculator` goes one step further: it evaluates the GSI model in every pixel
+the flow reaches, on the GPU, and sums force and torque there. Shadow edges then cut through
+triangles instead of switching whole triangles on or off. Surfaces facing away from the flow are
+still evaluated per triangle.
 
 **Flow direction convention.** `v_rel_B__m_per_s` is the velocity of the *geometry relative to
 the atmosphere*, expressed in the body frame — the orange vector above.
@@ -107,6 +116,13 @@ calculator->calc_aero_torque_force(
 The full program, including visualization of the shading result, is in
 [examples/compute_force_and_torque/](examples/compute_force_and_torque/).
 
+To integrate per pixel instead, swap the calculator; it needs no shading pipeline:
+
+```cpp
+auto calculator = std::make_unique<loads::PixelForceTorqueCalculator>(
+    *geometry, *gsi_model, /*num_pixel=*/2000);
+```
+
 ## From MATLAB
 
 To use the toolbox in Matlab, you need to build it first (this also automatically builds the C++ toolbox):
@@ -122,12 +138,31 @@ addpath('<repo_root>\matlab')
 addpath('<repo_root>\matlab\bin')
 ```
 
-Check out the Matlab examples:
-- [quickstart.m](matlab/examples/quickstart.m) walks through the whole path — atmosphere, GSI
-model, geometry, shading, force and torque — and ends by visualizing which triangles the flow
-reached. 
-- [soar_rotatable.m](matlab/examples/soar_rotatable.m) goes further, sweeping the
-aerodynamic torque over a full sphere of flow directions with one panel deflected.
+The examples in [matlab/examples](matlab/examples) build on each other; read them in order.
+
+| Script | Shows |
+|---|---|
+| [ex01_quickstart.m](matlab/examples/ex01_quickstart.m) | atmosphere, GSI model, geometry and calculator: force and torque |
+| [ex02_geometry_and_hinges.m](matlab/examples/ex02_geometry_and_hinges.m) | which mesh is which, defining and checking hinges, turning parts |
+| [ex03_gsi_models.m](matlab/examples/ex03_gsi_models.m) | the six GSI models side by side, changing a model parameter |
+| [ex04_shading.m](matlab/examples/ex04_shading.m) | the shading pipeline (Binary, CoP), per-triangle visibility and the hybrid calculator |
+| [ex05_pressure_image.m](matlab/examples/ex05_pressure_image.m) | where the load comes from: pressure image, wetted and frontal area |
+| [ex06_attitude_sweep.m](matlab/examples/ex06_attitude_sweep.m) | drag, lift and pitch torque over the angle of attack |
+| [ex07_wing_deflection.m](matlab/examples/ex07_wing_deflection.m) | drag and pitch torque over wing angles, pressure images of deflected wings |
+| [ex08_soar_torque_map.m](matlab/examples/ex08_soar_torque_map.m) | torque over all flow directions for a satellite with a turned panel |
+
+The per-pixel calculator (`vat.loads.PixelForceTorqueCalculator`) is the default in the
+examples. The hybrid calculator with its shading pipeline appears in example 4.
+
+[matlab/examples/benchmarks](matlab/examples/benchmarks) compares the hybrid calculator (Binary
+and CoP shading) with the per-pixel calculator:
+
+| Script | Question |
+|---|---|
+| [analytic_plates.m](matlab/examples/benchmarks/analytic_plates.m) | How far from the exact result is each method? Two plates, one shading the other. |
+| [mesh_independence.m](matlab/examples/benchmarks/mesh_independence.m) | Does the result change with the mesh? The shuttlecock with 96 to 61440 triangles. |
+| [cost_vs_accuracy.m](matlab/examples/benchmarks/cost_vs_accuracy.m) | What does each method cost per evaluation, and how accurate is it for that? |
+| [smoothness.m](matlab/examples/benchmarks/smoothness.m) | How large are the jumps in the loads between small attitude steps? |
 
 ## Gas–surface interaction models
 

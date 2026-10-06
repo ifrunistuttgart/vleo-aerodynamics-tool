@@ -156,6 +156,10 @@ std::span<const float> StaticMeshGeometry::get_normals() {
     return std::span<const float>(m_normals.data(), m_normals.size());
 }
 
+std::span<const float> StaticMeshGeometry::get_raw_normals() {
+    return std::span<const float>(m_normals.data(), m_normals.size());
+}
+
 std::span<const float> StaticMeshGeometry::get_areas() {
     return std::span<const float>(m_areas.data(), m_areas.size());
 }
