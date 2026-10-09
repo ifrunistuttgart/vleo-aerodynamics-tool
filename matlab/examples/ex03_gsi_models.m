@@ -5,9 +5,9 @@
 % example compares their drag and lift on the shuttlecock and shows how to
 % change a model parameter.
 %
-% Prerequisites, from the repository root:
-%   pixi run build-matlab
-%   addpath('matlab'); addpath('matlab\bin')
+% Prerequisites: make sure you have build the matlab binaries with:
+% pixi run build-matlab
+% And that you have loaded the Matlab project from Vat.prj
 
 clear; close all;
 vat.setLogLevel("warn");

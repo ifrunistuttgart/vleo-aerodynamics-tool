@@ -8,9 +8,9 @@
 % The show_* functions open an interactive 3D window and wait until it is
 % closed.
 %
-% Prerequisites, from the repository root:
-%   pixi run build-matlab
-%   addpath('matlab'); addpath('matlab\bin')
+% Prerequisites: make sure you have build the matlab binaries with:
+% pixi run build-matlab
+% And that you have loaded the Matlab project from Vat.prj
 
 clear; close all;
 vat.setLogLevel("warn");
@@ -24,7 +24,7 @@ geometry = vat.geometry.RotatableMeshGeometry(obj_file);
 vat.visualization.show_meshes(geometry);
 
 %% 2. Define a hinge per wing
-% A hinge is a mesh, a point on the hinge line and the direction of that
+% A hinge needs a reference to a mesh, a point on the hinge line and the direction of that
 % line, both in the body frame. A positive angle turns the wing by the
 % right-hand rule about the axis; these axes are chosen so that a positive
 % angle turns each wing out into the flow.
