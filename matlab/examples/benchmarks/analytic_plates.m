@@ -3,11 +3,11 @@
 % shadowing the +x face of the downstream plate. The leeward faces are
 % never shadowed. The reference is assembled from direct GSI evaluations,
 % using the visible area and centroid of every surface.
-% Compares the hybrid calculator (Binary and CoP shading) and the
-% per-pixel calculator
+% Compares the hybrid calculators (Binary and CoP shading).
 %   1. over num_pixel at a fixed flow angle, and
 %   2. over the flow angle, which moves the shadow across the back plate,
-% each with the second plate meshed coarsely and finely.
+% each with the second plate meshed coarsely and finely. Timing and
+% cost-versus-accuracy plots are included as well.
 
 clear; close all;
 vat.setLogLevel("warn");
@@ -27,22 +27,32 @@ methods = {'hybrid, Binary', 'hybrid, CoP'};
 % At 12 deg the shadow edge on the back plate cuts through the cells of the
 % fine mesh; at angles where it falls exactly on a cell boundary, the
 % hybrid calculator would be exact by coincidence.
-alpha_fixed = 12;
 num_pixels  = [250 500 1000 2000 4000];
-[F_exact, T_exact] = exact_loads(alpha_fixed, gsi_model, speed, T_wall, aero_cond);
+time_ms = zeros(numel(meshes), numel(num_pixels), numel(methods));
 
-%% 2. Error over the flow angle, num_pixel = 2000
+%% 3. Error over the flow angle, multiple num_pixel values
 alphas = -89:1:89;   % [deg]; the shadow slides across the whole back plate
-error_alpha = zeros(numel(num_pixels),numel(alphas), numel(methods), size(meshes, 1));
+error_alpha = zeros(numel(num_pixels), numel(alphas), ...
+    numel(methods), size(meshes, 1));
 for g = 1:size(meshes, 1)
     geometry = vat.geometry.RotatableMeshGeometry(fullfile(folder, meshes{g, 1}));
     for p  = 1:numel(num_pixels)
         calculators = make_calculators(geometry, gsi_model, num_pixels(p));
-        for i = 1:numel(alphas)
-            F_ref = exact_loads(alphas(i), gsi_model, speed, T_wall, aero_cond);
-            for m = 1:numel(calculators)
-                F = calculators{m}.calc_aero_load(flow(alphas(i), speed), T_wall, aero_cond).';   % returned as a column
-                error_alpha(p,i, m, g) = norm(F - F_ref) / norm(F_ref);
+        for m = 1:numel(calculators)
+            F = zeros(numel(alphas), 3);
+     
+            start = tic;
+            for i = 1:numel(alphas)
+                F(i,:) = calculators{m}.calc_aero_load( ...
+                    flow(alphas(i), speed), T_wall, aero_cond).';   % returned as a column
+            end
+            time_ms(g, p, m) = 1e3 * toc(start)/numel(alphas);
+
+            for i = 1:numel(alphas)
+                F_ref = exact_loads( ...
+                    alphas(i), gsi_model, speed, T_wall, aero_cond);
+                F_i = F(i, :);
+                error_alpha(p, i, m, g) = norm(F_i - F_ref) / norm(F_ref);
             end
         end
     end
@@ -62,10 +72,10 @@ hold on;
 
 for g = 1:size(meshes, 1)
     for m = 1:numel(methods)
-        y_val = 100 * avg_error(:, :, m, g);
-        y_err = 100 * std_error(:, :, m, g);
+        y_val = 100 * squeeze(avg_error(:, :, m, g));
+        y_err = 100 * squeeze(std_error(:, :, m, g));
         
-        offset_factor = (m - (numel(methods) + 1) / 2) * 15; 
+        offset_factor = (m - (numel(methods) + 1) / 2) * 15;
         x_shifted = num_pixels + offset_factor;
         
         errorbar(x_shifted, y_val, y_err, styles{g}, ...
@@ -80,13 +90,29 @@ xlabel('num\_pixel');
 ylabel('force error [%]');
 legend('Location', 'southwest');
 title(sprintf('Two plates, average relative error'));
+
+figure('Name', 'Cost versus accuracy');
+cost_time_ms = squeeze(time_ms(2, :, :));
+cost_error = 100 * squeeze(avg_error(:, 1, :, 2));
+loglog(cost_time_ms, cost_error, '-o', 'LineWidth', 1.5);
+hold on;
+for i = 1:numel(num_pixels)
+    text(cost_time_ms(i, 1), cost_error(i, 1), sprintf('  %d px', num_pixels(i)), ...
+        'FontSize', 8);
+end
+grid on;
+xlabel('time per evaluation [ms]');
+ylabel('force error [%]');
+legend(methods, 'Location', 'southwest');
+title('Lower left is better');
 %%
 
 figure('Name', 'Error over flow angle');
 for g = 1:size(meshes, 1)
     for m = 1:numel(methods)
-        plot(alphas, 100 * error_alpha(end,:, m, g), styles{g}, 'Color', colors(m, :), 'LineWidth', 1, ...
-            'MarkerSize', 3, 'DisplayName', sprintf('%s, %s', methods{m}, meshes{g, 2}));
+        plot(alphas, 100 * error_alpha(end, :, m, g), styles{g}, ...
+            'Color', colors(m, :), 'LineWidth', 1, 'MarkerSize', 3, ...
+            'DisplayName', sprintf('%s, %s', methods{m}, meshes{g, 2}));
         hold on;
     end
 end
@@ -102,7 +128,7 @@ function v = flow(alpha__deg, speed)
 end
 
 function calculators = make_calculators(geometry, gsi_model, num_pixel)
-    % Hybrid with Binary shading, hybrid with CoP shading, per pixel.
+    % Hybrid with Binary shading and hybrid with CoP shading.
     calculators = {
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel), gsi_model)
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model)
