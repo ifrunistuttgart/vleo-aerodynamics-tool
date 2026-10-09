@@ -53,6 +53,17 @@ public:
     virtual std::span<const float> get_normals() = 0;
 
     /**
+     * Retrieves the untransformed normals of the triangles, the counterpart of
+     * get_raw_vertices().
+     *
+     * GPU pipelines that apply the model matrices themselves need these; uploading
+     * get_normals() would rotate the normals twice.
+     *
+     * @return A span containing raw normal vectors (x, y, z triplets), one per triangle.
+     */
+    virtual std::span<const float> get_raw_normals() = 0;
+
+    /**
      * Retrieves the areas of the triangles in the geometry.s meshes.
      *
      * @return A span containing the area of each triangle.
