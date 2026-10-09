@@ -13,6 +13,12 @@ classdef HybridForceTorqueCalculator < handle
     properties %(Access = private, Hidden = true)
         handle_ = int32(-1);
     end
+    properties (Access = private)
+        % The C++ calculator refers to these; holding them keeps them alive.
+        geometry_
+        shading_pipeline_
+        gsi_model_
+    end
 
     methods
         function this = HybridForceTorqueCalculator(geometry, shading_pipeline, gsi_model)
@@ -33,6 +39,9 @@ classdef HybridForceTorqueCalculator < handle
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             this.handle_ = int32(MexGateway("loads.HybridForceTorqueCalculator.new", int32(geometry.handle_), int32(shading_pipeline.handle_), int32(gsi_model.handle_)));
+            this.geometry_ = geometry;
+            this.shading_pipeline_ = shading_pipeline;
+            this.gsi_model_ = gsi_model;
         end
 
         function [force__N, torque__Nm] = calc_aero_load(this, v_rel__m_per_s,surface_temp__K, aero_conditions)
