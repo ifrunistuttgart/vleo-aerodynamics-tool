@@ -4,9 +4,6 @@
 % other, and the pitch torque follows. Every method sees the geometry at
 % pixel resolution, so its result moves in small jumps:
 %   hybrid:    when a triangle switches between visible and hidden,
-%   per pixel: when a shadow edge or an outline crosses a pixel. Surfaces
-%              seen almost edge-on cover few pixels with a large wetted
-%              area each (pixel area / cos(delta)), so they jump most.
 % A jump is the part of a 0.25 deg step that differs from the step of a
 % reference curve, the per-pixel result at 8000 pixels.
 %
@@ -26,7 +23,7 @@ geometry = vat.geometry.RotatableMeshGeometry(obj_file);
 
 yaw        = 0:0.25:90;   % [deg]
 num_pixels = [500 1000 2000 4000];
-methods    = {'hybrid, Binary', 'hybrid, CoP', 'per pixel'};
+methods    = {'hybrid, Binary', 'hybrid, CoP'};
 
 %% Reference
 reference = sweep(vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, 8000), yaw, T_wall, aero_cond);
@@ -39,7 +36,6 @@ for k = 1:numel(num_pixels)
     calculators = {
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, N), gsi_model)
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 1, N), gsi_model)
-        vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, N)
     };
     for m = 1:numel(calculators)
         pitch(:, m, k) = sweep(calculators{m}, yaw, T_wall, aero_cond);

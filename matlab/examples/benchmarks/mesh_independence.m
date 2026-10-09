@@ -26,7 +26,7 @@ v_rel = 7800 * [cosd(30), sind(30), 0];
 
 folder  = fullfile(fileparts(mfilename('fullpath')), '..', 'geometries');
 meshes  = [96 240 960 3840 15360 61440];
-methods = {'hybrid, Binary', 'hybrid, CoP', 'per pixel'};
+methods = {'hybrid, Binary', 'hybrid, CoP'};
 drag    = zeros(numel(meshes), numel(methods));
 
 for i = 1:numel(meshes)
@@ -34,7 +34,6 @@ for i = 1:numel(meshes)
     calculators = {
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel), gsi_model)
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model)
-        vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel)
     };
     for m = 1:numel(calculators)
         F = calculators{m}.calc_aero_load(v_rel, T_wall, aero_cond);
@@ -44,7 +43,7 @@ end
 
 %% Results
 % Deviation from the per-pixel result on the finest mesh.
-reference = drag(end, 3);
+reference = drag(end, 2);
 deviation = 100 * (drag - reference) / reference;
 
 fprintf('\n triangles');

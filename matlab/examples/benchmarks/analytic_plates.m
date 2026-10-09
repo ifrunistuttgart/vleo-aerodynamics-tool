@@ -7,10 +7,6 @@
 %   1. over num_pixel at a fixed flow angle, and
 %   2. over the flow angle, which moves the shadow across the back plate,
 % each with the back plate meshed as 2 triangles and as 2048.
-%
-% Prerequisites, from the repository root:
-%   pixi run build-matlab
-%   addpath('matlab'); addpath('matlab\bin')
 
 clear; close all;
 vat.setLogLevel("warn");
@@ -24,7 +20,7 @@ T_wall    = 300;
 folder  = fullfile(fileparts(mfilename('fullpath')), '..', 'geometries');
 meshes  = {'two_plates.obj', '2 triangles per plate'; ...
            'two_plates_fine.obj', 'back plate 2048 triangles'};
-methods = {'hybrid, Binary', 'hybrid, CoP', 'per pixel'};
+methods = {'hybrid, Binary', 'hybrid, CoP'};
 
 %% 1. Error over num_pixel, flow at 12 deg
 % At 12 deg the shadow edge on the back plate cuts through the cells of the
@@ -114,7 +110,6 @@ function calculators = make_calculators(geometry, gsi_model, num_pixel)
     calculators = {
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel), gsi_model)
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model)
-        vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel)
     };
 end
 
