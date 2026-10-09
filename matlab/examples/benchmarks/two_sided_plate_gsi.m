@@ -15,7 +15,7 @@ alpha_e           = 0.9;
 sigma_n           = 0.9;
 sigma_t           = 0.9;
 V_w__m_per_s      = 100.0;
-num_pixel         = 1000;
+num_pixel         = 500;
 alphas__deg       = 0:1:360;
 
 aero_cond = vat.AeroConditions(rho__kg_per_m3, T_atmospheric__K, particle_mass__kg);

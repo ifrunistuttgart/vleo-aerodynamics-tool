@@ -1,12 +1,13 @@
 %% Benchmark: accuracy against an analytic result
-% Two flat plates facing +x, the front one partly shading the back one.
-% With the Newton model and flow in the x-y plane, force and torque follow
-% from the visible area and its centroid, so the exact result is known.
+% Two two-sided flat plates face +x, with the upstream plate partly
+% shadowing the +x face of the downstream plate. The leeward faces are
+% never shadowed. The reference is assembled from direct GSI evaluations,
+% using the visible area and centroid of every surface.
 % Compares the hybrid calculator (Binary and CoP shading) and the
 % per-pixel calculator
 %   1. over num_pixel at a fixed flow angle, and
 %   2. over the flow angle, which moves the shadow across the back plate,
-% each with the back plate meshed as 2 triangles and as 2048.
+% each with the second plate meshed coarsely and finely.
 
 clear; close all;
 vat.setLogLevel("warn");
@@ -18,8 +19,8 @@ speed     = 7800;
 T_wall    = 300;
 
 folder  = fullfile(fileparts(mfilename('fullpath')), '..', 'geometries');
-meshes  = {'two_plates.obj', '2 triangles per plate'; ...
-           'two_plates_fine.obj', 'back plate 2048 triangles'};
+meshes  = {'two_two_sided_plates.obj', '2 triangles per face'; ...
+           'two_two_sided_plates_fine.obj', 'fine two-sided plates'};
 methods = {'hybrid, Binary', 'hybrid, CoP'};
 
 %% 1. Error over num_pixel, flow at 12 deg
@@ -28,68 +29,63 @@ methods = {'hybrid, Binary', 'hybrid, CoP'};
 % hybrid calculator would be exact by coincidence.
 alpha_fixed = 12;
 num_pixels  = [250 500 1000 2000 4000];
-[F_exact, T_exact] = exact_loads(alpha_fixed, rho, speed);
-
-error_N = zeros(numel(num_pixels), numel(methods), size(meshes, 1));
-for g = 1:size(meshes, 1)
-    geometry = vat.geometry.RotatableMeshGeometry(fullfile(folder, meshes{g, 1}));
-    for i = 1:numel(num_pixels)
-        F = evaluate_all(geometry, gsi_model, num_pixels(i), flow(alpha_fixed, speed), T_wall, aero_cond);
-        error_N(i, :, g) = vecnorm(F - F_exact, 2, 2) / norm(F_exact);
-    end
-end
+[F_exact, T_exact] = exact_loads(alpha_fixed, gsi_model, speed, T_wall, aero_cond);
 
 %% 2. Error over the flow angle, num_pixel = 2000
-alphas = 0:1:65;   % [deg]; the shadow slides across the whole back plate
-error_alpha = zeros(numel(alphas), numel(methods), size(meshes, 1));
+alphas = -89:1:89;   % [deg]; the shadow slides across the whole back plate
+error_alpha = zeros(numel(num_pixels),numel(alphas), numel(methods), size(meshes, 1));
 for g = 1:size(meshes, 1)
     geometry = vat.geometry.RotatableMeshGeometry(fullfile(folder, meshes{g, 1}));
-    calculators = make_calculators(geometry, gsi_model, 2000);
-    for i = 1:numel(alphas)
-        F_ref = exact_loads(alphas(i), rho, speed);
-        for m = 1:numel(calculators)
-            F = calculators{m}.calc_aero_load(flow(alphas(i), speed), T_wall, aero_cond).';   % returned as a column
-            error_alpha(i, m, g) = norm(F - F_ref) / norm(F_ref);
+    for p  = 1:numel(num_pixels)
+        calculators = make_calculators(geometry, gsi_model, num_pixels(p));
+        for i = 1:numel(alphas)
+            F_ref = exact_loads(alphas(i), gsi_model, speed, T_wall, aero_cond);
+            for m = 1:numel(calculators)
+                F = calculators{m}.calc_aero_load(flow(alphas(i), speed), T_wall, aero_cond).';   % returned as a column
+                error_alpha(p,i, m, g) = norm(F - F_ref) / norm(F_ref);
+            end
         end
     end
 end
 
-%% Results
-fprintf('\nForce error at %.0f deg flow angle [%%]\n', alpha_fixed);
-for g = 1:size(meshes, 1)
-    fprintf('%s\n  num_pixel', meshes{g, 2});
-    fprintf('  %14s', methods{:});
-    fprintf('\n');
-    for i = 1:numel(num_pixels)
-        fprintf('  %9d', num_pixels(i));
-        fprintf('  %14.3f', 100 * error_N(i, :, g));
-        fprintf('\n');
-    end
-end
-fprintf('(torque at %.0f deg, exact: %+.3e %+.3e %+.3e Nm)\n', alpha_fixed, T_exact);
+avg_error = mean(error_alpha, 2);
+std_error = std(error_alpha,1,2);
 
+%% Results
 colors = lines(numel(methods));
 styles = {'-o', '--s'};
-
 figure('Name', 'Error over num_pixel');
+
+% Achsen explizit erstellen, um Log-Skalierung mit errorbar sauber zu steuern
+ax = axes;
+hold on;
+
 for g = 1:size(meshes, 1)
     for m = 1:numel(methods)
-        loglog(num_pixels, 100 * error_N(:, m, g), styles{g}, 'Color', colors(m, :), 'LineWidth', 1.5, ...
+        y_val = 100 * avg_error(:, :, m, g);
+        y_err = 100 * std_error(:, :, m, g);
+        
+        offset_factor = (m - (numel(methods) + 1) / 2) * 15; 
+        x_shifted = num_pixels + offset_factor;
+        
+        errorbar(x_shifted, y_val, y_err, styles{g}, ...
+            'Color', colors(m, :), 'LineWidth', 1.5, ...
             'DisplayName', sprintf('%s, %s', methods{m}, meshes{g, 2}));
-        hold on;
     end
 end
+
 grid on;
 xticks(num_pixels);
 xlabel('num\_pixel');
 ylabel('force error [%]');
 legend('Location', 'southwest');
-title(sprintf('Two plates, flow at %.0f deg', alpha_fixed));
+title(sprintf('Two plates, average relative error'));
+%%
 
 figure('Name', 'Error over flow angle');
 for g = 1:size(meshes, 1)
     for m = 1:numel(methods)
-        plot(alphas, 100 * error_alpha(:, m, g), styles{g}, 'Color', colors(m, :), 'LineWidth', 1, ...
+        plot(alphas, 100 * error_alpha(end,:, m, g), styles{g}, 'Color', colors(m, :), 'LineWidth', 1, ...
             'MarkerSize', 3, 'DisplayName', sprintf('%s, %s', methods{m}, meshes{g, 2}));
         hold on;
     end
@@ -98,7 +94,7 @@ grid on;
 xlabel('flow angle in the x-y plane [deg]');
 ylabel('force error [%]');
 legend('Location', 'northwest');
-title('Two plates, num\_pixel = 2000');
+title('Two plates, num\_pixel = 4000');
 
 %% Local functions
 function v = flow(alpha__deg, speed)
@@ -113,30 +109,38 @@ function calculators = make_calculators(geometry, gsi_model, num_pixel)
     };
 end
 
-function F = evaluate_all(geometry, gsi_model, num_pixel, v_rel, T_wall, aero_cond)
-    calculators = make_calculators(geometry, gsi_model, num_pixel);
-    F = zeros(numel(calculators), 3);
-    for m = 1:numel(calculators)
-        F(m, :) = calculators{m}.calc_aero_load(v_rel, T_wall, aero_cond);
+function [F, T] = exact_loads(alpha__deg, gsi_model, speed, T_wall, aero_cond)
+    v_rel = flow(alpha__deg, speed);
+    [visible_area, visible_centroid] = downstream_visible_surface(alpha__deg);
+
+    % Plate 1 is at x = 0 and plate 2 at x = 0.5. The +x face of plate 1
+    % shadows plate 2; both -x faces are leeward and fully exposed.
+    surfaces = {
+        1.0, [1, 0, 0], [0, 0, 0]; ...
+        1.0, [-1, 0, 0], [0, 0, 0]; ...
+        visible_area, [1, 0, 0], visible_centroid; ...
+        1.0, [-1, 0, 0], [0.5, 0, 0.5]
+    };
+    F = zeros(1, 3);
+    T = zeros(1, 3);
+    for i = 1:size(surfaces, 1)
+        [force, torque] = gsi_model.calc_aero_force_torque( ...
+            surfaces{i, 1}, surfaces{i, 2}, surfaces{i, 3}, ...
+            v_rel, T_wall, aero_cond);
+        F = F + force(:).';
+        T = T + torque(:).';
     end
 end
 
-function [F, T] = exact_loads(alpha__deg, rho, speed)
-    % Newton: every visible point of the plates (normal +x) carries the
-    % pressure p = rho v^2 cos^2(alpha) along -x, so F = -p A x and the torque
-    % about the origin is p (0, -int z dA, int y dA) over the visible area.
-    t = tand(alpha__deg);
-    % A point (1, y, z) of the front plate shades (0, y - t, z) on the back one.
-    overlap_lo = max(-1, 0.5 - t);
-    overlap_hi = min(1, 1.5 - t);
-    overlap    = max(0, overlap_hi - overlap_lo);   % times the plate height 1
-    overlap_y  = 0.5 * (overlap_lo + overlap_hi);
+function [visible_area, visible_centroid] = downstream_visible_surface(alpha__deg)
+    % The x spacing translates the upstream plate shadow by this amount in y.
+    shift = 0.5 * tand(alpha__deg);
+    overlap_lo = max(-0.5, -0.5 + shift);
+    overlap_hi = min(0.5, 0.5 + shift);
+    overlap_width = max(0, overlap_hi - overlap_lo);
+    overlap_area = 0.5 * overlap_width;  % overlap in z is [0, 0.5]
+    overlap_centroid = [0.5, 0.5 * (overlap_lo + overlap_hi), 0.25];
 
-    area = (4 - overlap) + 1;                       % back plate minus shadow, plus front
-    int_y = -overlap * overlap_y + 1.0;             % back plate alone: 0; front: 1 * 1.0
-    int_z = -overlap * 0.5 + 0.5;                   % back plate alone: 0; front: 1 * 0.5
-
-    p = rho * speed^2 * cosd(alpha__deg)^2;
-    F = [-p * area, 0, 0];
-    T = [0, -p * int_z, p * int_y];
+    visible_area = 1.0 - overlap_area;
+    visible_centroid = ([0.5, 0, 0.5] - overlap_area * overlap_centroid) / visible_area;
 end
