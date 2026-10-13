@@ -3,9 +3,9 @@
 % atmosphere, gas-surface interaction model, geometry, shading pipeline,
 % load calculator.
 %
-% Prerequisites, from the repository root:
-%   pixi run build-matlab
-%   addpath('matlab'); addpath('matlab\bin')
+% Prerequisites: make sure you have build the matlab binaries with:
+% pixi run build-matlab
+% And that you have loaded the Matlab project from Vat.prj
 
 clear; close all;
 vat.setLogLevel("warn");   % "debug", "info", "warn", "error" or "off"

@@ -4,9 +4,9 @@
 % evaluations take a few seconds, which is what makes such maps, and
 % attitude simulations, practical without precomputed databases.
 %
-% Prerequisites, from the repository root:
-%   pixi run build-matlab
-%   addpath('matlab'); addpath('matlab\bin')
+% Prerequisites: make sure you have build the matlab binaries with:
+% pixi run build-matlab
+% And that you have loaded the Matlab project from Vat.prj
 
 clear; close all;
 vat.setLogLevel("warn");

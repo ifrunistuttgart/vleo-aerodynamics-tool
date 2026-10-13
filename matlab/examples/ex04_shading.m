@@ -8,9 +8,9 @@
 %
 % show_shading opens an interactive 3D window and waits until it is closed.
 %
-% Prerequisites, from the repository root:
-%   pixi run build-matlab
-%   addpath('matlab'); addpath('matlab\bin')
+% Prerequisites: make sure you have build the matlab binaries with:
+% pixi run build-matlab
+% And that you have loaded the Matlab project from Vat.prj
 
 clear; close all;
 vat.setLogLevel("warn");
@@ -31,7 +31,7 @@ v_rel = 7800 * [cosd(40) * cosd(20), sind(40) * cosd(20), sind(20)];
 %% 1. Shading pipeline: which triangles does the flow reach?
 % algorithm 0 = Binary: a triangle is visible if any pixel shows it.
 % algorithm 1 = CoP:    a triangle is visible if its centre is not hidden.
-num_pixel = 2000;
+num_pixel = 1000;
 pipeline_binary = vat.shading.ShadingPipeline(geometry, 0, num_pixel);
 pipeline_cop    = vat.shading.ShadingPipeline(geometry, 1, num_pixel);
 
