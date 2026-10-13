@@ -1,0 +1,34 @@
+# Wavefront OBJ file: Two two-sided 1x1 plates in the y,z plane (Triangulated)
+
+# --- Vertices ---
+
+# Plate 1 (Centered at 0, 0, 0)
+v 0.0 -0.5 -0.5
+v 0.0  0.5 -0.5
+v 0.0  0.5  0.5
+v 0.0 -0.5  0.5
+
+# Plate 2 (Offset by 0.5, 0, 0.5)
+v 0.5 -0.5  0.0
+v 0.5  0.5  0.0
+v 0.5  0.5  1.0
+v 0.5 -0.5  1.0
+
+
+# --- Faces (Triangles, Two-Sided) ---
+
+# Plate 1 - Front faces
+f 1 2 3
+f 1 3 4
+
+# Plate 1 - Back faces (reversed winding)
+f 3 2 1
+f 4 3 1
+
+# Plate 2 - Front faces
+f 5 6 7
+f 5 7 8
+
+# Plate 2 - Back faces (reversed winding)
+f 7 6 5
+f 8 7 5
