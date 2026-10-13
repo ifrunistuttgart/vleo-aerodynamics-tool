@@ -25,4 +25,6 @@ target_include_directories(gsi_models
 target_link_libraries(gsi_models PUBLIC loads)
 target_link_libraries(gsi_models PRIVATE glm::glm spdlog::spdlog)
 
+add_subdirectory(shaders)
+
 add_library(Vat::gsi_models ALIAS gsi_models)

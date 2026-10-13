@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <format>
 #include <array>
+#include <cmath>
 #include <glm/glm.hpp>
 #include <spdlog/spdlog.h>
 
@@ -26,6 +27,7 @@
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
 #include "hybrid_aero_load_calculator.h"
+#include "pixel_force_torque_calculator.h"
 #include "show_mesh.h"
 #include "custom_spdlog_sink.h"
 
@@ -41,6 +43,8 @@ using vat::gsi_models::SchaafChambre;
 using vat::gsi_models::Sentman;
 using vat::gsi_models::Storch;
 using vat::loads::HybridForceTorqueCalculator;
+using vat::loads::PixelForceTorqueCalculator;
+using vat::loads::PixelLoadOptions;
 using vat::geometry::RotatableMeshGeometry;
 using vat::shading::ShadingAlgorithmType;
 using vat::shading::ShadingPipeline;
@@ -467,6 +471,100 @@ public:
                     return;
                 }
             }
+            if (cls == "loads.PixelForceTorqueCalculator") {
+                if (cmd == "new") {
+                    validate_input_size(inputs, 6);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 2, "int", 1);
+                    validate_argument(inputs, 3, "int", 1);
+                    validate_argument(inputs, 4, "double", 1);
+                    validate_argument(inputs, 5, "int", 1);
+
+                    const int geometry_id = inputs[1][0];
+                    const int gsi_id = inputs[2][0];
+                    const int num_pixel = inputs[3][0];
+                    if (num_pixel <= 0) {
+                        throw std::invalid_argument("num_pixel must be positive");
+                    }
+                    PixelLoadOptions options;
+                    options.min_cos_delta = static_cast<float>(static_cast<double>(inputs[4][0]));
+                    options.keep_pressure_image = static_cast<int>(inputs[5][0]) != 0;
+
+                    pixel_aero_load_calculator_map.insert(
+                        {pixel_aero_max_id,
+                        std::make_unique<PixelForceTorqueCalculator>(
+                            *geometry_map.at(geometry_id),
+                            *gsi_map.at(gsi_id),
+                            static_cast<unsigned int>(num_pixel),
+                            options
+                        )}
+                    );
+
+                    outputs[0] = factory.createScalar<int>(pixel_aero_max_id);
+                    pixel_aero_max_id++;
+                    return;
+                }
+                if (cmd=="calc_aero_load") {
+                    validate_input_size(inputs, 5);
+                    validate_output_size(outputs, 2);
+                    validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 2, "double", 3);
+                    validate_argument(inputs, 3, "double", 1);
+                    validate_argument(inputs, 4, "int", 1);
+
+                    const int aero_cond_id = inputs[4][0];
+                    const int id = inputs[1][0];
+                    PixelForceTorqueCalculator* calculator = pixel_aero_load_calculator_map.at(id).get();
+                    AeroConditions&  aero_conditions = *aero_conditions_map.at(aero_cond_id);
+
+                    glm::vec3 velocity__m_per_s(inputs[2][0], inputs[2][1], inputs[2][2]);
+                    const float surface_temp__K = inputs[3][0];
+                    glm::vec3 torque__Nm(0.0f, 0.0f, 0.0f);
+                    glm::vec3 force__N(0.0f, 0.0f, 0.0f);
+                    calculator->calc_aero_torque_force(velocity__m_per_s, surface_temp__K, aero_conditions, torque__Nm, force__N);
+                    outputs[0] = factory.createArray({3}, {force__N.x, force__N.y, force__N.z});
+                    outputs[1] = factory.createArray({3}, {torque__Nm.x, torque__Nm.y, torque__Nm.z});
+                    return;
+                }
+                if (cmd=="get_pressure_image") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    const std::vector<float>& image = pixel_aero_load_calculator_map.at(id)->pressure_image();
+
+                    // C++ holds rows bottom to top, row-major; MATLAB wants the top row
+                    // first and stores column-major.
+                    const size_t n = static_cast<size_t>(std::llround(std::sqrt(static_cast<double>(image.size()))));
+                    std::vector<double> column_major(image.size());
+                    for (size_t col = 0; col < n; ++col) {
+                        for (size_t row = 0; row < n; ++row) {
+                            column_major[col * n + row] = image[(n - 1 - row) * n + col];
+                        }
+                    }
+                    outputs[0] = factory.createArray({n, n}, column_major.begin(), column_major.end());
+                    return;
+                }
+                if (cmd=="get_last_areas") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 2);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    const PixelForceTorqueCalculator& calculator = *pixel_aero_load_calculator_map.at(id);
+                    outputs[0] = factory.createScalar<double>(calculator.last_wetted_area());
+                    outputs[1] = factory.createScalar<double>(calculator.last_projected_area());
+                    return;
+                }
+                if (cmd=="delete") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 0);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    pixel_aero_load_calculator_map.erase(id);
+                    return;
+                }
+            }
             if (cls == "visualization") {
                 if (cmd == "show_shading") {
                     validate_input_size(inputs, 4);
@@ -652,9 +750,11 @@ private:
     std::unordered_map<int, std::unique_ptr<RotatableMeshGeometry>> geometry_map;
     std::unordered_map<int, std::unique_ptr<ShadingPipeline>> shading_pipeline_map;
     std::unordered_map<int, std::unique_ptr<HybridForceTorqueCalculator>> hybrid_aero_load_calculator_map;
+    std::unordered_map<int, std::unique_ptr<PixelForceTorqueCalculator>> pixel_aero_load_calculator_map;
     int gsi_max_id = 0;
     int aero_conditions_max_id = 0;
     int geometry_max_id = 0;
     int shading_pipeline_max_id = 0;
     int hybrid_aero_max_id = 0;
+    int pixel_aero_max_id = 0;
 };
