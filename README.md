@@ -137,6 +137,17 @@ deeper: the mesh [before and after](matlab/examples/remesh_before_after.m),
 [choosing the size](matlab/examples/remesh_choose_size.m),
 [shading and accuracy](matlab/examples/remesh_shading.m), and
 [rotating wings](matlab/examples/remesh_rotating_wings.m) on a remeshed geometry.
+The examples in [matlab/examples](matlab/examples) build on each other; read them in order.
+
+| Script | Shows |
+|---|---|
+| [ex01_quickstart.m](matlab/examples/ex01_quickstart.m) | atmosphere, GSI model, geometry, shading pipeline and calculator: force and torque |
+| [ex02_geometry_and_hinges.m](matlab/examples/ex02_geometry_and_hinges.m) | which mesh is which, defining and checking hinges, turning parts |
+| [ex03_gsi_models.m](matlab/examples/ex03_gsi_models.m) | the six GSI models side by side, changing a model parameter |
+| [ex04_shading.m](matlab/examples/ex04_shading.m) | Binary and CoP shading, per-triangle visibility |
+| [ex05_attitude_sweep.m](matlab/examples/ex05_attitude_sweep.m) | drag, lift and pitch torque over the angle of attack |
+| [ex06_wing_deflection.m](matlab/examples/ex06_wing_deflection.m) | drag and pitch torque over wing angles |
+| [ex07_soar_torque_map.m](matlab/examples/ex07_soar_torque_map.m) | torque over all flow directions for a satellite with a turned panel |
 
 ## Gas–surface interaction models
 

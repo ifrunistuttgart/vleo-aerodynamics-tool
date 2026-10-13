@@ -15,6 +15,10 @@ classdef ShadingPipeline < handle
         % store handle as int32 to match MexGateway expectations
         handle_ = int32(-1);
     end
+    properties (Access = private)
+        % The C++ pipeline refers to the geometry; holding it keeps it alive.
+        geometry_
+    end
     methods
         function this = ShadingPipeline(geometry, shading_algorithm, num_pixel)
             % SHADINGPIPELINE Constructor for ShadingPipeline.
@@ -45,11 +49,8 @@ classdef ShadingPipeline < handle
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             try
-                if isempty(num_pixel)
-                    this.handle_ = MexGateway("shading.ShadingPipeline.new", int32(geometry.handle_), int32(shading_algorithm));
-                else
-                    this.handle_ = MexGateway("shading.ShadingPipeline.new", int32(geometry.handle_), int32(shading_algorithm), int32(num_pixel));
-                end
+                this.handle_ = MexGateway("shading.ShadingPipeline.new", int32(geometry.handle_), int32(shading_algorithm), int32(num_pixel));
+                this.geometry_ = geometry;
             catch ME
                 error("Failed to create Shading pipeline: %s", ME.message);
             end

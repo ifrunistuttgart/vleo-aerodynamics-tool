@@ -1,4 +1,5 @@
 #include "shading_pipeline.h"
+#include "scoped_context.h"
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <span>
@@ -72,7 +73,7 @@ ShadingPipeline::~ShadingPipeline() {
 }
 
 std::vector<float> ShadingPipeline::shade( const glm::vec3& v_rel_hat) {
-	m_context->make_current();
+	ScopedCurrentContext current(*m_context);
 
 	float bsr = m_geometry.get_bounding_sphere_radius();
 	// The frustum follows the current radius but num_pixel does not, so a pose that

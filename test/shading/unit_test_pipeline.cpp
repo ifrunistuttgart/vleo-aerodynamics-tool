@@ -37,6 +37,10 @@ public:
         return std::span<const float>();
     }
 
+    std::span<const float> get_raw_normals() override {
+        return std::span<const float>();
+    }
+
     std::span<const float> get_areas() override {
         return std::span<const float>();
     }

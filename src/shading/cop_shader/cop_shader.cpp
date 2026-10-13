@@ -3,11 +3,11 @@
 #include <spdlog/spdlog.h>
 #include <algorithm>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 //custom abstractions
 #include "vertex_buffer.h"
 #include "gl_helpers.h"
+#include "flow_camera.h"
 #include "vertex_buffer_layout.h"
 
 // embedded shader headers
@@ -87,10 +87,19 @@ int CoPShader::set_vertices(std::span<const float> vertices, std::span<const std
 
     //compute triangle centroids from vertices
     std::vector<float> cop(m_numTriangles*3,0);
+    std::vector<float> cop_normals(m_numTriangles*3,0);
     for (unsigned int i = 0; i < m_numTriangles; i++) {
         cop[i*3] = (vertices[i*9] + vertices[i*9+3] + vertices[i*9+6]) / 3.0f;
         cop[i*3+1] = (vertices[i*9+1] + vertices[i*9+4] + vertices[i*9+7]) / 3.0f;
         cop[i*3+2] = (vertices[i*9+2] + vertices[i*9+5] + vertices[i*9+8]) / 3.0f;
+        //compute unit normal for cop assume CCW winding order of vertices
+        glm::vec3 v0(vertices[i*9], vertices[i*9+1], vertices[i*9+2]);
+        glm::vec3 v1(vertices[i*9+3], vertices[i*9+4], vertices[i*9+5]);
+        glm::vec3 v2(vertices[i*9+6], vertices[i*9+7], vertices[i*9+8]);
+        glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
+        cop_normals[i*3] = normal.x;
+        cop_normals[i*3+1] = normal.y;
+        cop_normals[i*3+2] = normal.z;
     }
 
     m_cop_vao.reset(new VertexArray());
@@ -109,43 +118,25 @@ int CoPShader::set_vertices(std::span<const float> vertices, std::span<const std
     }
     VertexBuffer vb_cop_ID(cop_triangle_ids.data(), static_cast<unsigned int>(sizeof(std::uint32_t) * cop_triangle_ids.size()));
     m_cop_vao->AddBuffer(vb_cop_ID, layout_cop_ids);
+    
+    //set normals for Cops
+    VertexBufferLayout layout_cop_normals;
+    layout_cop_normals.Push<float>(3);
+    VertexBuffer vb_cop_normals(cop_normals.data(), static_cast<unsigned int>(sizeof(float) * cop_normals.size()));
+    m_cop_vao->AddBuffer(vb_cop_normals, layout_cop_normals);
 
     return 0;
 }
 
 std::vector<float> CoPShader::shade_geometry(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) {
-    //projection matrices
-    glm::vec3 camera_position = v_rel_hat * bounding_sphere_radius;
-
-    glm::mat4 orthoProj = glm::ortho(-bounding_sphere_radius,
-        bounding_sphere_radius,
-        -bounding_sphere_radius,
-        bounding_sphere_radius,
-        0.0f,
-        2 * bounding_sphere_radius
-    );
-
-    glm::vec3 target = glm::vec3(0.0f);
-    glm::vec3 forward = glm::normalize(target - camera_position);
-
-    glm::vec3 ref = (std::abs(forward.y) < 0.99f)
-        ? glm::vec3(0.0f, 1.0f, 0.0f)
-        : glm::vec3(1.0f, 0.0f, 0.0f);
-
-    glm::vec3 right = glm::normalize(glm::cross(forward, ref));
-    glm::vec3 up    = glm::normalize(glm::cross(right, forward));
-
-    glm::mat4 view = glm::lookAt(
-        camera_position,
-        target,
-        up
-    );
+    const FlowCamera camera = make_flow_camera(v_rel_hat, bounding_sphere_radius);
+    const glm::mat4& orthoProj = camera.projection;
+    const glm::mat4& view = camera.view;
 
     m_frame_buffer->Bind();
-    // The viewport does not follow the bound framebuffer: it starts out as the window's
-    // size, and the OS clamps a window to roughly the screen. Without this, every num_pixel
-    // above the screen height renders at screen resolution, squashed non-uniformly.
-    GLCall(glViewport(0, 0, NUM_PIXEL, NUM_PIXEL));
+    // The default viewport is the hidden window's size, which the OS may clamp to
+    // the screen; without this, num_pixel above the screen size is silently lost.
+    GLCall(glViewport(0, 0, static_cast<GLsizei>(NUM_PIXEL), static_cast<GLsizei>(NUM_PIXEL)));
     m_frame_buffer->Clear();
 
 	//render triangles and cops to Framebuffer
@@ -167,8 +158,10 @@ std::vector<float> CoPShader::shade_geometry(glm::vec3 v_rel_hat, float bounding
     unsigned int cop_offset = 0;
     for (int i = 0; i < num_triangles_per_mesh.size(); i++) {
         glm::mat4 model = model_matrices[i];
-        glm::mat4 u_MVP = orthoProj * view * model;
+        glm::mat4 u_MV = view * model;
+        glm::mat4 u_MVP = orthoProj * u_MV;
         m_point_shader->setUniformMat4f("u_MVP", u_MVP);
+        m_point_shader->setUniformMat4f("u_MV", u_MV);
         glDrawArrays(GL_POINTS, cop_offset, static_cast<GLsizei>(num_triangles_per_mesh[i]));
         cop_offset += num_triangles_per_mesh[i];
     }
