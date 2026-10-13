@@ -75,7 +75,10 @@ TEST_F(CoPShaderTest, ShadeTetrahedron) {
 
     std::vector<unsigned int> numTrianglesPerMesh{ numFaces };
     std::vector<glm::mat4> modelMatrices{ glm::mat4(1.0f) };
-    glm::vec3 windDir(1.0f, 0.0f, 0.0f);
+    // Both flow directions are tilted slightly off the axes: along an axis, some
+    // faces are seen exactly edge-on and their centroid falls on another face's
+    // edge, so the result would depend on where the pixel centres happen to lie.
+    glm::vec3 windDir = glm::normalize(glm::vec3(1.0f, 0.1f, 0.2f));
     float bounding_sphere_radius = 1.0f;
     std::vector<float> isTriangleVisible = shader.shade_geometry(
         windDir,
@@ -88,7 +91,7 @@ TEST_F(CoPShaderTest, ShadeTetrahedron) {
     EXPECT_NEAR(isTriangleVisible[2], 0.0f, 1e-5);
     EXPECT_NEAR(isTriangleVisible[3], 1.0f, 1e-5);
 
-    windDir = glm::vec3(0.0f, 0.0f, 1.0f);
+    windDir = glm::normalize(glm::vec3(-0.2f, 0.1f, 1.0f));
     std::fill(isTriangleVisible.begin(), isTriangleVisible.end(), 0.0f);
     bounding_sphere_radius = 1.0f;
     isTriangleVisible = shader.shade_geometry(
