@@ -7,14 +7,19 @@ classdef RotatableMeshGeometry < handle
     % calculations.
     %
     % RotatableMeshGeometry methods:
-    %   RotatableMeshGeometry   - Constructor to load a geometry.
-    %   get_vertices             - Retrieves the vertex data of the geometry.
-    %   get_num_triangles        - Retrieves the total number of triangles.
-    %   turn_mesh_around_axis - Rotates a specific mesh of the geometry.
-    %   get_mesh_quality         - Size and shape statistics of the triangles.
-    %   predict_remesh           - What remesh would produce, without remeshing.
-    %   remesh                   - A copy with near-equilateral triangles.
-    %   export_obj               - Writes the geometry to an .obj file.
+    %   RotatableMeshGeometry        - Constructor to load a geometry.
+    %   get_transformed_vertices     - Retrieves the transformed vertex data of the geometry.
+    %   get_untransformed_vertices   - Retrieves the untransformed vertex data of the geometry.
+    %   get_transformed_normals      - Retrieves the transformed normals of the triangles.
+    %   get_untransformed_normals    - Retrieves the untransformed normals of the triangles.
+    %   get_transformed_centroids    - Retrieves the transformed centroids of the triangles.
+    %   get_untransformed_centroids  - Retrieves the untransformed centroids of the triangles.
+    %   get_num_triangles            - Retrieves the total number of triangles.
+    %   turn_mesh_around_axis        - Rotates a specific mesh of the geometry.
+    %   get_mesh_quality             - Size and shape statistics of the triangles.
+    %   predict_remesh               - What remesh would produce, without remeshing.
+    %   remesh                       - A copy with near-equilateral triangles.
+    %   export_obj                   - Writes the geometry to an .obj file.
     %
     properties %(Access = private, Hidden = true)
         % store handle as int32 to match MexGateway expectations
@@ -56,10 +61,10 @@ classdef RotatableMeshGeometry < handle
             end
         end
 
-        function vertices = get_vertices(this)
-            % GET_VERTICES Retrieves the vertex positions of the geometry.
+        function vertices = get_transformed_vertices(this)
+            % GET_TRANSFORMED_VERTICES Retrieves the transformed vertex positions of the geometry.
             %
-            %   vertices = get_vertices(this) returns a flat array of vertex 
+            %   vertices = get_transformed_vertices(this) returns a flat array of vertex 
             %   positions (x, y, z triplets).
             %
             %   Output Arguments:
@@ -68,7 +73,82 @@ classdef RotatableMeshGeometry < handle
             arguments
                 this (1,1) vat.geometry.RotatableMeshGeometry
             end
-            vertices = MexGateway("geometry.RotatableMeshGeometry.get_vertices", int32(this.handle_));
+            vertices = MexGateway("geometry.RotatableMeshGeometry.get_transformed_vertices", int32(this.handle_));
+        end
+
+        function vertices = get_untransformed_vertices(this)
+            % GET_UNTRANSFORMED_VERTICES Retrieves the untransformed vertex positions of the geometry.
+            %
+            %   vertices = get_untransformed_vertices(this) returns a flat array of raw vertex 
+            %   positions (x, y, z triplets).
+            %
+            %   Output Arguments:
+            %       vertices - Array of raw vertex coordinates [3 x N].
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+            end
+            vertices = MexGateway("geometry.RotatableMeshGeometry.get_untransformed_vertices", int32(this.handle_));
+        end
+
+        function normals = get_transformed_normals(this)
+            % GET_TRANSFORMED_NORMALS Retrieves the transformed normals of the triangles.
+            %
+            %   normals = get_transformed_normals(this) returns a flat array of normal 
+            %   vectors (x, y, z triplets).
+            %
+            %   Output Arguments:
+            %       normals - Array of normal vectors [3 x N].
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+            end
+            normals = MexGateway("geometry.RotatableMeshGeometry.get_transformed_normals", int32(this.handle_));
+        end
+
+        function normals = get_untransformed_normals(this)
+            % GET_UNTRANSFORMED_NORMALS Retrieves the untransformed normals of the triangles.
+            %
+            %   normals = get_untransformed_normals(this) returns a flat array of raw normal 
+            %   vectors (x, y, z triplets).
+            %
+            %   Output Arguments:
+            %       normals - Array of raw normal vectors [3 x N].
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+            end
+            normals = MexGateway("geometry.RotatableMeshGeometry.get_untransformed_normals", int32(this.handle_));
+        end
+
+        function centroids = get_transformed_centroids(this)
+            % GET_TRANSFORMED_CENTROIDS Retrieves the transformed centroids of the triangles.
+            %
+            %   centroids = get_transformed_centroids(this) returns a flat array of centroid 
+            %   positions (x, y, z triplets).
+            %
+            %   Output Arguments:
+            %       centroids - Array of centroid positions [3 x N].
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+            end
+            centroids = MexGateway("geometry.RotatableMeshGeometry.get_transformed_centroids", int32(this.handle_));
+        end
+
+        function centroids = get_untransformed_centroids(this)
+            % GET_UNTRANSFORMED_CENTROIDS Retrieves the untransformed centroids of the triangles.
+            %
+            %   centroids = get_untransformed_centroids(this) returns a flat array of raw centroid 
+            %   positions (x, y, z triplets).
+            %
+            %   Output Arguments:
+            %       centroids - Array of raw centroid positions [3 x N].
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+            end
+            centroids = MexGateway("geometry.RotatableMeshGeometry.get_untransformed_centroids", int32(this.handle_));
         end
 
         function num_triangles = get_num_triangles(this)

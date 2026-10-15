@@ -23,23 +23,31 @@ RotatableMeshGeometry::RotatableMeshGeometry(std::vector<MeshData> meshes)
 	  m_transformed_centroids(m_centroids.size()) {
 }
 
-std::span<const float> RotatableMeshGeometry::get_vertices() {
+std::span<const float> RotatableMeshGeometry::get_transformed_vertices() {
 	refresh_transforms();
 	return std::span<const float>(m_transformed_vertices.data(), m_transformed_vertices.size());
 }
 
-std::span<const float> RotatableMeshGeometry::get_raw_vertices() {
+std::span<const float> RotatableMeshGeometry::get_untransformed_vertices() {
 	return std::span<const float>(m_vertices.data(), m_vertices.size());
 }
 
-std::span<const float> RotatableMeshGeometry::get_normals() {
+std::span<const float> RotatableMeshGeometry::get_transformed_normals() {
 	refresh_transforms();
 	return std::span<const float>(m_transformed_normals.data(), m_transformed_normals.size());
 }
 
-std::span<const float> RotatableMeshGeometry::get_centroids() {
+std::span<const float> RotatableMeshGeometry::get_untransformed_normals() {
+	return std::span<const float>(m_normals.data(), m_normals.size());
+}
+
+std::span<const float> RotatableMeshGeometry::get_transformed_centroids() {
 	refresh_transforms();
 	return std::span<const float>(m_transformed_centroids.data(), m_transformed_centroids.size());
+}
+
+std::span<const float> RotatableMeshGeometry::get_untransformed_centroids() {
+	return std::span<const float>(m_centroids.data(), m_centroids.size());
 }
 
 float RotatableMeshGeometry::get_bounding_sphere_radius() {

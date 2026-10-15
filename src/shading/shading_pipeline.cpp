@@ -50,7 +50,7 @@ ShadingPipeline::ShadingPipeline(
 	}
 	m_algorithm = create_shading_algorithm(algorithm_type, num_pixel);
 
-	std::span<const float> vertices = m_geometry.get_raw_vertices();
+ std::span<const float> vertices = m_geometry.get_untransformed_vertices();
 	std::span<const std::uint32_t> triangleIDs = m_geometry.get_triangle_ids();
 	const int set_vertices_result = m_algorithm->set_vertices(vertices, triangleIDs);
 	if (set_vertices_result != 0) {

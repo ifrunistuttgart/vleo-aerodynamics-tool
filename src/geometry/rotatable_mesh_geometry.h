@@ -22,13 +22,17 @@ public:
     explicit RotatableMeshGeometry(std::vector<MeshData> meshes);
     ~RotatableMeshGeometry() = default;
 
-    std::span<const float> get_vertices() override;
+    std::span<const float> get_transformed_vertices() override;
 
-    std::span<const float> get_raw_vertices() override;
+    std::span<const float> get_untransformed_vertices() override;
 
-    std::span<const float> get_normals() override;
+    std::span<const float> get_transformed_normals() override;
 
-    std::span<const float> get_centroids() override;
+    std::span<const float> get_untransformed_normals() override;
+
+    std::span<const float> get_transformed_centroids() override;
+
+    std::span<const float> get_untransformed_centroids() override;
 
     float get_bounding_sphere_radius() override;
 

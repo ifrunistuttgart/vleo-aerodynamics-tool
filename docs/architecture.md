@@ -13,11 +13,11 @@ classDiagram
 
     class IGeometryShadingData {
         <<interface>>
-        +get_vertices()
-        +get_raw_vertices()
-        +get_normals()
+        +get_transformed_vertices()
+        +get_untransformed_vertices()
+        +get_transformed_normals()
         +get_areas()
-        +get_centroids()
+        +get_transformed_centroids()
         +get_triangle_ids()
         +get_model_matrices()
         +get_bounding_sphere_radius()
@@ -159,8 +159,8 @@ the same value three times, used as a render-target colour. IDs are **1-based**,
 ID framebuffer means background.
 
 **Raw versus transformed vertices.** `RotatableMeshGeometry` overrides the getters to apply the
-per-mesh model matrices, so `get_vertices()` returns already-transformed geometry. The shading
-pipeline instead uploads `get_raw_vertices()`, because the GPU path applies the model matrices
+per-mesh model matrices, so `get_transformed_vertices()` returns already-transformed geometry. The shading
+pipeline instead uploads `get_untransformed_vertices()`, because the GPU path applies the model matrices
 itself — uploading the transformed vertices would apply the rotation twice. Positions are
 transformed with `w = 1`; normals go through a separate path using the linear block only, so
 they never pick up the model matrix's translation column.

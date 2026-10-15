@@ -23,10 +23,13 @@ std::vector<T> ToVector(std::span<const T> s) {
 // Every derived array compared exactly, not within a tolerance.
 inline void ExpectSameGeometry(vat::geometry::StaticMeshGeometry& a, vat::geometry::StaticMeshGeometry& b) {
     EXPECT_EQ(a.get_num_triangles(), b.get_num_triangles());
-    EXPECT_EQ(ToVector(a.get_vertices()), ToVector(b.get_vertices()));
+    EXPECT_EQ(ToVector(a.get_transformed_vertices()), ToVector(b.get_transformed_vertices()));
+    EXPECT_EQ(ToVector(a.get_untransformed_vertices()), ToVector(b.get_untransformed_vertices()));
     EXPECT_EQ(ToVector(a.get_triangle_ids()), ToVector(b.get_triangle_ids()));
-    EXPECT_EQ(ToVector(a.get_normals()), ToVector(b.get_normals()));
-    EXPECT_EQ(ToVector(a.get_centroids()), ToVector(b.get_centroids()));
+    EXPECT_EQ(ToVector(a.get_transformed_normals()), ToVector(b.get_transformed_normals()));
+    EXPECT_EQ(ToVector(a.get_untransformed_normals()), ToVector(b.get_untransformed_normals()));
+    EXPECT_EQ(ToVector(a.get_transformed_centroids()), ToVector(b.get_transformed_centroids()));
+    EXPECT_EQ(ToVector(a.get_untransformed_centroids()), ToVector(b.get_untransformed_centroids()));
     EXPECT_EQ(ToVector(a.get_areas()), ToVector(b.get_areas()));
     EXPECT_EQ(ToVector(a.get_num_triangles_per_mesh()), ToVector(b.get_num_triangles_per_mesh()));
     EXPECT_EQ(ToVector(a.get_mesh_names()), ToVector(b.get_mesh_names()));

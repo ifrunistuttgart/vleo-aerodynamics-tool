@@ -335,14 +335,64 @@ public:
                     geometry->turn_mesh_around_axis(inputs[2][0], inputs[3][0], origin, axis);
                     return;
                 }
-                if (cmd=="get_vertices") {
+                if (cmd=="get_transformed_vertices") {
                     validate_input_size(inputs, 2);
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
                     const int id = inputs[1][0];
                     RotatableMeshGeometry* geometry = geometry_map.at(id).get();
-                    std::span<const float> vertices = geometry->get_vertices();
+                    std::span<const float> vertices = geometry->get_transformed_vertices();
                     outputs[0] = factory.createArray({vertices.size()}, vertices.begin(), vertices.end());
+                    return;
+                }
+                if (cmd=="get_untransformed_vertices") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    RotatableMeshGeometry* geometry = geometry_map.at(id).get();
+                    std::span<const float> vertices = geometry->get_untransformed_vertices();
+                    outputs[0] = factory.createArray({vertices.size()}, vertices.begin(), vertices.end());
+                    return;
+                }
+                if (cmd=="get_transformed_normals") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    RotatableMeshGeometry* geometry = geometry_map.at(id).get();
+                    std::span<const float> normals = geometry->get_transformed_normals();
+                    outputs[0] = factory.createArray({normals.size()}, normals.begin(), normals.end());
+                    return;
+                }
+                if (cmd=="get_untransformed_normals") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    RotatableMeshGeometry* geometry = geometry_map.at(id).get();
+                    std::span<const float> normals = geometry->get_untransformed_normals();
+                    outputs[0] = factory.createArray({normals.size()}, normals.begin(), normals.end());
+                    return;
+                }
+                if (cmd=="get_transformed_centroids") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    RotatableMeshGeometry* geometry = geometry_map.at(id).get();
+                    std::span<const float> centroids = geometry->get_transformed_centroids();
+                    outputs[0] = factory.createArray({centroids.size()}, centroids.begin(), centroids.end());
+                    return;
+                }
+                if (cmd=="get_untransformed_centroids") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    RotatableMeshGeometry* geometry = geometry_map.at(id).get();
+                    std::span<const float> centroids = geometry->get_untransformed_centroids();
+                    outputs[0] = factory.createArray({centroids.size()}, centroids.begin(), centroids.end());
                     return;
                 }
                 if (cmd=="get_num_triangles") {

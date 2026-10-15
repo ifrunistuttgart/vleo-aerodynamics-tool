@@ -63,16 +63,16 @@ void ExpectRoundTripped(StaticMeshGeometry& original, StaticMeshGeometry& reload
     EXPECT_EQ(ToVector(original.get_mesh_names()), ToVector(reloaded.get_mesh_names()));
     EXPECT_EQ(ToVector(original.get_triangle_ids()), ToVector(reloaded.get_triangle_ids()));
 
-    const auto va = original.get_vertices();
-    const auto vb = reloaded.get_vertices();
+    const auto va = original.get_transformed_vertices();
+    const auto vb = reloaded.get_transformed_vertices();
     std::int64_t max_ulps = 0;
     for (std::size_t i = 0; i < va.size(); ++i) {
         max_ulps = std::max(max_ulps, UlpDistance(va[i], vb[i]));
     }
     EXPECT_LE(max_ulps, 1) << "a coordinate moved by more than one ulp";
 
-    const auto na = original.get_normals(), nb = reloaded.get_normals();
-    const auto ca = original.get_centroids(), cb = reloaded.get_centroids();
+    const auto na = original.get_transformed_normals(), nb = reloaded.get_transformed_normals();
+    const auto ca = original.get_transformed_centroids(), cb = reloaded.get_transformed_centroids();
     for (std::size_t i = 0; i < na.size(); ++i) {
         EXPECT_NEAR(na[i], nb[i], 1e-4f);
         EXPECT_NEAR(ca[i], cb[i], 1e-6f);

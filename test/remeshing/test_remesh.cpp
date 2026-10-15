@@ -46,8 +46,8 @@ Load UnshadedSentmanLoad(StaticMeshGeometry& geometry, const glm::vec3& v_rel__m
     vat::gsi_models::Sentman sentman(1, 0.9f);
     vat::AeroConditions aero{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f};
     const auto areas = geometry.get_areas();
-    const auto normals = geometry.get_normals();
-    const auto centroids = geometry.get_centroids();
+    const auto normals = geometry.get_transformed_normals();
+    const auto centroids = geometry.get_transformed_centroids();
     // Accumulated in double: tens of thousands of float terms would otherwise dominate
     // the comparison.
     glm::dvec3 force(0.0), torque(0.0);

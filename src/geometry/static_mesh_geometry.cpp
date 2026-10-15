@@ -107,11 +107,11 @@ std::span<const MeshData> StaticMeshGeometry::get_mesh_data() const {
     return std::span<const MeshData>(m_mesh_data.data(), m_mesh_data.size());
 }
 
-std::span<const float> StaticMeshGeometry::get_vertices() {
+std::span<const float> StaticMeshGeometry::get_transformed_vertices() {
     return std::span<const float>(m_vertices.data(), m_vertices.size());
 }
 
-std::span<const float> StaticMeshGeometry::get_raw_vertices() {
+std::span<const float> StaticMeshGeometry::get_untransformed_vertices() {
     return std::span<const float>(m_vertices.data(), m_vertices.size());
 }
 
@@ -119,11 +119,11 @@ std::span<const std::uint32_t> StaticMeshGeometry::get_triangle_ids() {
     return std::span<const std::uint32_t>(m_triangle_ids.data(), m_triangle_ids.size());
 }
 
-std::span<const float> StaticMeshGeometry::get_normals() {
+std::span<const float> StaticMeshGeometry::get_transformed_normals() {
     return std::span<const float>(m_normals.data(), m_normals.size());
 }
 
-std::span<const float> StaticMeshGeometry::get_raw_normals() {
+std::span<const float> StaticMeshGeometry::get_untransformed_normals() {
     return std::span<const float>(m_normals.data(), m_normals.size());
 }
 
@@ -131,7 +131,11 @@ std::span<const float> StaticMeshGeometry::get_areas() {
     return std::span<const float>(m_areas.data(), m_areas.size());
 }
 
-std::span<const float> StaticMeshGeometry::get_centroids() {
+std::span<const float> StaticMeshGeometry::get_transformed_centroids() {
+    return std::span<const float>(m_centroids.data(), m_centroids.size());
+}
+
+std::span<const float> StaticMeshGeometry::get_untransformed_centroids() {
     return std::span<const float>(m_centroids.data(), m_centroids.size());
 }
 

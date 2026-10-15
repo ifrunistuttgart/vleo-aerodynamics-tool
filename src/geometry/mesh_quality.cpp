@@ -33,7 +33,7 @@ MeshQuality compute_mesh_quality(IGeometryShadingData& geometry) {
     if (n == 0) {
         throw std::invalid_argument("cannot compute mesh quality of a geometry without triangles");
     }
-    const auto vertices = geometry.get_vertices();
+    const auto vertices = geometry.get_transformed_vertices();
 
     std::vector<float> areas, aspect_ratios, min_altitudes;
     areas.reserve(n);

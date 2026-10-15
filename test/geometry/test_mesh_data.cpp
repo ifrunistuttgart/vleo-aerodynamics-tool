@@ -109,9 +109,9 @@ TEST(MeshDataTest, RotatableGeometryFromArraysTurnsLikeOneFromFile) {
     from_file.turn_mesh_around_axis(0, angle__rad, origin, axis);
     from_arrays.turn_mesh_around_axis(0, angle__rad, origin, axis);
 
-    EXPECT_EQ(ToVector(from_file.get_vertices()), ToVector(from_arrays.get_vertices()));
-    EXPECT_EQ(ToVector(from_file.get_normals()), ToVector(from_arrays.get_normals()));
-    EXPECT_EQ(ToVector(from_file.get_centroids()), ToVector(from_arrays.get_centroids()));
+    EXPECT_EQ(ToVector(from_file.get_transformed_vertices()), ToVector(from_arrays.get_transformed_vertices()));
+    EXPECT_EQ(ToVector(from_file.get_transformed_normals()), ToVector(from_arrays.get_transformed_normals()));
+    EXPECT_EQ(ToVector(from_file.get_transformed_centroids()), ToVector(from_arrays.get_transformed_centroids()));
     // The indexed source data is the untransformed mesh, whatever the pose.
     EXPECT_EQ(from_arrays.get_mesh_data()[0].positions, HandBuiltTetra().positions);
 }

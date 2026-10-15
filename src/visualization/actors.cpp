@@ -172,7 +172,7 @@ void AddBodyAxes(vtkRenderer* renderer, float bounding_sphere_radius) {
 std::vector<vtkSmartPointer<vtkPolyData>> PerMeshPolyData(IGeometryShadingData& geometry) {
     const std::span<const unsigned int> num_triangles_per_mesh =
         geometry.get_num_triangles_per_mesh();
-    const std::span<const float> vertices = geometry.get_vertices();
+    const std::span<const float> vertices = geometry.get_transformed_vertices();
 
     std::vector<vtkSmartPointer<vtkPolyData>> per_mesh;
     per_mesh.reserve(num_triangles_per_mesh.size());
@@ -219,7 +219,7 @@ vtkSmartPointer<vtkPolyData> VisibilityColoredPolyData(IGeometryShadingData& geo
         throw std::invalid_argument("triangle_visibility size does not match number of triangles");
     }
 
-    const std::span<const float> vertices = geometry.get_vertices();
+    const std::span<const float> vertices = geometry.get_transformed_vertices();
 
     auto points = vtkSmartPointer<vtkPoints>::New();
     points->SetNumberOfPoints(static_cast<vtkIdType>(3 * num_triangles));

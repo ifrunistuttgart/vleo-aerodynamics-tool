@@ -23,7 +23,7 @@ public:
      *
      * @return A span containing vertex positions (x, y, z triplets).
      */
-    virtual std::span<const float> get_vertices() = 0;
+    virtual std::span<const float> get_transformed_vertices() = 0;
 
     /**
      * Retrieves the untransformed vertex positions of the underlying mesh data.
@@ -33,7 +33,7 @@ public:
      *
      * @return A span containing raw vertex positions (x, y, z triplets).
      */
-    virtual std::span<const float> get_raw_vertices() = 0;
+    virtual std::span<const float> get_untransformed_vertices() = 0;
 
     /**
      * Retrieves the triangle IDs for the geometry's meshes.
@@ -46,36 +46,45 @@ public:
     virtual  std::span<const std::uint32_t> get_triangle_ids() = 0;
 
     /**
-     * Retrieves the normals of the triangles in the geometry.s meshes.
+     * Retrieves the normals of the triangles in the geometry's meshes, including any
+     * applied model transforms.
      *
      * @return A span containing the normal vectors (x, y, z triplets).
      */
-    virtual std::span<const float> get_normals() = 0;
+    virtual std::span<const float> get_transformed_normals() = 0;
 
     /**
      * Retrieves the untransformed normals of the triangles, the counterpart of
-     * get_raw_vertices().
+     * get_untransformed_vertices().
      *
      * GPU pipelines that apply the model matrices themselves need these; uploading
-     * get_normals() would rotate the normals twice.
+     * get_transformed_normals() would rotate the normals twice.
      *
      * @return A span containing raw normal vectors (x, y, z triplets), one per triangle.
      */
-    virtual std::span<const float> get_raw_normals() = 0;
+    virtual std::span<const float> get_untransformed_normals() = 0;
 
     /**
-     * Retrieves the areas of the triangles in the geometry.s meshes.
+     * Retrieves the areas of the triangles in the geometry's meshes.
      *
      * @return A span containing the area of each triangle.
      */
     virtual std::span<const float> get_areas() = 0;
 
     /**
-     * Retrieves the centroids of the triangles in the geometry meshes.
+     * Retrieves the centroids of the triangles in the geometry meshes, including any
+     * applied model transforms.
      *
      * @return A span containing the centroid positions (x, y, z triplets).
      */
-    virtual std::span<const float> get_centroids() = 0;
+    virtual std::span<const float> get_transformed_centroids() = 0;
+
+    /**
+     * Retrieves the untransformed centroids of the triangles in the geometry meshes.
+     *
+     * @return A span containing raw centroid positions (x, y, z triplets).
+     */
+    virtual std::span<const float> get_untransformed_centroids() = 0;
 
     /**
      * Retrieves the 4x4 transformation (model) matrices for each geometry mesh.
