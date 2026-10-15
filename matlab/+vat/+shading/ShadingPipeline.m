@@ -49,7 +49,11 @@ classdef ShadingPipeline < handle
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             try
-                this.handle_ = MexGateway("shading.ShadingPipeline.new", int32(geometry.handle_), int32(shading_algorithm), int32(num_pixel));
+                if isempty(num_pixel)
+                    this.handle_ = MexGateway("shading.ShadingPipeline.new", int32(geometry.handle_), int32(shading_algorithm));
+                else
+                    this.handle_ = MexGateway("shading.ShadingPipeline.new", int32(geometry.handle_), int32(shading_algorithm), int32(num_pixel));
+                end
                 this.geometry_ = geometry;
             catch ME
                 error("Failed to create Shading pipeline: %s", ME.message);
