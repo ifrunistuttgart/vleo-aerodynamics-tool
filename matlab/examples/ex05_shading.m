@@ -1,4 +1,4 @@
-%% Example 4: Shading
+%% Example 5: Shading
 % Parts of a satellite hide others from the flow. The shading pipeline
 % decides for every triangle whether the flow reaches it, and the hybrid
 % calculator evaluates the GSI model per visible triangle. Visibility is
@@ -8,8 +8,8 @@
 %
 % show_shading opens an interactive 3D window and waits until it is closed.
 %
-% Prerequisites: make sure you have build the matlab binaries with:
-% pixi run build-matlab
+% Prerequisites: make sure you have built the matlab binaries with:
+%   pixi run build-matlab
 % And that you have loaded the Matlab project from Vat.prj
 
 clear; close all;
@@ -55,4 +55,4 @@ fprintf('CoP     %+.4e %+.4e %+.4e    %+.4e %+.4e %+.4e\n', F_cop, T_cop);
 
 % The two differ where shadow edges cut through triangles: Binary counts a
 % partly hidden triangle fully, CoP only if its centre is visible. A finer
-% mesh shrinks the difference.
+% or remeshed mesh shrinks the difference.

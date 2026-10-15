@@ -48,4 +48,4 @@ end
 vat.visualization.show_meshes(geometry);
 
 % Every calculator built on this geometry sees the turned wings from now
-% on; no calculator or pipeline has to be rebuilt (see example 6).
+% on; no calculator or pipeline has to be rebuilt (see example 7).

@@ -1,4 +1,4 @@
-function show_hinges(geometry, hinges)
+function show_hinges(geometry, hinges, options)
     % SHOW_HINGES Visualizes hinge points and rotation axes on the geometry.
     %   This function displays the geometry together with the given hinge
     %   definitions, so they can be checked before being used to actually rotate
@@ -30,6 +30,7 @@ function show_hinges(geometry, hinges)
     arguments
         geometry (1,1) vat.geometry.RotatableMeshGeometry
         hinges (1,:) struct
+        options.ShowTriangleEdges (1,1) logical = true
     end
 
     required_fields = ["mesh_id", "origin", "axis"];
@@ -66,5 +67,6 @@ function show_hinges(geometry, hinges)
     end
 
     MexGateway("visualization.show_hinges", int32(geometry.handle_), ...
-        int32(mesh_ids), double(origins), double(axes_));
+        int32(mesh_ids), double(origins), double(axes_), ...
+        logical(options.ShowTriangleEdges));
 end

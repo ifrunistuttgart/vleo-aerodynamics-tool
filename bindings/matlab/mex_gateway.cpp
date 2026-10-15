@@ -4,6 +4,7 @@
 #include "mex.hpp"
 #include "matlab_logger.h"
 
+#include <algorithm>
 #include <exception>
 #include <memory>
 #include <stdexcept>
@@ -22,6 +23,10 @@
 #include "cook.h"
 #include "maxwell.h"
 #include "schaaf_chambre.h"
+#include "mesh_quality.h"
+#include "obj_writer.h"
+#include "pixel_sizing.h"
+#include "remesh.h"
 #include "rotatable_mesh_geometry.h"
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
@@ -41,7 +46,9 @@ using vat::gsi_models::SchaafChambre;
 using vat::gsi_models::Sentman;
 using vat::gsi_models::Storch;
 using vat::loads::HybridForceTorqueCalculator;
+using vat::geometry::MeshQuality;
 using vat::geometry::RotatableMeshGeometry;
+using vat::remeshing::RemeshOptions;
 using vat::shading::ShadingAlgorithmType;
 using vat::shading::ShadingPipeline;
 using vat::visualization::Hinge;
@@ -328,14 +335,64 @@ public:
                     geometry->turn_mesh_around_axis(inputs[2][0], inputs[3][0], origin, axis);
                     return;
                 }
-                if (cmd=="get_vertices") {
+                if (cmd=="get_transformed_vertices") {
                     validate_input_size(inputs, 2);
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
                     const int id = inputs[1][0];
                     RotatableMeshGeometry* geometry = geometry_map.at(id).get();
-                    std::span<const float> vertices = geometry->get_vertices();
+                    std::span<const float> vertices = geometry->get_transformed_vertices();
                     outputs[0] = factory.createArray({vertices.size()}, vertices.begin(), vertices.end());
+                    return;
+                }
+                if (cmd=="get_untransformed_vertices") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    RotatableMeshGeometry* geometry = geometry_map.at(id).get();
+                    std::span<const float> vertices = geometry->get_untransformed_vertices();
+                    outputs[0] = factory.createArray({vertices.size()}, vertices.begin(), vertices.end());
+                    return;
+                }
+                if (cmd=="get_transformed_normals") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    RotatableMeshGeometry* geometry = geometry_map.at(id).get();
+                    std::span<const float> normals = geometry->get_transformed_normals();
+                    outputs[0] = factory.createArray({normals.size()}, normals.begin(), normals.end());
+                    return;
+                }
+                if (cmd=="get_untransformed_normals") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    RotatableMeshGeometry* geometry = geometry_map.at(id).get();
+                    std::span<const float> normals = geometry->get_untransformed_normals();
+                    outputs[0] = factory.createArray({normals.size()}, normals.begin(), normals.end());
+                    return;
+                }
+                if (cmd=="get_transformed_centroids") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    RotatableMeshGeometry* geometry = geometry_map.at(id).get();
+                    std::span<const float> centroids = geometry->get_transformed_centroids();
+                    outputs[0] = factory.createArray({centroids.size()}, centroids.begin(), centroids.end());
+                    return;
+                }
+                if (cmd=="get_untransformed_centroids") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    RotatableMeshGeometry* geometry = geometry_map.at(id).get();
+                    std::span<const float> centroids = geometry->get_untransformed_centroids();
+                    outputs[0] = factory.createArray({centroids.size()}, centroids.begin(), centroids.end());
                     return;
                 }
                 if (cmd=="get_num_triangles") {
@@ -346,6 +403,89 @@ public:
                     RotatableMeshGeometry* geometry = geometry_map.at(id).get();
                     const unsigned int num_triangles = geometry->get_num_triangles();
                     outputs[0] = factory.createScalar<unsigned int>(num_triangles);
+                    return;
+                }
+                if (cmd == "get_mesh_quality") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    RotatableMeshGeometry& geometry = *geometry_map.at(static_cast<int>(inputs[1][0]));
+                    outputs[0] = quality_struct(vat::geometry::compute_mesh_quality(geometry));
+                    return;
+                }
+                if (cmd == "export_obj") {
+                    validate_input_size(inputs, 3);
+                    validate_output_size(outputs, 0);
+                    validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 2, "string", 1);
+                    RotatableMeshGeometry& geometry = *geometry_map.at(static_cast<int>(inputs[1][0]));
+                    const std::string path = inputs[2][0];
+                    vat::geometry::write_obj(geometry, path);
+                    return;
+                }
+                if (cmd == "predict_remesh") {
+                    validate_input_size(inputs, 6);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    RotatableMeshGeometry& geometry = *geometry_map.at(static_cast<int>(inputs[1][0]));
+                    const vat::remeshing::RemeshPrediction p =
+                        vat::remeshing::predict_remesh(geometry, remesh_options(inputs, 2));
+
+                    // No num_pixel here: it follows from the narrowest triangles of the real
+                    // mesh, which the ideal tiling behind this prediction cannot foretell.
+                    matlab::data::StructArray out = factory.createStructArray({1, 1},
+                        {"target_edge_length__m", "predicted_triangles", "predicted_memory__MB",
+                         "total_area__m2", "exceeds_limit"});
+                    out[0]["target_edge_length__m"] = factory.createScalar<double>(p.target_edge_length__m);
+                    out[0]["predicted_triangles"] = factory.createScalar<double>(p.predicted_triangles);
+                    out[0]["predicted_memory__MB"] = factory.createScalar<double>(p.predicted_memory__bytes / 1.0e6);
+                    out[0]["total_area__m2"] = factory.createScalar<double>(p.total_area__m2);
+                    out[0]["exceeds_limit"] = factory.createScalar<bool>(
+                        p.predicted_triangles > vat::remeshing::REMESH_MAX_TRIANGLES);
+                    outputs[0] = std::move(out);
+                    return;
+                }
+                if (cmd == "remesh") {
+                    validate_input_size(inputs, 6);
+                    validate_output_size(outputs, 2);
+                    validate_argument(inputs, 1, "int", 1);
+                    RotatableMeshGeometry& geometry = *geometry_map.at(static_cast<int>(inputs[1][0]));
+                    vat::remeshing::RemeshResult result =
+                        vat::remeshing::remesh(geometry, remesh_options(inputs, 2));
+                    const vat::remeshing::RemeshReport& r = result.report;
+
+                    matlab::data::StructArray report = factory.createStructArray({1, 1},
+                        {"target_edge_length__m", "area_change__percent", "suggested_num_pixel", "before",
+                         "after", "triangles_per_mesh_before", "triangles_per_mesh_after", "repair"});
+                    report[0]["target_edge_length__m"] = factory.createScalar<double>(r.target_edge_length__m);
+                    report[0]["area_change__percent"] = factory.createScalar<double>(r.area_change__percent);
+                    // Per algorithm: CoP gains accuracy from pixels well past the point
+                    // where Binary stops gaining anything.
+                    matlab::data::StructArray num_pixel = factory.createStructArray({1, 1}, {"cop", "binary"});
+                    num_pixel[0]["cop"] = factory.createScalar<double>(
+                        vat::shading::suggest_num_pixel(*result.geometry, ShadingAlgorithmType::CoP));
+                    num_pixel[0]["binary"] = factory.createScalar<double>(
+                        vat::shading::suggest_num_pixel(*result.geometry, ShadingAlgorithmType::Binary));
+                    report[0]["suggested_num_pixel"] = std::move(num_pixel);
+                    report[0]["before"] = quality_struct(r.before);
+                    report[0]["after"] = quality_struct(r.after);
+                    report[0]["triangles_per_mesh_before"] = row_vector(r.triangles_per_mesh_before);
+                    report[0]["triangles_per_mesh_after"] = row_vector(r.triangles_per_mesh_after);
+
+                    matlab::data::StructArray repair = factory.createStructArray({1, 1},
+                        {"merged_vertices", "removed_unused_vertices", "removed_duplicate_triangles",
+                         "removed_degenerate_triangles", "split_vertices"});
+                    repair[0]["merged_vertices"] = factory.createScalar<double>(r.repair.merged_vertices);
+                    repair[0]["removed_unused_vertices"] = factory.createScalar<double>(r.repair.removed_unused_vertices);
+                    repair[0]["removed_duplicate_triangles"] = factory.createScalar<double>(r.repair.removed_duplicate_triangles);
+                    repair[0]["removed_degenerate_triangles"] = factory.createScalar<double>(r.repair.removed_degenerate_triangles);
+                    repair[0]["split_vertices"] = factory.createScalar<double>(r.repair.split_vertices);
+                    report[0]["repair"] = std::move(repair);
+
+                    geometry_map.insert({geometry_max_id, std::move(result.geometry)});
+                    outputs[0] = factory.createScalar<int>(geometry_max_id);
+                    geometry_max_id++;
+                    outputs[1] = std::move(report);
                     return;
                 }
                 if (cmd == "delete") {
@@ -360,11 +500,13 @@ public:
             if (cls == "shading.ShadingPipeline") {
                 if (cmd == "new") {
                     matlab_logger->log(LEVEL_INFO, "Creating new Shading instance.","mex_gateway.cpp",__LINE__);
-                    validate_input_size(inputs, 4);
+                    // num_pixel is optional: without it the pipeline chooses it from the mesh.
+                    if (inputs.size() != 3 && inputs.size() != 4) {
+                        validate_input_size(inputs, 4);
+                    }
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
                     validate_argument(inputs, 2, "int", 1);
-                    validate_argument(inputs, 3, "int", 1);
 
                     const int id = inputs[1][0];
                     RotatableMeshGeometry& geometry = *geometry_map.at(id);
@@ -381,10 +523,24 @@ public:
                             matlab_logger->log(LEVEL_ERROR, "Unknown shading algorithm type: " + std::to_string(shading_key),"mex_gateway.cpp",__LINE__);
                             throw std::invalid_argument(std::string("Unknown shading algorithm type: ") + std::to_string(shading_key));
                     };
-                    shading_pipeline_map.insert({shading_pipeline_max_id,
-                                                std::make_unique<ShadingPipeline>(geometry,algorithm_type, inputs[3][0])});
+                    std::unique_ptr<ShadingPipeline> pipeline;
+                    if (inputs.size() == 4) {
+                        validate_argument(inputs, 3, "int", 1);
+                        pipeline = std::make_unique<ShadingPipeline>(geometry, algorithm_type, inputs[3][0]);
+                    } else {
+                        pipeline = std::make_unique<ShadingPipeline>(geometry, algorithm_type);
+                    }
+                    shading_pipeline_map.insert({shading_pipeline_max_id, std::move(pipeline)});
                     outputs[0] = factory.createScalar<int>(shading_pipeline_max_id);
                     shading_pipeline_max_id++;
+                    return;
+                }
+                if (cmd == "get_num_pixel") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const ShadingPipeline& pipeline = *shading_pipeline_map.at(static_cast<int>(inputs[1][0]));
+                    outputs[0] = factory.createScalar<double>(pipeline.get_num_pixel());
                     return;
                 }
                 if (cmd=="shade"){
@@ -469,10 +625,11 @@ public:
             }
             if (cls == "visualization") {
                 if (cmd == "show_shading") {
-                    validate_input_size(inputs, 4);
+                    validate_input_size(inputs, 5);
                     validate_output_size(outputs, 0);
                     validate_argument(inputs, 1, "int", 1);
                     validate_argument(inputs, 3, "double", 3);
+                    validate_argument(inputs, 4, "logical", 1);
 
                     const int geometry_id = inputs[1][0];
                     RotatableMeshGeometry& geometry = *geometry_map.at(geometry_id);
@@ -482,24 +639,27 @@ public:
                     std::vector<float> triangle_visibility(typed_array.begin(), typed_array.end());
                     glm::vec3 velocity__m_per_s(inputs[3][0], inputs[3][1], inputs[3][2]);
 
-                    ShowShading(geometry, triangle_visibility, velocity__m_per_s);
+                    ShowShading(geometry, triangle_visibility, velocity__m_per_s,
+                        view_options(inputs, 4));
                     return;
                 }
                 if (cmd == "show_meshes") {
-                    validate_input_size(inputs, 2);
+                    validate_input_size(inputs, 3);
                     validate_output_size(outputs, 0);
                     validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 2, "logical", 1);
 
                     const int geometry_id = inputs[1][0];
                     RotatableMeshGeometry& geometry = *geometry_map.at(geometry_id);
 
-                    ShowMeshes(geometry);
+                    ShowMeshes(geometry, view_options(inputs, 2));
                     return;
                 }
                 if (cmd == "show_hinges") {
-                    validate_input_size(inputs, 5);
+                    validate_input_size(inputs, 6);
                     validate_output_size(outputs, 0);
                     validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 5, "logical", 1);
 
                     const int geometry_id = inputs[1][0];
                     RotatableMeshGeometry& geometry = *geometry_map.at(geometry_id);
@@ -535,7 +695,7 @@ public:
                         hinges.push_back(hinge);
                     }
 
-                    ShowHinges(geometry, hinges);
+                    ShowHinges(geometry, hinges, view_options(inputs, 5));
                     return;
                 }
             }
@@ -594,6 +754,69 @@ private:
 
     };
 
+    // Every view takes the same trailing options argument, so build it in one place.
+    static vat::visualization::ViewOptions view_options(matlab::mex::ArgumentList& inputs, int idx) {
+        matlab::data::TypedArray<bool> const flags = inputs[idx];
+        vat::visualization::ViewOptions options;
+        options.show_triangle_edges = flags[0];
+        return options;
+    };
+
+    // Remesh arguments as the MATLAB wrapper passes them, starting at idx: triangle count
+    // (int), edge length (double), feature angle (double), iterations (int).
+    RemeshOptions remesh_options(matlab::mex::ArgumentList& inputs, int idx) {
+        validate_argument(inputs, idx, "int", 1);
+        validate_argument(inputs, idx + 1, "double", 1);
+        validate_argument(inputs, idx + 2, "double", 1);
+        validate_argument(inputs, idx + 3, "int", 1);
+        const int count = inputs[idx][0];
+        const int iterations = inputs[idx + 3][0];
+        if (count < 0 || iterations < 0) {
+            throw std::invalid_argument("TriangleCount and Iterations must not be negative");
+        }
+        RemeshOptions options;
+        options.target_triangle_count = static_cast<unsigned int>(count);
+        options.target_edge_length__m = static_cast<float>(static_cast<double>(inputs[idx + 1][0]));
+        options.feature_angle__deg = static_cast<float>(static_cast<double>(inputs[idx + 2][0]));
+        options.iterations = static_cast<unsigned int>(iterations);
+        return options;
+    }
+
+    matlab::data::TypedArray<double> row_vector(const std::vector<unsigned int>& values) {
+        std::vector<double> as_double(values.begin(), values.end());
+        return factory.createArray<double>({1, as_double.size()}, as_double.data(), as_double.data() + as_double.size());
+    }
+
+    matlab::data::StructArray distribution_struct(const vat::geometry::Distribution& d) {
+        matlab::data::StructArray out = factory.createStructArray({1, 1}, {"min", "p05", "median", "p95", "max"});
+        out[0]["min"] = factory.createScalar<double>(d.min);
+        out[0]["p05"] = factory.createScalar<double>(d.p05);
+        out[0]["median"] = factory.createScalar<double>(d.median);
+        out[0]["p95"] = factory.createScalar<double>(d.p95);
+        out[0]["max"] = factory.createScalar<double>(d.max);
+        return out;
+    }
+
+    matlab::data::StructArray quality_struct(const MeshQuality& q) {
+        matlab::data::StructArray out = factory.createStructArray({1, 1},
+            {"num_triangles", "num_degenerate", "total_area__m2", "mean_area__m2",
+             "bounding_sphere_radius__m", "area__m2", "aspect_ratio", "min_altitude__m"});
+        out[0]["num_triangles"] = factory.createScalar<double>(q.num_triangles);
+        out[0]["num_degenerate"] = factory.createScalar<double>(q.num_degenerate);
+        out[0]["total_area__m2"] = factory.createScalar<double>(q.total_area__m2);
+        out[0]["mean_area__m2"] = factory.createScalar<double>(q.mean_area__m2);
+        out[0]["bounding_sphere_radius__m"] = factory.createScalar<double>(q.bounding_sphere_radius__m);
+        out[0]["area__m2"] = distribution_struct(q.area__m2);
+        out[0]["aspect_ratio"] = distribution_struct(q.aspect_ratio);
+        out[0]["min_altitude__m"] = distribution_struct(q.min_altitude__m);
+        return out;
+    }
+
+    static bool is_logical(matlab::mex::ArgumentList& inputs, int idx) {
+        return inputs[idx].getType() == matlab::data::ArrayType::LOGICAL;
+
+    };
+
     void validate_argument(matlab::mex::ArgumentList& inputs,
                            int idx,
                            const std::string& expected_type,
@@ -613,6 +836,10 @@ private:
         if (expected_type == "uint" && !is_uint(inputs, idx)) {
             matlab_logger->log(LEVEL_ERROR, std::format("Expected argument at index {} to be an unsigned integer.", idx),"mex_gateway.cpp",__LINE__);
             throw std::invalid_argument("Argument type mismatch: expected unsigned integer.");
+        }
+        if (expected_type == "logical" && !is_logical(inputs, idx)) {
+            matlab_logger->log(LEVEL_ERROR, std::format("Expected argument at index {} to be a logical.", idx),"mex_gateway.cpp",__LINE__);
+            throw std::invalid_argument("Argument type mismatch: expected logical.");
         }
         if (expected_type == "string" && !is_string(inputs, idx)) {
             matlab_logger->log(LEVEL_ERROR, std::format("Expected argument at index {} to be a string.", idx),"mex_gateway.cpp",__LINE__);

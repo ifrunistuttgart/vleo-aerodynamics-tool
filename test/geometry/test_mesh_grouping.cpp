@@ -116,7 +116,7 @@ TEST(MeshGroupingTest, StlBecomesASingleNamedMesh) {
 
     const std::span<const std::string> names = geometry.get_mesh_names();
     ASSERT_EQ(names.size(), 1);
-    EXPECT_EQ(names[0], "Mesh 0");
+    EXPECT_EQ(names[0], "Mesh_0");
     EXPECT_EQ(geometry.get_num_triangles_per_mesh()[0], geometry.get_num_triangles());
 }
 

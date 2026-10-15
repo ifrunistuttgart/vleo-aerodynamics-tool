@@ -1,11 +1,11 @@
-%% Example 6: Deflecting wings
+%% Example 7: Deflecting wings
 % Uses the hinges from example 2 to turn the shuttlecock's wings and
 % computes what that does to drag and pitch torque. Turning a wing only
 % changes a model matrix, so the calculator is built once and each angle
 % costs one render.
 %
-% Prerequisites: make sure you have build the matlab binaries with:
-% pixi run build-matlab
+% Prerequisites: make sure you have built the matlab binaries with:
+%   pixi run build-matlab
 % And that you have loaded the Matlab project from Vat.prj
 
 clear; close all;

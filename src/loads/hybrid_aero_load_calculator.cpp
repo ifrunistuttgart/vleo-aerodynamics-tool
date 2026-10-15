@@ -40,8 +40,8 @@ int HybridForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__
 
 	std::vector<float> triangle_visibility = m_shading_pipeline.shade(glm::normalize(v_rel__m_per_s));
 	std::span<const float> areas = m_geometry.get_areas();
-	std::span<const float> normals = m_geometry.get_normals();
-	std::span<const float> centroids = m_geometry.get_centroids();
+ std::span<const float> normals = m_geometry.get_transformed_normals();
+ std::span<const float> centroids = m_geometry.get_transformed_centroids();
 
 	//loop over triangles
 	for (unsigned int i = 0; i < m_geometry.get_num_triangles(); i++){

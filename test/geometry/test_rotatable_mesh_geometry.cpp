@@ -34,10 +34,11 @@ TEST_F(RotatableMeshGeometryTest, LoadOBJFileSuccessfully) {
 
 // Test: Verify vertex count
 TEST_F(RotatableMeshGeometryTest, VerifyVertexCount) {
-    auto vertices = geometry->get_vertices();
+    auto vertices = geometry->get_transformed_vertices();
     // Tetrahedron has 4 unique faces, with 3 vertices per face and 3 floats per vertex
     // we expect to have 36 values in the vertex array
     EXPECT_EQ(vertices.size(), 36);
+    EXPECT_EQ(geometry->get_untransformed_vertices().size(), 36);
 }
 
 // Test: Verify triangle count
@@ -54,9 +55,10 @@ TEST_F(RotatableMeshGeometryTest, VerifyTriangleIndices) {
 
 // Test: Verify normals are computed
 TEST_F(RotatableMeshGeometryTest, VerifyNormals) {
-    auto normals = geometry->get_normals();
+    auto normals = geometry->get_transformed_normals();
     // 4 triangles * 3 values per normal = 12 values
     EXPECT_EQ(normals.size(), 12);
+    EXPECT_EQ(geometry->get_untransformed_normals().size(), 12);
     float expected_normals[12] = { 0.0f,    0.0f,   -1.0f,
                                   -0.5774f, 0.5774f, 0.5774f,
                                   -0.5774f,-0.5774f, 0.5774f,
@@ -70,9 +72,10 @@ TEST_F(RotatableMeshGeometryTest, VerifyNormals) {
 
 // Test: Verify centroids are computed
 TEST_F(RotatableMeshGeometryTest, VerifyCentroids) {
-    auto centroids = geometry->get_centroids();
+    auto centroids = geometry->get_transformed_centroids();
     // 4 triangles * 3 values per centroid = 12 values
     EXPECT_EQ(centroids.size(), 12);
+    EXPECT_EQ(geometry->get_untransformed_centroids().size(), 12);
     float cntroids[12] = { -0.1667f,    0.0f,    0.0f,
                            -0.1667f, 0.1667f, 0.1667f,
                            -0.1667f,-0.1667f, 0.1667f,
@@ -121,7 +124,7 @@ TEST_F(RotatableMeshGeometryTest, VerifyBoundingSphereRadius) {
 
 // Test: Verify vertices match ground truth (approximately)
 TEST_F(RotatableMeshGeometryTest, VerifyVerticesMatchGroundTruth) {
-    auto vertices = geometry->get_vertices();
+    auto vertices = geometry->get_transformed_vertices();
 
     // Collect unique vertices from loaded data
     std::vector<float> loaded_vertices(vertices.begin(), vertices.end());
