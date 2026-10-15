@@ -38,7 +38,6 @@ matlab/examples/
 └── benchmarks/                   # Analytical and numerical validation benchmarks
     ├── analytic_plates.m         # Two-plate shadowing benchmark vs. analytic solution
     ├── exact_solution_shadowing.m# Analytic reference helper for shadowing benchmark
-    ├── shading_convergence.m     # Shading accuracy and convergence for CAD vs. remeshed geometries
     ├── smoothness.m              # Load smoothness and discretization jumps across attitudes
     ├── onesided_plate_cl_cd.m    # Flat plate lift and drag coefficients across all GSI models
     └── two_sided_plate_gsi.m     # Two-sided flat plate aerodynamic validation
@@ -98,7 +97,6 @@ The numbered examples provide a step-by-step introduction to the core functional
 Scripts located in the [`benchmarks/`](benchmarks/) folder validate VAT against analytical solutions and investigate numerical properties:
 
 - **[`benchmarks/analytic_plates.m`](benchmarks/analytic_plates.m)**: Compares hybrid shading results against the closed-form analytical solution (`exact_solution_shadowing.m`) for two partially overlapping flat plates across various raster resolutions and flow angles.
-- **[`benchmarks/shading_convergence.m`](benchmarks/shading_convergence.m)**: Evaluates shading accuracy convergence and execution time over raster resolutions (`num_pixel`) for CAD vs. remeshed geometries using Binary and Center-of-Pressure algorithms against a fine reference.
 - **[`benchmarks/smoothness.m`](benchmarks/smoothness.m)**: Analyzes load smoothness and discretization jumps across continuous attitude variations as a function of raster pixel resolution.
 - **[`benchmarks/onesided_plate_cl_cd.m`](benchmarks/onesided_plate_cl_cd.m)**: Computes lift ($C_L$) and drag ($C_D$) coefficients for a unit flat plate across all GSI models over flow angles from $0^\circ$ to $90^\circ$.
 - **[`benchmarks/two_sided_plate_gsi.m`](benchmarks/two_sided_plate_gsi.m)**: Validates aerodynamic loads on a two-sided flat plate.
