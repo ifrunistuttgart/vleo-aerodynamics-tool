@@ -1,12 +1,12 @@
-%% Example 3: Gas-surface interaction models
+%% Example 4: Gas-surface interaction models
 % The gas-surface interaction (GSI) model decides how much momentum the gas
 % transfers to a surface. VAT has six; they are interchangeable, so the
 % same geometry and calculator setup works with every one of them. This
 % example compares their drag and lift on the shuttlecock and shows how to
 % change a model parameter.
 %
-% Prerequisites: make sure you have build the matlab binaries with:
-% pixi run build-matlab
+% Prerequisites: make sure you have built the matlab binaries with:
+%   pixi run build-matlab
 % And that you have loaded the Matlab project from Vat.prj
 
 clear; close all;

@@ -1,9 +1,9 @@
-%% Example 5: Loads over the attitude
+%% Example 6: Loads over the attitude
 % Sweeps the angle of attack and plots drag, lift and pitch torque. The
 % calculator is built once; each further attitude costs one render.
 %
-% Prerequisites: make sure you have build the matlab binaries with:
-% pixi run build-matlab
+% Prerequisites: make sure you have built the matlab binaries with:
+%   pixi run build-matlab
 % And that you have loaded the Matlab project from Vat.prj
 
 clear; close all;
