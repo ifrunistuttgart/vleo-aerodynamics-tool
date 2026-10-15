@@ -21,11 +21,8 @@ namespace vat::geometry {
  *
  * @param geometry The geometry to write.
  * @param file Path of the .obj to create or overwrite.
- * @throws std::invalid_argument if the geometry has no triangles, if a mesh has no
- *         triangles (it would vanish on reload and shift every later mesh_id), or if any
- *         mesh is turned away from its original pose. Writing a turned geometry would
- *         bake the rotation into the vertices, and every hinge angle applied to the
- *         reloaded file would then act on top of it.
+ * @throws std::invalid_argument if the geometry has no triangles, or if a mesh has no
+ *         triangles (it would vanish on reload and shift every later mesh_id).
  * @throws std::runtime_error if the file cannot be written.
  */
 void write_obj(StaticMeshGeometry& geometry, const std::string& file);

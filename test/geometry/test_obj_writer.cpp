@@ -148,20 +148,15 @@ TEST_F(ObjWriterTest, WhitespaceInNamesBecomesUnderscores) {
     EXPECT_EQ(reloaded.get_mesh_names()[0], "solar_array_left");
 }
 
-TEST_F(ObjWriterTest, TurnedGeometryIsRefused) {
+TEST_F(ObjWriterTest, TurnedGeometryWritesUntransformedMeshes) {
     RotatableMeshGeometry geometry(GetTestDataPath(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj"));
+    StaticMeshGeometry untransformed_reference(GetTestDataPath(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj"));
     geometry.turn_mesh_around_axis(1, 0.3f, ORIGIN, AXIS);
-
-    EXPECT_THROW(write_obj(geometry, Out()), std::invalid_argument);
-    EXPECT_FALSE(std::filesystem::exists(out_path));
-}
-
-TEST_F(ObjWriterTest, GeometryTurnedBackToZeroCanBeWritten) {
-    RotatableMeshGeometry geometry(GetTestDataPath(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj"));
-    geometry.turn_mesh_around_axis(1, 0.3f, ORIGIN, AXIS);
-    geometry.turn_mesh_around_axis(1, 0.0f, ORIGIN, AXIS);
 
     EXPECT_NO_THROW(write_obj(geometry, Out()));
+    StaticMeshGeometry reloaded(Out());
+
+    ExpectRoundTripped(untransformed_reference, reloaded);
 }
 
 TEST_F(ObjWriterTest, MeshWithoutTrianglesIsRefused) {

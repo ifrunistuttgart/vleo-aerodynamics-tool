@@ -51,15 +51,6 @@ void write_obj(StaticMeshGeometry& geometry, const std::string& file) {
                 "shifting every later mesh_id");
         }
     }
-    const auto model_matrices = geometry.get_model_matrices();
-    for (std::size_t i = 0; i < model_matrices.size(); ++i) {
-        if (model_matrices[i] != glm::mat4(1.0f)) {
-            throw std::invalid_argument("cannot write " + file + ": mesh " + std::to_string(i)
-                + " (\"" + meshes[i].name + "\") is turned away from its original pose. "
-                "Turn it back to angle 0 first; the file must hold the unturned geometry so "
-                "hinge angles still apply to it");
-        }
-    }
 
     std::ofstream out(file, std::ios::binary);
     if (!out) {
