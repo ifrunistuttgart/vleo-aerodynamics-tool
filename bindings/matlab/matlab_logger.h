@@ -52,7 +52,9 @@ private:
         std::string text = "[Error] [" + file + ":" + std::to_string(line) + "] " + msg + "\n";
 
         matlab_ptr_->feval(u"fprintf", 0, std::vector<matlab::data::Array>({
-            factory_.createScalar(2),      // File ID: 2 (stderr)
+            // File ID 2 (stderr). Must be a double: fprintf rejects an int32 file ID with
+            // "Invalid file identifier", which then replaces the message being logged.
+            factory_.createScalar(2.0),
             factory_.createScalar("%s"),   // Format specifier
             factory_.createScalar(text)    // Argument string
         }));

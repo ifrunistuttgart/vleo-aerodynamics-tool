@@ -7,10 +7,19 @@ classdef RotatableMeshGeometry < handle
     % calculations.
     %
     % RotatableMeshGeometry methods:
-    %   RotatableMeshGeometry   - Constructor to load a geometry.
-    %   get_vertices             - Retrieves the vertex data of the geometry.
-    %   get_num_triangles        - Retrieves the total number of triangles.
-    %   turn_mesh_around_axis - Rotates a specific mesh of the geometry.
+    %   RotatableMeshGeometry        - Constructor to load a geometry.
+    %   get_transformed_vertices     - Retrieves the transformed vertex data of the geometry.
+    %   get_untransformed_vertices   - Retrieves the untransformed vertex data of the geometry.
+    %   get_transformed_normals      - Retrieves the transformed normals of the triangles.
+    %   get_untransformed_normals    - Retrieves the untransformed normals of the triangles.
+    %   get_transformed_centroids    - Retrieves the transformed centroids of the triangles.
+    %   get_untransformed_centroids  - Retrieves the untransformed centroids of the triangles.
+    %   get_num_triangles            - Retrieves the total number of triangles.
+    %   turn_mesh_around_axis        - Rotates a specific mesh of the geometry.
+    %   get_mesh_quality             - Size and shape statistics of the triangles.
+    %   predict_remesh               - What remesh would produce, without remeshing.
+    %   remesh                       - A copy with near-equilateral triangles.
+    %   export_obj                   - Writes the geometry to an .obj file.
     %
     properties %(Access = private, Hidden = true)
         % store handle as int32 to match MexGateway expectations
@@ -27,9 +36,14 @@ classdef RotatableMeshGeometry < handle
             %       file_path - Path to the 3D model file (e.g., .obj or .stl).
             %
             arguments
-                file_path (1,1) string
+                file_path (1,1) string = missing
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
+            % Without a file the object stays empty, for remesh to attach the C++
+            % geometry it created.
+            if ismissing(file_path)
+                return
+            end
             this.handle_ = int32(MexGateway("geometry.RotatableMeshGeometry.new", string(file_path)));
         end
       
@@ -47,10 +61,10 @@ classdef RotatableMeshGeometry < handle
             end
         end
 
-        function vertices = get_vertices(this)
-            % GET_VERTICES Retrieves the vertex positions of the geometry.
+        function vertices = get_transformed_vertices(this)
+            % GET_TRANSFORMED_VERTICES Retrieves the transformed vertex positions of the geometry.
             %
-            %   vertices = get_vertices(this) returns a flat array of vertex 
+            %   vertices = get_transformed_vertices(this) returns a flat array of vertex 
             %   positions (x, y, z triplets).
             %
             %   Output Arguments:
@@ -59,7 +73,82 @@ classdef RotatableMeshGeometry < handle
             arguments
                 this (1,1) vat.geometry.RotatableMeshGeometry
             end
-            vertices = MexGateway("geometry.RotatableMeshGeometry.get_vertices", int32(this.handle_));
+            vertices = MexGateway("geometry.RotatableMeshGeometry.get_transformed_vertices", int32(this.handle_));
+        end
+
+        function vertices = get_untransformed_vertices(this)
+            % GET_UNTRANSFORMED_VERTICES Retrieves the untransformed vertex positions of the geometry.
+            %
+            %   vertices = get_untransformed_vertices(this) returns a flat array of raw vertex 
+            %   positions (x, y, z triplets).
+            %
+            %   Output Arguments:
+            %       vertices - Array of raw vertex coordinates [3 x N].
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+            end
+            vertices = MexGateway("geometry.RotatableMeshGeometry.get_untransformed_vertices", int32(this.handle_));
+        end
+
+        function normals = get_transformed_normals(this)
+            % GET_TRANSFORMED_NORMALS Retrieves the transformed normals of the triangles.
+            %
+            %   normals = get_transformed_normals(this) returns a flat array of normal 
+            %   vectors (x, y, z triplets).
+            %
+            %   Output Arguments:
+            %       normals - Array of normal vectors [3 x N].
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+            end
+            normals = MexGateway("geometry.RotatableMeshGeometry.get_transformed_normals", int32(this.handle_));
+        end
+
+        function normals = get_untransformed_normals(this)
+            % GET_UNTRANSFORMED_NORMALS Retrieves the untransformed normals of the triangles.
+            %
+            %   normals = get_untransformed_normals(this) returns a flat array of raw normal 
+            %   vectors (x, y, z triplets).
+            %
+            %   Output Arguments:
+            %       normals - Array of raw normal vectors [3 x N].
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+            end
+            normals = MexGateway("geometry.RotatableMeshGeometry.get_untransformed_normals", int32(this.handle_));
+        end
+
+        function centroids = get_transformed_centroids(this)
+            % GET_TRANSFORMED_CENTROIDS Retrieves the transformed centroids of the triangles.
+            %
+            %   centroids = get_transformed_centroids(this) returns a flat array of centroid 
+            %   positions (x, y, z triplets).
+            %
+            %   Output Arguments:
+            %       centroids - Array of centroid positions [3 x N].
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+            end
+            centroids = MexGateway("geometry.RotatableMeshGeometry.get_transformed_centroids", int32(this.handle_));
+        end
+
+        function centroids = get_untransformed_centroids(this)
+            % GET_UNTRANSFORMED_CENTROIDS Retrieves the untransformed centroids of the triangles.
+            %
+            %   centroids = get_untransformed_centroids(this) returns a flat array of raw centroid 
+            %   positions (x, y, z triplets).
+            %
+            %   Output Arguments:
+            %       centroids - Array of raw centroid positions [3 x N].
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+            end
+            centroids = MexGateway("geometry.RotatableMeshGeometry.get_untransformed_centroids", int32(this.handle_));
         end
 
         function num_triangles = get_num_triangles(this)
@@ -97,6 +186,109 @@ classdef RotatableMeshGeometry < handle
                 axis (1,3) double
             end
             MexGateway("geometry.RotatableMeshGeometry.turn_mesh_around_axis", int32(this.handle_), int32(mesh_id), angle__rad, origin, axis)
+        end
+
+        function quality = get_mesh_quality(this)
+            % GET_MESH_QUALITY Size and shape statistics of the geometry's triangles.
+            %
+            %   quality = get_mesh_quality(this) returns a struct with the triangle
+            %   count, total area, bounding radius, and min/p05/median/p95/max of each
+            %   triangle's area, aspect ratio (1 = equilateral) and narrowest width
+            %   (min_altitude__m). The narrowest width, not the area, decides whether
+            %   the shading raster resolves a triangle.
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+            end
+            quality = MexGateway("geometry.RotatableMeshGeometry.get_mesh_quality", int32(this.handle_));
+        end
+
+        function prediction = predict_remesh(this, options)
+            % PREDICT_REMESH What remesh would produce, without remeshing.
+            %
+            %   prediction = predict_remesh(this, TriangleCount=N) or
+            %   predict_remesh(this, EdgeLength=h) returns the edge length and the
+            %   predicted triangle count and memory. Takes the same options as remesh.
+            %   Cheap enough to try sizes. The num_pixel suited to the result depends
+            %   on its narrowest triangles, so it is reported by remesh, not here.
+            %
+            %   The predicted count assumes ideal equilateral triangles; the real count
+            %   lands above it, by ~5 % for a few large flat parts and 30 % or more for
+            %   many small parts with sharp edges.
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+                options.TriangleCount (1,1) double {mustBeInteger, mustBeNonnegative} = 0
+                options.EdgeLength (1,1) double {mustBeNonnegative} = 0
+                options.FeatureAngle (1,1) double {mustBeInRange(options.FeatureAngle, 0, 180)} = 30
+                options.Iterations (1,1) double {mustBeInteger, mustBePositive} = 3
+            end
+            vat.geometry.RotatableMeshGeometry.require_one_size(options);
+            prediction = MexGateway("geometry.RotatableMeshGeometry.predict_remesh", int32(this.handle_), ...
+                int32(options.TriangleCount), options.EdgeLength, options.FeatureAngle, int32(options.Iterations));
+        end
+
+        function [remeshed, report] = remesh(this, options)
+            % REMESH A copy of the geometry with near-equilateral triangles of one size.
+            %
+            %   [remeshed, report] = remesh(this, TriangleCount=N) or
+            %   remesh(this, EdgeLength=h) returns a new geometry; this one is left as
+            %   it is. Give exactly one of TriangleCount and EdgeLength [m].
+            %
+            %   Every mesh keeps its mesh_id and name, so hinge definitions still apply.
+            %   Edges sharper than FeatureAngle [deg] and the rims of open panels stay
+            %   where they are, and no triangle is flipped. The new geometry starts
+            %   with all meshes unturned. Warns above 250k triangles and refuses more
+            %   than 1M; use predict_remesh to try sizes first.
+            %
+            %   report holds before/after mesh quality, the area change in percent,
+            %   what repair changed, and suggested_num_pixel.cop / .binary for the
+            %   new mesh -- what ShadingPipeline picks when num_pixel is omitted.
+            %
+            %   Name-Value Arguments:
+            %       TriangleCount - Approximate number of triangles.
+            %       EdgeLength    - Target edge length [m].
+            %       FeatureAngle  - Dihedral angle above which an edge is kept sharp
+            %                       [deg]. Default 30.
+            %       Iterations    - Remeshing passes. Default 3.
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+                options.TriangleCount (1,1) double {mustBeInteger, mustBeNonnegative} = 0
+                options.EdgeLength (1,1) double {mustBeNonnegative} = 0
+                options.FeatureAngle (1,1) double {mustBeInRange(options.FeatureAngle, 0, 180)} = 30
+                options.Iterations (1,1) double {mustBeInteger, mustBePositive} = 3
+            end
+            vat.geometry.RotatableMeshGeometry.require_one_size(options);
+            [id, report] = MexGateway("geometry.RotatableMeshGeometry.remesh", int32(this.handle_), ...
+                int32(options.TriangleCount), options.EdgeLength, options.FeatureAngle, int32(options.Iterations));
+            remeshed = vat.geometry.RotatableMeshGeometry();
+            remeshed.handle_ = int32(id);
+        end
+
+        function export_obj(this, file_path)
+            % EXPORT_OBJ Writes the geometry to a Wavefront .obj file.
+            %
+            %   export_obj(this, file_path) writes one object per mesh, in mesh_id
+            %   order and with its name, so the file loads back with the same
+            %   mesh_ids. Coordinates read back to within one float ulp.
+            %
+            %   All meshes must be unturned (angle 0): the file must hold the
+            %   geometry that hinge angles are applied to.
+            %
+            arguments
+                this (1,1) vat.geometry.RotatableMeshGeometry
+                file_path (1,1) string
+            end
+            MexGateway("geometry.RotatableMeshGeometry.export_obj", int32(this.handle_), file_path);
+        end
+    end
+
+    methods (Static, Access = private)
+        function require_one_size(options)
+            if (options.TriangleCount > 0) == (options.EdgeLength > 0)
+                error("vat:remesh:size", "Give exactly one of TriangleCount and EdgeLength.");
+            end
         end
     end
 end

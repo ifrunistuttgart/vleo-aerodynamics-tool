@@ -28,6 +28,7 @@ int main() {
 	// 3. Visualize the geometry with dummy visibility
 	SPDLOG_INFO("Visualizing geometry model...");
 	glm::vec3 velocity__m_per_s(7800.0f, 0.0f, 0.0f);  // ~7.8 km/s orbital velocity
-	vat::visualization::ShowShading(*geometry, dummy_visibility, velocity__m_per_s);
+	vat::visualization::ShowMeshes(*geometry);
+	//vat::visualization::ShowShading(*geometry, dummy_visibility, velocity__m_per_s);
 	return 0;
 }

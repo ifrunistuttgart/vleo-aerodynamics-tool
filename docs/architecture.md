@@ -13,11 +13,11 @@ classDiagram
 
     class IGeometryShadingData {
         <<interface>>
-        +get_vertices()
-        +get_raw_vertices()
-        +get_normals()
+        +get_transformed_vertices()
+        +get_untransformed_vertices()
+        +get_transformed_normals()
         +get_areas()
-        +get_centroids()
+        +get_transformed_centroids()
         +get_triangle_ids()
         +get_model_matrices()
         +get_bounding_sphere_radius()
@@ -143,7 +143,9 @@ Both render under an orthographic projection along the flow direction, and both 
   point survives the depth test. This carries less area-quantization bias than the binary
   approach at the same resolution.
 
-`num_pixel` is the square render resolution, and the single accuracy/runtime knob.
+`num_pixel` is the square render resolution, and the single accuracy/runtime knob. Leave it
+out and `ShadingPipeline` chooses it from the mesh's narrowest triangles
+([pixel_sizing.h](../src/shading/pixel_sizing.h) has the rule and the measurements behind it).
 
 ## Geometry data layout
 
@@ -157,8 +159,8 @@ the same value three times, used as a render-target colour. IDs are **1-based**,
 ID framebuffer means background.
 
 **Raw versus transformed vertices.** `RotatableMeshGeometry` overrides the getters to apply the
-per-mesh model matrices, so `get_vertices()` returns already-transformed geometry. The shading
-pipeline instead uploads `get_raw_vertices()`, because the GPU path applies the model matrices
+per-mesh model matrices, so `get_transformed_vertices()` returns already-transformed geometry. The shading
+pipeline instead uploads `get_untransformed_vertices()`, because the GPU path applies the model matrices
 itself — uploading the transformed vertices would apply the rotation twice. Positions are
 transformed with `w = 1`; normals go through a separate path using the linear block only, so
 they never pick up the model matrix's translation column.
@@ -180,10 +182,11 @@ module gets a nested namespace named after its folder and CMake target:
 |---|---|
 | `vat` | `AeroConditions` and the five interfaces every module speaks: `IGSIModel`, `IShadingPipeline`, `IAeroLoadCalculator`, `IGeometryShadingData`, `IGeometryManipulator` |
 | `vat::gsi_models` | `Sentman`, `Cook`, `Maxwell`, `Newton`, `SchaafChambre`, `Storch` |
-| `vat::geometry` | `StaticMeshGeometry`, `RotatableMeshGeometry` |
-| `vat::shading` | `ShadingPipeline`, `ShadingAlgorithmType`, `IShadingAlgorithm`, `BinaryShader`, `CoPShader`, `VisibilityReducer` |
+| `vat::geometry` | `StaticMeshGeometry`, `RotatableMeshGeometry`, `MeshData`, `compute_mesh_quality`, `write_obj` |
+| `vat::shading` | `ShadingPipeline`, `ShadingAlgorithmType`, `IShadingAlgorithm`, `BinaryShader`, `CoPShader`, `VisibilityReducer`, `suggest_num_pixel` |
 | `vat::loads` | `HybridForceTorqueCalculator` |
-| `vat::visualization` | `ShowMeshWithShadingAndWind` |
+| `vat::remeshing` | `remesh`, `predict_remesh`, `RemeshOptions`, `RemeshReport`; CGAL stays inside the module |
+| `vat::visualization` | `ShowShading`, `ShowMeshes`, `ShowHinges` |
 | `vat::gl` | the OpenGL wrappers — `Shader`, `ComputeShader`, `VertexArray`, `VertexBuffer`, `FrameBuffer`, … |
 
 One deliberate exception to "namespace == folder":

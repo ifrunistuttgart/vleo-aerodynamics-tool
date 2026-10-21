@@ -1,11 +1,11 @@
-%% Example 7: Torque map over all flow directions
+%% Example 8: Torque map over all flow directions
 % A complete application: the SOAR satellite with one panel turned, and
 % its aerodynamic torque for every relative-wind direction. Hundreds of
 % evaluations take a few seconds, which is what makes such maps, and
 % attitude simulations, practical without precomputed databases.
 %
-% Prerequisites: make sure you have build the matlab binaries with:
-% pixi run build-matlab
+% Prerequisites: make sure you have built the matlab binaries with:
+%   pixi run build-matlab
 % And that you have loaded the Matlab project from Vat.prj
 
 clear; close all;

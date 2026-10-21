@@ -21,11 +21,11 @@ private:
     std::vector<std::string> m_mesh_names{ "Mesh 0" };
 
 public:
-    std::span<const float> get_vertices() override {
+    std::span<const float> get_transformed_vertices() override {
         return std::span<const float>(vertices.data(), vertices.size());
     }
 
-    std::span<const float> get_raw_vertices() override {
+    std::span<const float> get_untransformed_vertices() override {
         return std::span<const float>(vertices.data(), vertices.size());
     }
 
@@ -33,11 +33,11 @@ public:
         return std::span<const std::uint32_t>(triangleIDs.data(), triangleIDs.size());
     }
 
-    std::span<const float> get_normals() override {
+    std::span<const float> get_transformed_normals() override {
         return std::span<const float>();
     }
 
-    std::span<const float> get_raw_normals() override {
+    std::span<const float> get_untransformed_normals() override {
         return std::span<const float>();
     }
 
@@ -45,7 +45,11 @@ public:
         return std::span<const float>();
     }
 
-    std::span<const float> get_centroids() override {
+    std::span<const float> get_transformed_centroids() override {
+        return std::span<const float>();
+    }
+
+    std::span<const float> get_untransformed_centroids() override {
         return std::span<const float>();
     }
 
