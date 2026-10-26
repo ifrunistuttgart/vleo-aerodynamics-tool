@@ -4,9 +4,9 @@
 % evaluations take a few seconds, which is what makes such maps, and
 % attitude simulations, practical without precomputed databases.
 %
-% Prerequisites, from the repository root:
+% Prerequisites: make sure you have built the matlab binaries with:
 %   pixi run build-matlab
-%   addpath('matlab'); addpath('matlab\bin')
+% And that you have loaded the Matlab project from Vat.prj
 
 clear; close all;
 vat.setLogLevel("warn");
@@ -18,7 +18,7 @@ gsi_model       = vat.gsi_models.Sentman(1, 0.95);
 %% Geometry: SOAR with its upper panel turned by 45 deg
 obj_file = fullfile(fileparts(mfilename('fullpath')), 'geometries', 'soar_satellite.obj');
 geometry = vat.geometry.RotatableMeshGeometry(obj_file);
-geometry.turn_mesh_around_axis(0, deg2rad(0), [-0.15, 0, -0.05], [0, 0, -1]);
+geometry.turn_mesh_around_axis(0, deg2rad(45), [-0.15, 0, -0.05], [0, 0, -1]);
 
 calculator = vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, 4000);
 
@@ -41,17 +41,23 @@ elapsed = toc;
 fprintf('%d wind directions in %.2f s (%.2f ms each)\n', numel(ALPHA), elapsed, 1e3 * elapsed / numel(ALPHA));
 
 %% Plot
+% All three components share one scale, so their sizes compare directly.
+torque__uNm = 1e6 * torque;
+limits = [min(torque__uNm, [], 'all'), max(torque__uNm, [], 'all')];
 figure('Name', 'Torque map', 'Position', [100 100 1200 400]);
 tiledlayout(1, 3, 'TileSpacing', 'compact');
 names = {'T_x', 'T_y', 'T_z'};
 for axis_index = 1:3
     nexttile;
-    surf(ALPHA, BETA, 1e6 * torque(:, :, axis_index));
+    surf(ALPHA, BETA, torque__uNm(:, :, axis_index));
     shading interp;
+    zlim(limits);
+    clim(limits);
     xlabel('\alpha [deg]');
     ylabel('\beta [deg]');
     zlabel([names{axis_index} ' [\muNm]']);
-    title(names{axis_index});
+    title(sprintf('%s, max |%s| = %.2f \\muNm', names{axis_index}, names{axis_index}, ...
+        max(abs(torque__uNm(:, :, axis_index)), [], 'all')));
 end
 
 %% Local functions

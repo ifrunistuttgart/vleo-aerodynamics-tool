@@ -4,9 +4,9 @@
 % changes a model matrix, so the calculator is built once and each angle
 % costs one render.
 %
-% Prerequisites, from the repository root:
+% Prerequisites: make sure you have built the matlab binaries with:
 %   pixi run build-matlab
-%   addpath('matlab'); addpath('matlab\bin')
+% And that you have loaded the Matlab project from Vat.prj
 
 clear; close all;
 vat.setLogLevel("warn");
@@ -51,7 +51,7 @@ title('Flow along +x');
 % into it, while the upper wing stays in the shadow of the body and hardly
 % changes the torque. The pressure images below show why.
 v_rel   = 7800 * [cosd(20), 0, sind(20)];
-angles  = 0:0.1:40;   % [deg]
+angles  = 0:0.5:40;   % [deg]
 upper   = [0 0 0 1];  % which wing turns
 lower   = [1 0 0 0];
 pitch   = zeros(numel(angles), 2);

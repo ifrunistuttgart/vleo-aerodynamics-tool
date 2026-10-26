@@ -1,10 +1,11 @@
 %% Example 1: Quick start
 % Computes the aerodynamic force and torque on a satellite in VLEO:
-% atmosphere, gas-surface interaction model, geometry, load calculator.
+% atmosphere, gas-surface interaction model, geometry, shading pipeline,
+% load calculator.
 %
-% Prerequisites, from the repository root:
-%   pixi run build-matlab
-%   addpath('matlab'); addpath('matlab\bin')
+% Prerequisites: make sure you have build the matlab binaries with:
+% pixi run build-matlab
+% And that you have loaded the Matlab project from Vat.prj
 
 clear; close all;
 vat.setLogLevel("warn");   % "debug", "info", "warn", "error" or "off"
@@ -29,14 +30,27 @@ obj_file = fullfile(fileparts(mfilename('fullpath')), 'geometries', 'shuttlecock
 geometry = vat.geometry.RotatableMeshGeometry(obj_file);
 fprintf('Loaded %d triangles\n', geometry.get_num_triangles());
 
-%% 4. Load calculator
-% Renders the geometry along the flow and evaluates the GSI model in every
-% pixel the flow reaches, so parts in the shadow of others carry no load.
-% num_pixel is the accuracy/runtime knob: the render is num_pixel x num_pixel.
+%% 4. Shading pipeline
+% The shading pipeline renders the geometry along the flow and decides for
+% every triangle whether the flow reaches it, so parts in the shadow of
+% others carry no load. To determine which triangles are visible two algorithms are provided:
+%   algorithm: 0 = Binary, 1 = CoP (example 4 compares them)
+%   num_pixel: the accuracy/runtime knob, the render is num_pixel x num_pixel
 num_pixel  = 2000;
-calculator = vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel);
+pipeline   = vat.shading.ShadingPipeline(geometry, 1, num_pixel);
 
-%% 5. Force and torque
+%% 5. load calculator
+% For the calculation of the aerodynamic loads two methods are possible.
+% 1. The HybridForceTorqueCalculator which uses the results from the shading pipeline
+%    to determine for which triangles the aerodynamics loads get caclulated. We will use this version here
+% 2. The PixelForceTorqueCalculator project the geometry onto a virtual a screen and then calculates the aerodynamic
+%    load for every pixel and accumulated the results. It can be intatiated with:
+%        calculator = vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel);
+%    It than can be used in the exact same way as the HybridForceTorqueCalculator
+
+calculator = vat.loads.HybridForceTorqueCalculator(geometry, pipeline, gsi_model);
+
+%% 6. Force and torque
 % v_rel is the velocity of the satellite relative to the atmosphere, in the
 % body frame, as a row vector [x y z]. A surface faces the flow when
 % dot(normal, v_rel) > 0. The torque is about the body origin.
@@ -48,4 +62,4 @@ fprintf('Force  [N]  : %+.4e %+.4e %+.4e\n', force__N);
 fprintf('Torque [Nm] : %+.4e %+.4e %+.4e\n', torque__Nm);
 
 % The calculator is set up once; every further call only renders and sums,
-% so sweeping many attitudes is cheap (see example 6).
+% so sweeping many attitudes is cheap (see example 5).

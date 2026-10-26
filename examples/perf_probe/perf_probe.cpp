@@ -121,7 +121,7 @@ void run_fingerprint(RotatableMeshGeometry& sat) {
         // Sentman divides only by |v_rel|, so it requires unit normals. Report how far
         // the transformed normals drift from unit length in this pose.
         sat.turn_mesh_around_axis(0, rotated ? 0.785398163f : 0.0f, HINGE_ORIGIN, HINGE_AXIS);
-        const auto normals = sat.get_normals();
+        const auto normals = sat.get_transformed_normals();
         float max_norm_error = 0.0f;
         for (std::size_t i = 0; i < normals.size(); i += 3) {
             const glm::vec3 n(normals[i], normals[i + 1], normals[i + 2]);
@@ -167,17 +167,17 @@ void run_timings(RotatableMeshGeometry& sat, const std::vector<unsigned int>& re
     const glm::vec3 vhat = glm::normalize(v);
 
     std::printf("[A] CPU geometry re-transform, per getter call\n");
-    const double tN = time_ms(20, [&] { auto s = sat.get_normals(); (void)s.size(); });
-    const double tC = time_ms(20, [&] { auto s = sat.get_centroids(); (void)s.size(); });
+    const double tN = time_ms(20, [&] { auto s = sat.get_transformed_normals(); (void)s.size(); });
+    const double tC = time_ms(20, [&] { auto s = sat.get_transformed_centroids(); (void)s.size(); });
     const double tB = time_ms(20, [&] { volatile float r = sat.get_bounding_sphere_radius(); (void)r; });
-    std::printf("    get_normals()                %8.3f ms\n", tN);
-    std::printf("    get_centroids()              %8.3f ms\n", tC);
+    std::printf("    get_transformed_normals()    %8.3f ms\n", tN);
+    std::printf("    get_transformed_centroids()  %8.3f ms\n", tC);
     std::printf("    get_bounding_sphere_radius() %8.3f ms\n", tB);
     std::printf("    -> per force/torque call     %8.3f ms\n\n", tN + tC + tB);
 
     auto areas = sat.get_areas();
-    auto normals = sat.get_normals();
-    auto centroids = sat.get_centroids();
+    auto normals = sat.get_transformed_normals();
+    auto centroids = sat.get_transformed_centroids();
     std::printf("[B] Sentman x %u triangles       %8.3f ms\n\n", N, time_ms(10, [&] {
         glm::vec3 f, tq;
         for (unsigned int i = 0; i < N; ++i) {
