@@ -5,7 +5,7 @@
 > properties,"* CEAS Space Journal (2025).
 > [https://doi.org/10.1007/s12567-025-00684-x](https://doi.org/10.1007/s12567-025-00684-x)
 > please visit: [the `legacy-matlab-panel-method` branch](https://github.com/ifrunistuttgart/vleo-aerodynamics-tool/tree/legacy-matlab-panel-method)
-> (see tag [`paper-v1.0`](../../releases/tag/paper-v1.0)). Development has
+> (see tag [`paper-v1.0`](https://github.com/ifrunistuttgart/vleo-aerodynamics-tool/releases/tag/paper-v1.0)). Development has
 > since moved to a faster, GPU-accelerated toolbox
 
 # VLEO Aerodynamics Tool (VAT)
@@ -40,7 +40,7 @@ Geometry and models are initialized once; each subsequent change in flow directi
   conda-forge can locate an installed compiler but may not redistribute `cl.exe` itself.
 - **A GPU and driver supporting OpenGL 4.3 core profile.** The shading pipeline requires it.
 - **[pixi](https://pixi.sh)**, which provisions everything else — CMake, Ninja, VTK, assimp,
-  GLEW, GLFW, glm, spdlog — into a project-local environment.
+  GLEW, GLFW, glm, spdlog, CGAL — into a project-local environment.
 - **MATLAB R2024a or newer**, optional, only for the MATLAB bindings.
 
 ## Install and run
@@ -118,36 +118,26 @@ To use the toolbox in Matlab, you need to build it first (this also automaticall
 pixi run build-matlab
 ```
 
-Now from Matlab you can add everything to path by double clicking on `matlab\Vat.prj` or by adding the following the folders to path:
+Now from Matlab you can add everything to path by double clicking on `matlab\Vat.prj` or by adding the following folders to path:
 
 ```matlab
 addpath('<repo_root>\matlab')
 addpath('<repo_root>\matlab\bin')
 ```
 
-Check out the Matlab examples:
-- [quickstart.m](matlab/examples/quickstart.m) walks through the whole path — atmosphere, GSI
-model, geometry, shading, force and torque — and ends by visualizing which triangles the flow
-reached. 
-- [soar_rotatable.m](matlab/examples/soar_rotatable.m) goes further, sweeping the
-aerodynamic torque over a full sphere of flow directions with one panel deflected.
-- [remesh_satellite.m](matlab/examples/remesh_satellite.m) remeshes an imported model, saves
-it, and lets the shading pipeline choose `num_pixel` for it. The other `remesh_*.m` scripts go
-deeper: the mesh [before and after](matlab/examples/remesh_before_after.m),
-[choosing the size](matlab/examples/remesh_choose_size.m),
-[shading and accuracy](matlab/examples/remesh_shading.m), and
-[rotating wings](matlab/examples/remesh_rotating_wings.m) on a remeshed geometry.
 The examples in [matlab/examples](matlab/examples) build on each other; read them in order.
+Validation against analytic solutions is in [matlab/examples/benchmarks](matlab/examples/benchmarks).
 
 | Script | Shows |
 |---|---|
 | [ex01_quickstart.m](matlab/examples/ex01_quickstart.m) | atmosphere, GSI model, geometry, shading pipeline and calculator: force and torque |
 | [ex02_geometry_and_hinges.m](matlab/examples/ex02_geometry_and_hinges.m) | which mesh is which, defining and checking hinges, turning parts |
-| [ex03_gsi_models.m](matlab/examples/ex03_gsi_models.m) | the six GSI models side by side, changing a model parameter |
-| [ex04_shading.m](matlab/examples/ex04_shading.m) | Binary and CoP shading, per-triangle visibility |
-| [ex05_attitude_sweep.m](matlab/examples/ex05_attitude_sweep.m) | drag, lift and pitch torque over the angle of attack |
-| [ex06_wing_deflection.m](matlab/examples/ex06_wing_deflection.m) | drag and pitch torque over wing angles |
-| [ex07_soar_torque_map.m](matlab/examples/ex07_soar_torque_map.m) | torque over all flow directions for a satellite with a turned panel |
+| [ex03_remeshing.m](matlab/examples/ex03_remeshing.m) | mesh quality, remeshing, saving the remeshed mesh, automatic `num_pixel` |
+| [ex04_gsi_models.m](matlab/examples/ex04_gsi_models.m) | the six GSI models side by side, changing a model parameter |
+| [ex05_shading.m](matlab/examples/ex05_shading.m) | Binary and CoP shading, per-triangle visibility |
+| [ex06_attitude_sweep.m](matlab/examples/ex06_attitude_sweep.m) | drag, lift and pitch torque over the angle of attack |
+| [ex07_wing_deflection.m](matlab/examples/ex07_wing_deflection.m) | drag and pitch torque over wing angles |
+| [ex08_soar_torque_map.m](matlab/examples/ex08_soar_torque_map.m) | torque over all flow directions for a satellite with a turned panel |
 
 ## Gas–surface interaction models
 
