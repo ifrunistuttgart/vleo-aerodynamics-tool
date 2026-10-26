@@ -95,8 +95,8 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
 
     // Raw geometry: the model matrices are applied on the GPU. Normals are per
     // triangle, so each one is repeated for the triangle's three de-indexed vertices.
-    std::span<const float> vertices = m_geometry.get_raw_vertices();
-    std::span<const float> normals = m_geometry.get_raw_normals();
+    std::span<const float> vertices = m_geometry.get_untransformed_vertices();
+    std::span<const float> normals = m_geometry.get_untransformed_normals();
     std::vector<float> vertex_normals(vertices.size());
     for (size_t triangle = 0; triangle < normals.size() / 3; ++triangle) {
         for (size_t corner = 0; corner < 3; ++corner) {
@@ -188,8 +188,8 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
 
     // Leeward triangles are invisible to the camera: per triangle on the CPU, unshadowed.
     std::span<const float> areas = m_geometry.get_areas();
-    std::span<const float> normals = m_geometry.get_normals();
-    std::span<const float> centroids = m_geometry.get_centroids();
+    std::span<const float> normals = m_geometry.get_transformed_normals();
+    std::span<const float> centroids = m_geometry.get_transformed_centroids();
     for (unsigned int i = 0; i < m_geometry.get_num_triangles(); i++) {
         const glm::vec3 normal{normals[3 * i], normals[3 * i + 1], normals[3 * i + 2]};
         // Written as !(... <= 0) so degenerate triangles, whose normal is NaN, are

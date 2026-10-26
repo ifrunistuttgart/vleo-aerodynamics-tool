@@ -224,8 +224,8 @@ the same value three times, used as a render-target colour. IDs are **1-based**,
 ID framebuffer means background.
 
 **Raw versus transformed vertices.** `RotatableMeshGeometry` overrides the getters to apply the
-per-mesh model matrices, so `get_transformed_vertices()` and `get_normals()` return already-transformed
-geometry. The GPU paths instead upload `get_untransformed_vertices()` and `get_raw_normals()`, because they
+per-mesh model matrices, so `get_transformed_vertices()`, `get_transformed_normals()` and `get_transformed_centroids()` return already-transformed
+geometry. The GPU paths instead upload `get_untransformed_vertices()` and `get_untransformed_normals()`, because they
 apply the model matrices themselves — uploading the transformed data would apply the rotation
 twice. Positions are transformed with `w = 1`; normals go through the inverse transpose of the
 linear block only, on the CPU and on the GPU alike, so they never pick up the model matrix's

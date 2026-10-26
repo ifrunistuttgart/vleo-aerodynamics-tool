@@ -39,7 +39,7 @@ function show_pressure_image(calculator, geometry, options)
     end
 
     % The image spans the bounding sphere, [-R, R] in both directions.
-    vertices = reshape(geometry.get_vertices(), 3, []);
+    vertices = reshape(geometry.get_transformed_vertices(), 3, []);
     R = double(max(vecnorm(vertices)));
     x = linspace(-R, R, size(p, 1));
 

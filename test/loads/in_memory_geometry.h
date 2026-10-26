@@ -74,13 +74,14 @@ public:
         }
     }
 
-    std::span<const float> get_vertices() override { return m_vertices; }
-    std::span<const float> get_raw_vertices() override { return m_vertices; }
+    std::span<const float> get_transformed_vertices() override { return m_vertices; }
+    std::span<const float> get_untransformed_vertices() override { return m_vertices; }
     std::span<const std::uint32_t> get_triangle_ids() override { return m_ids; }
-    std::span<const float> get_normals() override { return m_normals; }
-    std::span<const float> get_raw_normals() override { return m_normals; }
+    std::span<const float> get_transformed_normals() override { return m_normals; }
+    std::span<const float> get_untransformed_normals() override { return m_normals; }
     std::span<const float> get_areas() override { return m_areas; }
-    std::span<const float> get_centroids() override { return m_centroids; }
+    std::span<const float> get_transformed_centroids() override { return m_centroids; }
+    std::span<const float> get_untransformed_centroids() override { return m_centroids; }
     std::span<const glm::mat4> get_model_matrices() override { return m_model_matrices; }
     std::span<const std::string> get_mesh_names() override { return m_mesh_names; }
     std::span<const unsigned int> get_num_triangles_per_mesh() override { return m_num_triangles_per_mesh; }
