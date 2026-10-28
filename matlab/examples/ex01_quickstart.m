@@ -22,7 +22,7 @@ conditions = vat.AeroConditions(rho__kg_per_m3, T_atmospheric__K, particle_mass_
 
 %% 2. Gas-surface interaction model
 % Sentman(temperature_ratio_method, alpha_e), alpha_e being the energy
-% accommodation coefficient. Example 3 compares all six models.
+% accommodation coefficient. Example 4 compares all six models.
 gsi_model = vat.gsi_models.Sentman(1, 0.9);
 
 %% 3. Geometry
@@ -33,20 +33,20 @@ fprintf('Loaded %d triangles\n', geometry.get_num_triangles());
 %% 4. Shading pipeline
 % The shading pipeline renders the geometry along the flow and decides for
 % every triangle whether the flow reaches it, so parts in the shadow of
-% others carry no load. To determine which triangles are visible two algorithms are provided:
-%   algorithm: 0 = Binary, 1 = CoP (example 4 compares them)
+% others carry no load. Two algorithms decide which triangles are visible:
+%   algorithm: 0 = Binary, 1 = CoP (example 5 compares them)
 %   num_pixel: the accuracy/runtime knob, the render is num_pixel x num_pixel
 num_pixel  = 2000;
 pipeline   = vat.shading.ShadingPipeline(geometry, 1, num_pixel);
 
-%% 5. load calculator
-% For the calculation of the aerodynamic loads two methods are possible.
-% 1. The HybridForceTorqueCalculator which uses the results from the shading pipeline
-%    to determine for which triangles the aerodynamics loads get caclulated. We will use this version here
-% 2. The PixelForceTorqueCalculator project the geometry onto a virtual a screen and then calculates the aerodynamic
-%    load for every pixel and accumulated the results. It can be intatiated with:
+%% 5. Load calculator
+% Two calculators are available:
+% 1. HybridForceTorqueCalculator (used here) takes the visibility from the
+%    shading pipeline and evaluates the GSI model on every visible triangle.
+% 2. PixelForceTorqueCalculator renders the geometry along the flow itself
+%    and evaluates the GSI model in every pixel, so it needs no pipeline:
 %        calculator = vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel);
-%    It than can be used in the exact same way as the HybridForceTorqueCalculator
+%    It is used in exactly the same way as the Hybrid calculator.
 
 calculator = vat.loads.HybridForceTorqueCalculator(geometry, pipeline, gsi_model);
 
@@ -62,4 +62,4 @@ fprintf('Force  [N]  : %+.4e %+.4e %+.4e\n', force__N);
 fprintf('Torque [Nm] : %+.4e %+.4e %+.4e\n', torque__Nm);
 
 % The calculator is set up once; every further call only renders and sums,
-% so sweeping many attitudes is cheap (see example 5).
+% so sweeping many attitudes is cheap (see example 6).

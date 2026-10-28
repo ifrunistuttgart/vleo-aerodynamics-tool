@@ -1,6 +1,6 @@
 # VAT MATLAB Examples
 
-This directory contains introductory tutorials, workflow examples, and verification benchmarks demonstrating how to use the VAT (VLEO Aerodynamics Toolbox) MATLAB interface for aerodynamic analysis in Very Low Earth Orbit (VLEO).
+This directory contains introductory tutorials, workflow examples, and verification benchmarks demonstrating how to use the VAT (VLEO Aerodynamics Tool) MATLAB interface for aerodynamic analysis in Very Low Earth Orbit (VLEO).
 
 ---
 
@@ -13,7 +13,7 @@ Before running any of the examples, ensure that the MATLAB MEX binaries and depe
    pixi run build-matlab
    ```
 2. **Open MATLAB** and initialize the project environment by either:
-   - Opening/loading the MATLAB project file `Vat.prj` in the repository root (recommended), or
+   - Opening/loading the MATLAB project file `matlab/Vat.prj` (recommended), or
    - Adding the required paths in MATLAB:
      ```matlab
      addpath('matlab');
@@ -37,7 +37,7 @@ matlab/examples/
 ├── geometries/                   # OBJ geometry files used across examples
 └── benchmarks/                   # Analytical and numerical validation benchmarks
     ├── analytic_plates.m         # Two-plate shadowing benchmark vs. analytic solution
-    ├── exact_solution_shadowing.m# Analytic reference helper for shadowing benchmark
+    ├── exact_solution_shadowing.m # Analytic reference helper for shadowing benchmark
     ├── smoothness.m              # Load smoothness and discretization jumps across attitudes
     ├── onesided_plate_cl_cd.m    # Flat plate lift and drag coefficients across all GSI models
     └── two_sided_plate_gsi.m     # Two-sided flat plate aerodynamic validation
@@ -80,15 +80,15 @@ The numbered examples provide a step-by-step introduction to the core functional
 
 ### [`ex06_attitude_sweep.m`](ex06_attitude_sweep.m) — Loads Over Attitude
 - **What it shows:** Efficient attitude sweeps (angle of attack variation) computing drag, lift, and pitching torque ($T_y$).
-- **Features:** Demonstrates fast GPU rasterization performance, evaluating dozens of attitudes in fractions of a second.
+- **Features:** Uses `vat.loads.PixelForceTorqueCalculator`, which needs no separate shading pipeline, and evaluates dozens of attitudes in fractions of a second.
 
 ### [`ex07_wing_deflection.m`](ex07_wing_deflection.m) — Deflecting Wings & Aerodynamic Control
 - **What it shows:** Dynamic deflection of articulated surfaces and its impact on satellite forces and pitching moments.
-- **Features:** Demonstrates shielding effects where deflected surfaces enter the wake/shadow of the satellite body.
+- **Features:** Demonstrates shielding effects where deflected surfaces enter the wake/shadow of the satellite body, shown as per-pixel pressure images with `vat.visualization.show_pressure_image`. Uses `vat.loads.PixelForceTorqueCalculator`.
 
 ### [`ex08_soar_torque_map.m`](ex08_soar_torque_map.m) — Aerodynamic Torque Map
 - **What it shows:** Generation of a complete 2D aerodynamic torque map ($T_x, T_y, T_z$) over angle of attack ($\alpha$) and sideslip angle ($\beta$).
-- **Application:** Demonstrates fast multi-directional evaluation suitable for orbit and attitude propagation without pre-calculated lookup tables.
+- **Application:** Demonstrates fast multi-directional evaluation suitable for orbit and attitude propagation without pre-calculated lookup tables. Uses `vat.loads.PixelForceTorqueCalculator`.
 
 ---
 
@@ -96,8 +96,8 @@ The numbered examples provide a step-by-step introduction to the core functional
 
 Scripts located in the [`benchmarks/`](benchmarks/) folder validate VAT against analytical solutions and investigate numerical properties:
 
-- **[`benchmarks/analytic_plates.m`](benchmarks/analytic_plates.m)**: Compares hybrid shading results against the closed-form analytical solution (`exact_solution_shadowing.m`) for two partially overlapping flat plates across various raster resolutions and flow angles.
-- **[`benchmarks/smoothness.m`](benchmarks/smoothness.m)**: Analyzes load smoothness and discretization jumps across continuous attitude variations as a function of raster pixel resolution.
+- **[`benchmarks/analytic_plates.m`](benchmarks/analytic_plates.m)**: Compares the Hybrid calculator (Binary and CoP shading) and the Pixel calculator against the closed-form analytical solution (`exact_solution_shadowing.m`) for two partially overlapping flat plates across various raster resolutions and flow angles.
+- **[`benchmarks/smoothness.m`](benchmarks/smoothness.m)**: Analyzes load smoothness and discretization jumps of the Hybrid (Binary, CoP) and Pixel calculators across continuous attitude variations as a function of raster pixel resolution.
 - **[`benchmarks/onesided_plate_cl_cd.m`](benchmarks/onesided_plate_cl_cd.m)**: Computes lift ($C_L$) and drag ($C_D$) coefficients for a unit flat plate across all GSI models over flow angles from $0^\circ$ to $90^\circ$.
 - **[`benchmarks/two_sided_plate_gsi.m`](benchmarks/two_sided_plate_gsi.m)**: Validates aerodynamic loads on a two-sided flat plate.
 

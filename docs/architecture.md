@@ -16,8 +16,10 @@ classDiagram
         +get_transformed_vertices()
         +get_untransformed_vertices()
         +get_transformed_normals()
+        +get_untransformed_normals()
         +get_areas()
         +get_transformed_centroids()
+        +get_untransformed_centroids()
         +get_triangle_ids()
         +get_model_matrices()
         +get_bounding_sphere_radius()
@@ -110,19 +112,19 @@ geometry, the pipeline and the GSI model, and passes them in by reference. (The 
 **`IGeometryShadingData`** ([core/Igeometry_shading_data.h](../src/core/Igeometry_shading_data.h))
 supplies geometry: vertices, per-triangle normals, areas, centroids, triangle IDs, per-mesh
 model matrices, and the bounding sphere radius. Vertices and normals come in two flavours, see
-*Raw versus transformed* below. It is the only thing the rest of the pipeline
+*Untransformed versus transformed* below. It is the only thing the rest of the pipeline
 knows about geometry.
 
 **`IGeometryManipulator`** ([core/Igeometry_manipulator.h](../src/core/Igeometry_manipulator.h))
 is deliberately separate. Articulating a part — deflecting a solar array, feathering a panel —
 writes a per-mesh model matrix; it never touches vertex data.
 
-**`IShadingPipeline`** ([aero_load_calculator/Ishading_pipeline.h](../src/loads/Ishading_pipeline.h))
+**`IShadingPipeline`** ([loads/Ishading_pipeline.h](../src/loads/Ishading_pipeline.h))
 answers one question: given a flow direction, which fraction of each triangle is exposed?
 `ShadingPipeline` implements it by owning a hidden GLFW window for the OpenGL context and
 delegating the actual rendering to an `IShadingAlgorithm`.
 
-**`IGSIModel`** ([aero_load_calculator/Igsi_model.h](../src/loads/Igsi_model.h))
+**`IGSIModel`** ([loads/Igsi_model.h](../src/loads/Igsi_model.h))
 computes force and torque for a *single* triangle from its area, normal, centroid, the
 flow vector, the surface temperature and the atmospheric conditions. It knows nothing about
 occlusion — that is the pipeline's job. Every model carries the same formula twice:
@@ -223,7 +225,7 @@ Two details are easy to get wrong and worth stating explicitly.
 the same value three times, used as a render-target colour. IDs are **1-based**, so a `0` in the
 ID framebuffer means background.
 
-**Raw versus transformed vertices.** `RotatableMeshGeometry` overrides the getters to apply the
+**Untransformed versus transformed vertices.** `RotatableMeshGeometry` overrides the getters to apply the
 per-mesh model matrices, so `get_transformed_vertices()`, `get_transformed_normals()` and `get_transformed_centroids()` return already-transformed
 geometry. The GPU paths instead upload `get_untransformed_vertices()` and `get_untransformed_normals()`, because they
 apply the model matrices themselves — uploading the transformed data would apply the rotation
