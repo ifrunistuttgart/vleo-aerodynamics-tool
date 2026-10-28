@@ -26,6 +26,8 @@ TEST_F(SentmanTest, Constructor_ValidMethods_Construct) {
     EXPECT_NO_THROW({ Sentman s(2, 0.9f); });
     EXPECT_NO_THROW({ Sentman s(3, 0.9f); });
 }
+// Reference values: Sentman's formula in double precision, as in the legacy MATLAB
+// implementation (calcAeroForceAndTorque.m); tolerances are about 0.1 % of the force.
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
     // Arrange
     Sentman sentman{ 1, 0.9f };
@@ -37,8 +39,8 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
 
     glm::vec3 force;
     glm::vec3 torque;
-    glm::vec3 expected_force = glm::vec3(-0.0068f, 0.0f, 0.0022f) * 1e-3f;
-    glm::vec3 expected_torque = glm::vec3(0.0f, 0.0036f, 0.0f) * 1e-4f;
+    glm::vec3 expected_force = glm::vec3(-6.7649f, 0.0f, 2.1786f) * 1e-6f;
+    glm::vec3 expected_torque = glm::vec3(0.0f, 3.6311f, 0.0f) * 1e-7f;
 
     // Act
     sentman.calc_aero_force_and_torque(
@@ -46,12 +48,12 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
     );
 
     // Assert
-    EXPECT_NEAR(force.x, expected_force.x, 1e-2f);
-    EXPECT_NEAR(force.y, expected_force.y, 1e-2f);
-    EXPECT_NEAR(force.z, expected_force.z, 1e-2f);
-    EXPECT_NEAR(torque.x, expected_torque.x, 1e-2f);
-    EXPECT_NEAR(torque.y, expected_torque.y, 1e-2f);
-    EXPECT_NEAR(torque.z, expected_torque.z, 1e-2f);
+    EXPECT_NEAR(force.x, expected_force.x, 1e-9f);
+    EXPECT_NEAR(force.y, expected_force.y, 1e-9f);
+    EXPECT_NEAR(force.z, expected_force.z, 1e-9f);
+    EXPECT_NEAR(torque.x, expected_torque.x, 1e-9f);
+    EXPECT_NEAR(torque.y, expected_torque.y, 1e-9f);
+    EXPECT_NEAR(torque.z, expected_torque.z, 1e-9f);
 }
 
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
@@ -65,8 +67,8 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
 
     glm::vec3 force;
     glm::vec3 torque;
-    glm::vec3 expected_torque = glm::vec3(0.0f, -0.3857f, 0.0f) * 1e-4f;
-    glm::vec3 expected_force = glm::vec3(-0.2314f, 0.0f, 0.0f) * 1e-3f;
+    glm::vec3 expected_torque = glm::vec3(0.0f, -3.8566f, 0.0f) * 1e-5f;
+    glm::vec3 expected_force = glm::vec3(-2.3140f, 0.0f, 0.0f) * 1e-4f;
 
     // Act
     sentman.calc_aero_force_and_torque(
@@ -74,12 +76,12 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
     );
 
     // Assert
-    EXPECT_NEAR(force.x, expected_force.x, 1e-2f);
-    EXPECT_NEAR(force.y, expected_force.y, 1e-2f);
-    EXPECT_NEAR(force.z, expected_force.z, 1e-2f);
-    EXPECT_NEAR(torque.x, expected_torque.x, 1e-2f);
-    EXPECT_NEAR(torque.y, expected_torque.y, 1e-2f);
-    EXPECT_NEAR(torque.z, expected_torque.z, 1e-2f);
+    EXPECT_NEAR(force.x, expected_force.x, 1e-8f);
+    EXPECT_NEAR(force.y, expected_force.y, 1e-8f);
+    EXPECT_NEAR(force.z, expected_force.z, 1e-8f);
+    EXPECT_NEAR(torque.x, expected_torque.x, 1e-8f);
+    EXPECT_NEAR(torque.y, expected_torque.y, 1e-8f);
+    EXPECT_NEAR(torque.z, expected_torque.z, 1e-8f);
 }
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
     // Arrange
@@ -92,8 +94,8 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
 
     glm::vec3 force;
     glm::vec3 torque;
-    glm::vec3 expected_torque = glm::vec3(0.0843f, 0.4526f, -0.5370f) * 1e-3f;
-    glm::vec3 expected_force = glm::vec3(0.4526f, -0.0843f, 0.0f) * 1e-3f;
+    glm::vec3 expected_torque = glm::vec3(0.8435f, -6.2133f, 5.3698f) * 1e-4f;
+    glm::vec3 expected_force = glm::vec3(-6.2133f, -0.8435f, 0.0f) * 1e-4f;
 
     // Act
     sentman.calc_aero_force_and_torque(
@@ -101,12 +103,12 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
     );
 
     // Assert
-    EXPECT_NEAR(force.x, expected_force.x, 1e-3f);
-    EXPECT_NEAR(force.y, expected_force.y, 1e-3f);
-    EXPECT_NEAR(force.z, expected_force.z, 1e-3f);
-    EXPECT_NEAR(torque.x, expected_torque.x, 1e-3f);
-    EXPECT_NEAR(torque.y, expected_torque.y, 1e-3f);
-    EXPECT_NEAR(torque.z, expected_torque.z, 1e-3f);
+    EXPECT_NEAR(force.x, expected_force.x, 1e-7f);
+    EXPECT_NEAR(force.y, expected_force.y, 1e-7f);
+    EXPECT_NEAR(force.z, expected_force.z, 1e-7f);
+    EXPECT_NEAR(torque.x, expected_torque.x, 1e-7f);
+    EXPECT_NEAR(torque.y, expected_torque.y, 1e-7f);
+    EXPECT_NEAR(torque.z, expected_torque.z, 1e-7f);
 }
 
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod3) {
@@ -120,8 +122,8 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod3) {
 
     glm::vec3 force;
     glm::vec3 torque;
-    glm::vec3 expected_torque = glm::vec3(0.0829f, 0.4541f, -0.5370f) * 1e-3f;
-    glm::vec3 expected_force = glm::vec3(0.4541f, -0.0829f, 0.0f) * 1e-3f;
+    glm::vec3 expected_torque = glm::vec3(0.8292f, -6.1990f, 5.3698f) * 1e-4f;
+    glm::vec3 expected_force = glm::vec3(-6.1990f, -0.8292f, 0.0f) * 1e-4f;
 
     // Act
     sentman.calc_aero_force_and_torque(
@@ -129,10 +131,10 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod3) {
     );
 
     // Assert
-    EXPECT_NEAR(force.x, expected_force.x, 1e-3f);
-    EXPECT_NEAR(force.y, expected_force.y, 1e-3f);
-    EXPECT_NEAR(force.z, expected_force.z, 1e-3f);
-    EXPECT_NEAR(torque.x, expected_torque.x, 1e-3f);
-    EXPECT_NEAR(torque.y, expected_torque.y, 1e-3f);
-    EXPECT_NEAR(torque.z, expected_torque.z, 1e-3f);
+    EXPECT_NEAR(force.x, expected_force.x, 1e-7f);
+    EXPECT_NEAR(force.y, expected_force.y, 1e-7f);
+    EXPECT_NEAR(force.z, expected_force.z, 1e-7f);
+    EXPECT_NEAR(torque.x, expected_torque.x, 1e-7f);
+    EXPECT_NEAR(torque.y, expected_torque.y, 1e-7f);
+    EXPECT_NEAR(torque.z, expected_torque.z, 1e-7f);
 }
