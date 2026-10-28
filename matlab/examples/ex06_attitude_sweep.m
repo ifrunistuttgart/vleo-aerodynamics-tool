@@ -15,8 +15,7 @@ gsi_model       = vat.gsi_models.Sentman(1, 0.9);
 
 obj_file   = fullfile(fileparts(mfilename('fullpath')), 'geometries', 'shuttlecock_15k.obj');
 geometry   = vat.geometry.RotatableMeshGeometry(obj_file);
-pipeline   = vat.shading.ShadingPipeline(geometry, 1, 1000);
-calculator = vat.loads.HybridForceTorqueCalculator(geometry, pipeline, gsi_model);
+calculator = vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, 1000);
 
 %% Sweep the angle of attack
 % The flow turns in the body x-z plane: 0 deg is nose first.

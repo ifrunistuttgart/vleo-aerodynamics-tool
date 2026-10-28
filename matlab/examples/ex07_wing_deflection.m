@@ -24,8 +24,8 @@ hinges(2).mesh_id = 2;  hinges(2).origin = [-0.15, -0.05,  0.10];  hinges(2).axi
 hinges(3).mesh_id = 3;  hinges(3).origin = [-0.15,  0.05, -0.10];  hinges(3).axis = [0,  0, -1];  % right
 hinges(4).mesh_id = 4;  hinges(4).origin = [-0.15, -0.10, -0.05];  hinges(4).axis = [0, -1,  0];  % up
 
-pipeline   = vat.shading.ShadingPipeline(geometry, 1, 1000);
-calculator = vat.loads.HybridForceTorqueCalculator(geometry, pipeline, gsi_model);
+calculator = vat.loads.PixelForceTorqueCalculator( ...
+    geometry, gsi_model, 1000, KeepPressureImage=true);
 
 %% 1. All four wings together: drag over the wing angle
 v_rel  = [7800, 0, 0];
@@ -49,7 +49,7 @@ title('Flow along +x');
 % Upper or lower wing turned out, the other wings at 0 deg. The flow comes
 % in at 20 deg angle of attack, from the lower side: the lower wing turns
 % into it, while the upper wing stays in the shadow of the body and hardly
-% changes the torque. The shading view below shows why.
+% changes the torque. The pressure images below show why.
 v_rel   = 7800 * [cosd(20), 0, sind(20)];
 angles  = 0:0.5:40;   % [deg]
 upper   = [0 0 0 1];  % which wing turns
@@ -74,12 +74,30 @@ ylabel('pitch torque T_y [\muNm]');
 legend('upper wing turned out', 'lower wing turned out', 'Location', 'best');
 title('Flow at 20 deg angle of attack');
 
-%% 3. Why the upper wing hardly matters
-% With the upper wing turned out by 30 deg, the shading view shows it in
-% the shadow of the body. show_shading opens an interactive 3D window and
-% waits until it is closed.
-deflect(geometry, hinges, 30 * upper);
-vat.visualization.show_shading(geometry, pipeline.shade(v_rel), v_rel);
+%% 3. Pressure images of the three cases
+% Evaluated first, then drawn with one common colour scale.
+cases = {'no wing turned', [0 0 0 0]; ...
+         'upper wing 30 deg', 30 * upper; ...
+         'lower wing 30 deg', 30 * lower};
+p_max = 0;
+for c = 1:size(cases, 1)
+    deflect(geometry, hinges, cases{c, 2});
+    calculator.calc_aero_load(v_rel, surface_temp__K, conditions);
+    p_max = max(p_max, max(calculator.pressure_image(), [], 'all'));
+end
+
+figure('Name', 'Pressure images', 'Position', [100 100 1200 400]);
+tiledlayout(1, size(cases, 1), 'TileSpacing', 'compact');
+for c = 1:size(cases, 1)
+    deflect(geometry, hinges, cases{c, 2});
+    calculator.calc_aero_load(v_rel, surface_temp__K, conditions);
+    nexttile;
+    vat.visualization.show_pressure_image(calculator, geometry, CLim=[0 p_max], Colorbar=false);
+    title(cases{c, 1});
+end
+cb = colorbar;
+cb.Layout.Tile = 'east';
+cb.Label.String = 'pressure [N/m^2]';
 deflect(geometry, hinges, [0 0 0 0]);
 
 %% Local functions

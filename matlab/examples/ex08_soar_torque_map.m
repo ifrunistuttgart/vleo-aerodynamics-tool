@@ -20,8 +20,7 @@ obj_file = fullfile(fileparts(mfilename('fullpath')), 'geometries', 'soar_satell
 geometry = vat.geometry.RotatableMeshGeometry(obj_file);
 geometry.turn_mesh_around_axis(0, deg2rad(45), [-0.15, 0, -0.05], [0, 0, -1]);
 
-pipeline   = vat.shading.ShadingPipeline(geometry, 1, 4000);
-calculator = vat.loads.HybridForceTorqueCalculator(geometry, pipeline, gsi_model);
+calculator = vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, 4000);
 
 %% Sweep over the wind directions
 % Angle of attack alpha: rotation of the nominal +x flow about the body y

@@ -20,6 +20,9 @@ The VLEO Aerodynamics Tool provides algorithms for fast calculations of panel sh
   Storch, Newton.
 - **Two shading algorithms**, Binary and CoP, with the raster resolution as a single
   accuracy/runtime knob.
+- **Two load calculators**: Hybrid evaluates the GSI model per visible triangle; Pixel
+  integrates it per pixel on the GPU, so partly shaded triangles count with exactly their
+  exposed part and the result does not depend on the meshing.
 - **Articulated geometry** — individual meshes (solar arrays, panels for aerodynamic actuation) can be rotated
   about an arbitrary hinge axis between evaluations.
 - **Remeshing** of imported models into near-equilateral triangles of one size, keeping every
@@ -51,6 +54,7 @@ Geometry and models are initialized once; each subsequent change in flow directi
 pixi install                                   # one-time: resolve and download dependencies
 pixi run build                                 # build the library and examples
 pixi run run-example compute_force_and_torque  # force/torque on a shuttlecock geometry
+pixi run run-example compute_force_and_torque_pixel  # the same with the per-pixel calculator
 pixi run run-example import_and_visualize      # load a mesh and view it
 pixi run run-example remesh_obj                # remesh a sliver-ridden mesh and save it
 pixi run test                                  # build and run the GoogleTest suites
@@ -71,6 +75,11 @@ that visibility, and summed into a total force and torque.
 
 `num_pixel` is the accuracy knob: higher resolution resolves finer geometry, at the cost of
 render time. Leave it out and the pipeline picks it from the mesh.
+
+`PixelForceTorqueCalculator` goes one step further: it evaluates the GSI model in every pixel
+the flow reaches, on the GPU, and sums force and torque there. Shadow edges then cut through
+triangles instead of switching whole triangles on or off. Surfaces facing away from the flow are
+still evaluated per triangle.
 
 **Flow direction convention.** `v_rel_B__m_per_s` is the velocity of the *geometry relative to
 the atmosphere*, expressed in the body frame — the orange vector above.
@@ -109,6 +118,13 @@ calculator->calc_aero_torque_force(
 
 The full program, including visualization of the shading result, is in
 [examples/compute_force_and_torque/](examples/compute_force_and_torque/).
+
+To integrate per pixel instead, swap the calculator; it needs no shading pipeline:
+
+```cpp
+auto calculator = std::make_unique<loads::PixelForceTorqueCalculator>(
+    *geometry, *gsi_model, /*num_pixel=*/2000);
+```
 
 ## From MATLAB
 

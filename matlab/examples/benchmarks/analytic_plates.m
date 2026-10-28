@@ -21,7 +21,7 @@ T_wall    = 300;
 folder  = fullfile(fileparts(mfilename('fullpath')), '..', 'geometries');
 meshes  = {'two_two_sided_plates.obj', '2 triangles per face'; ...
            'two_two_sided_plates_fine.obj', 'fine two-sided plates'};
-methods = {'hybrid, Binary', 'hybrid, CoP'};
+methods = {'hybrid, Binary', 'hybrid, CoP', 'per pixel'};
 
 %% 1. Error over num_pixel, flow at 12 deg
 % At 12 deg the shadow edge on the back plate cuts through the cells of the
@@ -40,7 +40,7 @@ for g = 1:size(meshes, 1)
         calculators = make_calculators(geometry, gsi_model, num_pixels(p));
         for m = 1:numel(calculators)
             F = zeros(numel(alphas), 3);
-     
+
             start = tic;
             for i = 1:numel(alphas)
                 F(i,:) = calculators{m}.calc_aero_load( ...
@@ -66,7 +66,6 @@ colors = lines(numel(methods));
 styles = {'-o', '--s'};
 figure('Name', 'Error over num_pixel');
 
-% Achsen explizit erstellen, um Log-Skalierung mit errorbar sauber zu steuern
 ax = axes;
 hold on;
 
@@ -74,10 +73,10 @@ for g = 1:size(meshes, 1)
     for m = 1:numel(methods)
         y_val = 100 * squeeze(avg_error(:, :, m, g));
         y_err = 100 * squeeze(std_error(:, :, m, g));
-        
+
         offset_factor = (m - (numel(methods) + 1) / 2) * 15;
         x_shifted = num_pixels + offset_factor;
-        
+
         errorbar(x_shifted, y_val, y_err, styles{g}, ...
             'Color', colors(m, :), 'LineWidth', 1.5, ...
             'DisplayName', sprintf('%s, %s', methods{m}, meshes{g, 2}));
@@ -128,9 +127,10 @@ function v = flow(alpha__deg, speed)
 end
 
 function calculators = make_calculators(geometry, gsi_model, num_pixel)
-    % Hybrid with Binary shading and hybrid with CoP shading.
+    % Hybrid with Binary shading, hybrid with CoP shading, per pixel.
     calculators = {
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel), gsi_model)
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model)
+        vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel)
     };
 end
