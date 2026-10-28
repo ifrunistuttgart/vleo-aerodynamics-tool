@@ -1,4 +1,3 @@
-
 > **For the original MATLAB/panel-method implementation** described in
 > Geyer et al., *"Aerodynamic attitude control of very-low-earth-orbit
 > satellites: simulative analysis and insights into nonlinear system
@@ -6,7 +5,7 @@
 > [https://doi.org/10.1007/s12567-025-00684-x](https://doi.org/10.1007/s12567-025-00684-x)
 > please visit: [the `legacy-matlab-panel-method` branch](https://github.com/ifrunistuttgart/vleo-aerodynamics-tool/tree/legacy-matlab-panel-method)
 > (see tag [`paper-v1.0`](https://github.com/ifrunistuttgart/vleo-aerodynamics-tool/releases/tag/paper-v1.0)). Development has
-> since moved to a faster, GPU-accelerated toolbox
+> since moved to a faster, GPU-accelerated toolbox.
 
 # VLEO Aerodynamics Tool (VAT)
 
@@ -33,7 +32,7 @@ The VLEO Aerodynamics Tool provides algorithms for fast calculations of panel sh
 
 ## Why VAT is so fast
 This toolbox does the visibility test (*shadowing analysis*) on the GPU, by rasterizing the mesh along the flow direction.
-Geometry and models are initialized once; each subsequent change in flow direction or mesh rotation costs one render pass plus a per-triangle GSI evaluation. This removes the need for precomputation ("Databases").
+Geometry and models are initialized once; each subsequent change in flow direction or mesh rotation costs one render pass plus the GSI evaluation (per visible triangle or per pixel). This removes the need for precomputation ("Databases").
 
 
 ## Requirements

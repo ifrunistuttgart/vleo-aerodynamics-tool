@@ -3,7 +3,8 @@
 % shadowing the +x face of the downstream plate. The leeward faces are
 % never shadowed. The reference is assembled from direct GSI evaluations,
 % using the visible area and centroid of every surface.
-% Compares the hybrid calculators (Binary and CoP shading).
+% Compares the hybrid calculators (Binary and CoP shading) and the per-pixel
+% calculator.
 %   1. over num_pixel at a fixed flow angle, and
 %   2. over the flow angle, which moves the shadow across the back plate,
 % each with the second plate meshed coarsely and finely. Timing and
