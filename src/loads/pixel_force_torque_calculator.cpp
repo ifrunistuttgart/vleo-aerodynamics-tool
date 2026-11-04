@@ -145,9 +145,12 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
 
     m_gpu->g_buffer->Bind();
     GLCall(glViewport(0, 0, static_cast<GLsizei>(m_num_pixel), static_cast<GLsizei>(m_num_pixel)));
-    // No face culling: a surface facing away from the flow still shadows what lies
-    // behind it. Its own pixels carry no load; the integration pass skips them.
-    GLCall(glDisable(GL_CULL_FACE));
+    // Leeward faces are culled, as in the Binary and CoP shaders. On a two-sided plate
+    // the leeward face lies exactly on the windward one; drawn, it could win the depth
+    // tie and hide it. Closed or two-sided geometry needs no leeward face to shadow.
+    GLCall(glEnable(GL_CULL_FACE));
+    GLCall(glCullFace(GL_BACK));
+    GLCall(glFrontFace(GL_CCW));
     GLCall(glEnable(GL_DEPTH_TEST));
     GLCall(glDepthFunc(GL_LESS));
     GLCall(glDepthMask(GL_TRUE));

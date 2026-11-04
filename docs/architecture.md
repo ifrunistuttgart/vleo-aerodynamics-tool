@@ -160,9 +160,10 @@ It owns its own hidden OpenGL context and needs no shading pipeline.
 
 1. **G-buffer pass.** The same orthographic camera along the flow as the shading algorithms
    (`gl::make_flow_camera`) renders the body-frame position and normal of the front-most
-   surface into two RGBA32F targets. Face culling is off, so a sheet facing away from the flow
-   still shades what lies behind it. No physics happens here; this pass is the same for every
-   model.
+   surface into two RGBA32F targets. Leeward faces are culled, as in the shading algorithms, so
+   the leeward face of a two-sided plate cannot hide the windward one it lies on. This assumes
+   closed or two-sided geometry: a one-sided sheet facing away from the flow casts no shadow.
+   No physics happens here; this pass is the same for every model.
 2. **Integration pass** ([pixel_load_integrator.cpp](../src/loads/pixel_load_integrator.cpp)).
    One compute shader, assembled from the model's GLSL, visits every pixel whose surface faces
    the flow (`cos(delta) = dot(n, v_hat) > 0`) and adds

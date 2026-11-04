@@ -88,7 +88,8 @@ void accumulate_pixel(ivec2 pixel, inout vec4 force, inout vec4 torque)
     {
         vec3 n = texelFetch(u_g_normal, pixel, 0).xyz;
         float cos_d = dot(n, u_v_rel) / length(u_v_rel);
-        // Leeward pixels only occlude; their triangles are evaluated on the CPU.
+        // Culling goes by winding, so a triangle whose normal disagrees with it can
+        // still land here; leeward triangles are evaluated on the CPU.
         if (cos_d > 0.0)
         {
             vec3 force_per_projected_area = gsi_force_per_projected_area(n, u_v_rel, u_surface_temp);
