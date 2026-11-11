@@ -1,5 +1,6 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
+#include <stdexcept>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -51,11 +52,11 @@ std::vector<MeshData> load_mesh_data(const std::string& file) {
     );
 
     if (!scene || scene->mNumMeshes == 0) {
-        SPDLOG_ERROR("Failed to load model: {}", file);
-        if (importer.GetErrorString()) {
-            SPDLOG_ERROR("ASSIMP Error: {}", importer.GetErrorString());
-        }
-        return {};
+        const std::string error = importer.GetErrorString();
+        const std::string reason = error.empty() ? "file contains no meshes" : error;
+        SPDLOG_ERROR("Failed to load model '{}': {}", file, reason);
+        throw std::runtime_error("Failed to load model '" + file + "': " + reason);
+
     }
     SPDLOG_DEBUG("Successfully loaded {} meshes", scene->mNumMeshes);
     WarnIfFileUsesGroups(scene, file);
