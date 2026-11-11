@@ -16,7 +16,7 @@ sigma_n           = 0.9;
 sigma_t           = 0.9;
 V_w__m_per_s      = 100.0;
 num_pixel         = 500;
-alphas__deg       = 0:1:360;
+alphas__deg       = 0:0.1:180;
 
 aero_cond = vat.AeroConditions(rho__kg_per_m3, T_atmospheric__K, particle_mass__kg);
 folder = fileparts(mfilename('fullpath'));
@@ -24,7 +24,7 @@ mesh_file = fullfile(folder, '..', 'geometries', 'two_sided_plate.obj');
 geometry = vat.geometry.RotatableMeshGeometry(mesh_file);
 
 model_names = {'Newton', 'Maxwell', 'Cook', 'Schaaf-Chambre', 'Storch', 'Sentman'};
-shading_names = {'Binary', 'CoP'};
+shading_names = {'Binary', 'CoP','pixel'};
 num_models = numel(model_names);
 num_shading = numel(shading_names);
 num_angles = numel(alphas__deg);
@@ -41,6 +41,7 @@ for model_index = 1:num_models
             vat.shading.ShadingPipeline(geometry, 0, num_pixel), gsi_model)
         vat.loads.HybridForceTorqueCalculator(geometry, ...
             vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model)
+        vat.loads.PixelForceTorqueCalculator(geometry,gsi_model,1000)
     };
 
     for angle_index = 1:num_angles
@@ -144,12 +145,14 @@ function plot_errors(alphas, model_names, shading_names, drag_error, lift_error)
         nexttile(2 * i - 1);
         semilogy(alphas, 100 * drag_error(:, i, 1), '-', 'Color', colors(1, :), 'LineWidth', 1);
         hold on; plot(alphas, 100 * drag_error(:, i, 2), '-', 'Color', colors(2, :));
+        plot(alphas, 100*drag_error(:,i,3),'-', 'Color', colors(3, :));
         grid on; title([model_names{i} ' drag error']); ylabel('relative error [%]');
         if i > 4, xlabel('AOA [deg]'); end
         legend(shading_names, 'Location', 'best');
         nexttile(2 * i);
         semilogy(alphas, 100 * lift_error(:, i, 1), '-', 'Color', colors(1, :));
         hold on; plot(alphas, 100 * lift_error(:, i, 2), '-', 'Color', colors(2, :));
+        plot(alphas, 100*lift_error(:,i,3),'-', 'Color', colors(3, :));
         grid on; title([model_names{i} ' lift error']); ylabel('relative error [%]');
         if i > 4, xlabel('AOA [deg]'); end
     end
