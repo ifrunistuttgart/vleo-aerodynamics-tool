@@ -48,8 +48,17 @@ TEST(MeshDataTest, LoaderKeepsIndexedConnectivity) {
     EXPECT_EQ(corners(meshes[0]), corners(HandBuiltTetra()));
 }
 
-TEST(MeshDataTest, MissingFileGivesNoMeshes) {
-    EXPECT_TRUE(load_mesh_data(GetTestDataPath(__FILE__, "does_not_exist.obj")).empty());
+TEST(MeshDataTest, MissingFileThrows) {
+    const std::string missing = GetTestDataPath(__FILE__, "does_not_exist.obj");
+    EXPECT_THROW(load_mesh_data(missing), std::runtime_error);
+    EXPECT_THROW(StaticMeshGeometry{std::string(missing)}, std::runtime_error);
+    EXPECT_THROW(RotatableMeshGeometry{std::string(missing)}, std::runtime_error);
+}
+
+TEST(MeshDataTest, FileWithoutMeshesThrows) {
+    const std::string empty_file = GetTestDataPath(__FILE__, "../geometries/empty.obj");
+    EXPECT_THROW(load_mesh_data(empty_file), std::runtime_error);
+    EXPECT_THROW(StaticMeshGeometry{std::string(empty_file)}, std::runtime_error);
 }
 
 TEST(MeshDataTest, ArrayConstructionMatchesFileConstructionExactly) {
