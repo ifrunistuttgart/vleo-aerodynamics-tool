@@ -1,0 +1,19 @@
+---
+# Deliberately small first set. Widen it once the existing findings are triaged.
+Checks: >-
+  -*,
+  bugprone-*,
+  performance-*,
+  modernize-use-nullptr,
+  modernize-use-override,
+  -bugprone-reserved-identifier,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-throwing-static-initialization,
+  -bugprone-implicit-widening-of-multiplication-result,
+  -bugprone-unhandled-code-paths,
+  -bugprone-switch-missing-default-case,
+  -bugprone-signed-bitwise,
+  -performance-enum-size
+# Only report findings in our own headers and sources, not in third-party includes.
+HeaderFilterRegex: '[\\/](src|test|examples|bindings)[\\/]'
+WarningsAsErrors: ''

@@ -42,3 +42,33 @@ run-example = { cmd = "out/build/dev/examples/{{ name }}/{{ name }}", depends-on
 
 # Opt-in MATLAB bindings (MATLAB required).
 build-matlab = "cmake --preset dev-matlab && cmake --build --preset dev-matlab"
+
+# Formatting and linting. Kept out of the default environment, so the hooks and
+# `format` never pull in VTK, assimp or the compiler. Run as `pixi run -e lint <task>`.
+[feature.lint.dependencies]
+clang-format = "23.*"
+gersemi = "*"
+prek = "*"
+
+[feature.lint.pypi-dependencies]
+miss-hit-core = "*"
+
+[feature.lint.tasks]
+format = "prek run --all-files"
+setup-hooks = "prek install"
+# Uses MATLAB's own analyzer, so it needs a local MATLAB install. Fails on errors only.
+lint-matlab = "matlab -batch \"r = codeIssues('matlab/+vat'); n = nnz(r.Issues.Severity == 'error'); fprintf('%d error(s), %d issue(s)\\n', n, height(r.Issues)); exit(double(n > 0))\""
+
+# clang-tidy ships in clang-tools. It reads out/build/dev/compile_commands.json, so run
+# `pixi run build` (default env) first. Do not add a build dependency here: building in
+# this env makes the post-build gtest discovery fail, because the DLLs live in the default env.
+[feature.tidy.dependencies]
+clang-tools = "*"
+
+[feature.tidy.tasks]
+# run-clang-tidy is an extensionless Python script on Windows, so it is started through python.
+lint-cpp = "python .pixi/envs/tidy/Library/bin/run-clang-tidy -p out/build/dev -quiet -extra-arg-before=--driver-mode=cl"
+
+[environments]
+lint = { features = ["lint"], no-default-feature = true }
+tidy = { features = ["tidy"] }
