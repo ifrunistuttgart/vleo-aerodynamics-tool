@@ -1,0 +1,14 @@
+---
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++20
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+AccessModifierOffset: -4
+PointerAlignment: Left
+LineEnding: DeriveLF
+# Off on purpose: hybrid_aero_load_calculator.cpp defines FMT_UNICODE before
+# including spdlog, and reordering includes would break that.
+SortIncludes: Never

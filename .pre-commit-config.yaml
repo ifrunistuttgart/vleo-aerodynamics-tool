@@ -1,0 +1,23 @@
+# Hooks run through pixi so they use the pinned tool versions in pixi.lock.
+# Install once with: pixi run -e lint setup-hooks
+repos:
+  - repo: local
+    hooks:
+      - id: clang-format
+        name: clang-format
+        entry: pixi run -e lint clang-format -i
+        language: system
+        types_or: [c, c++]
+
+      - id: gersemi
+        name: gersemi
+        entry: pixi run -e lint gersemi -i
+        language: system
+        files: (^|/)CMakeLists\.txt$|\.cmake$
+
+      - id: mh-style
+        name: MISS_HIT style
+        entry: pixi run -e lint mh_style --fix
+        language: system
+        files: \.m$
+        exclude: ^matlab/(bin|resources)/
