@@ -56,11 +56,13 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
     IGeometryShadingData& geometry,
     IGSIModel& gsi_model,
     unsigned int num_pixel,
-    PixelLoadOptions options)
+    PixelLoadOptions options,
+    FlowRegime flow_regime)
     : m_geometry(geometry),
       m_gsi_model(gsi_model),
       m_num_pixel(num_pixel),
       m_options(options),
+      m_flow_regime(flow_regime),
       m_gpu(std::make_unique<GpuState>()) {
     const std::string gsi_glsl = m_gsi_model.glsl_force_per_projected_area();
     if (gsi_glsl.empty()) {
@@ -190,22 +192,25 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     m_projected_area__m2 = sums.windward_pixels * static_cast<double>(pixel_area__m2);
 
     // Leeward triangles are invisible to the camera: per triangle on the CPU, unshadowed.
-    std::span<const float> areas = m_geometry.get_areas();
-    std::span<const float> normals = m_geometry.get_transformed_normals();
-    std::span<const float> centroids = m_geometry.get_transformed_centroids();
-    for (unsigned int i = 0; i < m_geometry.get_num_triangles(); i++) {
-        const glm::vec3 normal{normals[3 * i], normals[3 * i + 1], normals[3 * i + 2]};
-        // Written as !(... <= 0) so degenerate triangles, whose normal is NaN, are
-        // skipped too: they have no area and would otherwise poison the sum.
-        if (!(glm::dot(normal, v_rel__m_per_s) <= 0.0f)) {
-            continue;
+    // Hyperthermal flow: leeward surfaces receive no load, so they are left out.
+    if (m_flow_regime.load() == FlowRegime::Hypothermal) {
+        std::span<const float> areas = m_geometry.get_areas();
+        std::span<const float> normals = m_geometry.get_transformed_normals();
+        std::span<const float> centroids = m_geometry.get_transformed_centroids();
+        for (unsigned int i = 0; i < m_geometry.get_num_triangles(); i++) {
+            const glm::vec3 normal{normals[3 * i], normals[3 * i + 1], normals[3 * i + 2]};
+            // Written as !(... <= 0) so degenerate triangles, whose normal is NaN, are
+            // skipped too: they have no area and would otherwise poison the sum.
+            if (!(glm::dot(normal, v_rel__m_per_s) <= 0.0f)) {
+                continue;
+            }
+            const glm::vec3 centroid{centroids[3 * i], centroids[3 * i + 1], centroids[3 * i + 2]};
+            glm::vec3 aero_force__N;
+            glm::vec3 aero_torque__Nm;
+            m_gsi_model.calc_aero_force_and_torque(areas[i], normal, centroid, v_rel__m_per_s, surface_temp__K, aero, aero_force__N, aero_torque__Nm);
+            force_sum__N += glm::dvec3(aero_force__N);
+            torque_sum__Nm += glm::dvec3(aero_torque__Nm);
         }
-        const glm::vec3 centroid{centroids[3 * i], centroids[3 * i + 1], centroids[3 * i + 2]};
-        glm::vec3 aero_force__N;
-        glm::vec3 aero_torque__Nm;
-        m_gsi_model.calc_aero_force_and_torque(areas[i], normal, centroid, v_rel__m_per_s, surface_temp__K, aero, aero_force__N, aero_torque__Nm);
-        force_sum__N += glm::dvec3(aero_force__N);
-        torque_sum__Nm += glm::dvec3(aero_torque__Nm);
     }
 
     force__N = glm::vec3(force_sum__N);

@@ -152,6 +152,12 @@ assigned visibility 1.0. This is safe because the GSI model is itself responsibl
 approximately zero force on a leeward element, and it avoids paying for a visibility lookup on
 triangles that cannot be loaded anyway.
 
+Every `IAeroLoadCalculator` carries a `FlowRegime` (`set_flow_regime` / `get_flow_regime`; for
+construction, both calculators take a trailing `FlowRegime` constructor argument). The default,
+`Hypothermal`, behaves as described. With `Hyperthermal`, back-facing triangles are skipped
+entirely and only windward surfaces contribute; the Pixel calculator then skips its leeward CPU
+loop. In MATLAB: `Hyperthermal=true` at construction, or the `Hyperthermal` property.
+
 ## How one evaluation flows (Pixel)
 
 `PixelForceTorqueCalculator` ([pixel_force_torque_calculator.cpp](../src/loads/pixel_force_torque_calculator.cpp))

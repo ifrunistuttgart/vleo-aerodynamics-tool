@@ -40,6 +40,7 @@
 // entry point by that exact name -- so pull the toolbox types in individually
 // rather than wrapping this translation unit in a namespace.
 using vat::AeroConditions;
+using vat::FlowRegime;
 using vat::IGSIModel;
 using vat::gsi_models::Cook;
 using vat::gsi_models::Maxwell;
@@ -573,22 +574,25 @@ public:
             }
             if (cls == "loads.HybridForceTorqueCalculator") {
                 if (cmd == "new") {
-                    validate_input_size(inputs, 4);
+                    validate_input_size(inputs, 5);
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
                     validate_argument(inputs, 2, "int", 1);
                     validate_argument(inputs, 3, "int", 1);
+                    validate_argument(inputs, 4, "int", 1);
 
                     const int geometry_id = inputs[1][0];
                     const int shading_pipeline_id = inputs[2][0];
                     const int gsi_id = inputs[3][0];
+                    const FlowRegime flow_regime = static_cast<int>(inputs[4][0]) != 0 ? FlowRegime::Hyperthermal : FlowRegime::Hypothermal;
 
                     hybrid_aero_load_calculator_map.insert(
                         {hybrid_aero_max_id,
                         std::make_unique<HybridForceTorqueCalculator>(
                             *geometry_map.at(geometry_id),
                             *shading_pipeline_map.at(shading_pipeline_id),
-                            *gsi_map.at(gsi_id)
+                            *gsi_map.at(gsi_id),
+                            flow_regime
                         )}
                     );
 
@@ -618,6 +622,25 @@ public:
                     outputs[1] = factory.createArray({3}, {torque__Nm.x, torque__Nm.y, torque__Nm.z});
                     return;
                 }
+                if (cmd=="set_hyperthermal") {
+                    validate_input_size(inputs, 3);
+                    validate_output_size(outputs, 0);
+                    validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 2, "int", 1);
+                    const int id = inputs[1][0];
+                    hybrid_aero_load_calculator_map.at(id)->set_flow_regime(
+                        static_cast<int>(inputs[2][0]) != 0 ? FlowRegime::Hyperthermal : FlowRegime::Hypothermal);
+                    return;
+                }
+                if (cmd=="get_hyperthermal") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    outputs[0] = factory.createScalar<int>(
+                        hybrid_aero_load_calculator_map.at(id)->get_flow_regime() == FlowRegime::Hyperthermal ? 1 : 0);
+                    return;
+                }
                 if (cmd=="delete") {
                     validate_input_size(inputs, 2);
                     validate_output_size(outputs, 0);
@@ -629,13 +652,14 @@ public:
             }
             if (cls == "loads.PixelForceTorqueCalculator") {
                 if (cmd == "new") {
-                    validate_input_size(inputs, 6);
+                    validate_input_size(inputs, 7);
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
                     validate_argument(inputs, 2, "int", 1);
                     validate_argument(inputs, 3, "int", 1);
                     validate_argument(inputs, 4, "double", 1);
                     validate_argument(inputs, 5, "int", 1);
+                    validate_argument(inputs, 6, "int", 1);
 
                     const int geometry_id = inputs[1][0];
                     const int gsi_id = inputs[2][0];
@@ -646,6 +670,7 @@ public:
                     PixelLoadOptions options;
                     options.min_cos_delta = static_cast<float>(static_cast<double>(inputs[4][0]));
                     options.keep_pressure_image = static_cast<int>(inputs[5][0]) != 0;
+                    const FlowRegime flow_regime = static_cast<int>(inputs[6][0]) != 0 ? FlowRegime::Hyperthermal : FlowRegime::Hypothermal;
 
                     pixel_aero_load_calculator_map.insert(
                         {pixel_aero_max_id,
@@ -653,7 +678,8 @@ public:
                             *geometry_map.at(geometry_id),
                             *gsi_map.at(gsi_id),
                             static_cast<unsigned int>(num_pixel),
-                            options
+                            options,
+                            flow_regime
                         )}
                     );
 
@@ -700,6 +726,25 @@ public:
                         }
                     }
                     outputs[0] = factory.createArray({n, n}, column_major.begin(), column_major.end());
+                    return;
+                }
+                if (cmd=="set_hyperthermal") {
+                    validate_input_size(inputs, 3);
+                    validate_output_size(outputs, 0);
+                    validate_argument(inputs, 1, "int", 1);
+                    validate_argument(inputs, 2, "int", 1);
+                    const int id = inputs[1][0];
+                    pixel_aero_load_calculator_map.at(id)->set_flow_regime(
+                        static_cast<int>(inputs[2][0]) != 0 ? FlowRegime::Hyperthermal : FlowRegime::Hypothermal);
+                    return;
+                }
+                if (cmd=="get_hyperthermal") {
+                    validate_input_size(inputs, 2);
+                    validate_output_size(outputs, 1);
+                    validate_argument(inputs, 1, "int", 1);
+                    const int id = inputs[1][0];
+                    outputs[0] = factory.createScalar<int>(
+                        pixel_aero_load_calculator_map.at(id)->get_flow_regime() == FlowRegime::Hyperthermal ? 1 : 0);
                     return;
                 }
                 if (cmd=="get_last_areas") {

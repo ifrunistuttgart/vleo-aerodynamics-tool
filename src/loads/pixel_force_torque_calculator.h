@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <memory>
 #include <vector>
 #include "Iaero_load_calculator.h"
@@ -42,15 +43,21 @@ public:
      * @param gsi_model Reference to the GSI model; must have a GPU implementation.
      * @param num_pixel Edge length of the square render target.
      * @param options See PixelLoadOptions.
+     * @param flow_regime Initial regime; Hyperthermal skips leeward-facing triangles, see
+     *        FlowRegime. Change it later with set_flow_regime().
      * @throws std::invalid_argument if the model has no GPU implementation or num_pixel is 0.
      */
-    PixelForceTorqueCalculator(IGeometryShadingData& geometry, IGSIModel& gsi_model, unsigned int num_pixel, PixelLoadOptions options = {});
+    PixelForceTorqueCalculator(IGeometryShadingData& geometry, IGSIModel& gsi_model, unsigned int num_pixel, PixelLoadOptions options = {},
+        FlowRegime flow_regime = FlowRegime::Hypothermal);
     ~PixelForceTorqueCalculator() override;
 
     PixelForceTorqueCalculator(const PixelForceTorqueCalculator&) = delete;
     PixelForceTorqueCalculator& operator=(const PixelForceTorqueCalculator&) = delete;
 
     int calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions& aero, glm::vec3& torque__Nm, glm::vec3& force__N) override;
+
+    void set_flow_regime(FlowRegime regime) override { m_flow_regime.store(regime); }
+    [[nodiscard]] FlowRegime get_flow_regime() const override { return m_flow_regime.load(); }
 
     /**
      * Pressure (normal component of the force per wetted area) [N/m^2] of the last
@@ -72,6 +79,7 @@ private:
     IGSIModel& m_gsi_model;
     const unsigned int m_num_pixel;
     const PixelLoadOptions m_options;
+    std::atomic<FlowRegime> m_flow_regime; // run-time switchable; atomic so a concurrent set is not a data race
     std::unique_ptr<GpuState> m_gpu;
 
     std::vector<float> m_pressure_image;

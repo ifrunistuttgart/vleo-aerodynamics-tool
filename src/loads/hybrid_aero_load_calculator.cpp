@@ -1,4 +1,5 @@
 #include "hybrid_aero_load_calculator.h"
+#include <cmath>
 #include <vector>
 #include <span>
 #include <glm/glm.hpp>
@@ -14,8 +15,10 @@ namespace vat::loads {
 HybridForceTorqueCalculator::HybridForceTorqueCalculator(
 	IGeometryShadingData& geometry,
 	IShadingPipeline& shading_pipeline,
-	IGSIModel& gsi_model)
-	: m_shading_pipeline(shading_pipeline),
+	IGSIModel& gsi_model,
+	FlowRegime flow_regime)
+	: m_flow_regime(flow_regime),
+	m_shading_pipeline(shading_pipeline),
 	m_geometry(geometry),
 	m_gsi_model(gsi_model)
 {
@@ -52,9 +55,19 @@ int HybridForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__
 		glm::vec3 aero_force__N;
 		glm::vec3 aero_torque__Nm;
 
+		const float cos_incidence = glm::dot(normal, v_rel__m_per_s);
+		// Degenerate triangles have a NaN normal and no area; skip them, as the pixel
+		// calculator does, so they cannot poison the sum.
+		if (std::isnan(cos_incidence)) {
+			continue;
+		}
+
 		float visibility;
-		if (glm::dot(normal, v_rel__m_per_s) <= 0) {
+		if (cos_incidence <= 0) {
 			//backward facing
+			if (m_flow_regime == FlowRegime::Hyperthermal) {
+				continue;
+			}
 			visibility = 1.0f;
 		}
 		else

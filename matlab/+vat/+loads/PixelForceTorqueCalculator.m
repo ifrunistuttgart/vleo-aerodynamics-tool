@@ -17,6 +17,11 @@ classdef PixelForceTorqueCalculator < handle
     properties %(Access = private, Hidden = true)
         handle_ = int32(-1);
     end
+    properties (Dependent)
+        % Hyperthermal  true: surfaces facing away from the flow are ignored.
+        %                false (default): they are evaluated per triangle, without shadowing.
+        Hyperthermal (1,1) logical
+    end
     properties (Access = private)
         % The C++ calculator refers to these; holding them keeps them alive.
         geometry_
@@ -40,6 +45,8 @@ classdef PixelForceTorqueCalculator < handle
             %                           edge-on (default 1e-3).
             %       KeepPressureImage - Read back the per-pixel pressure after every
             %                           evaluation, see pressure_image (default false).
+            %       Hyperthermal      - If true, surfaces facing away from the flow are
+            %                           ignored (default false).
             %
             arguments
                 geometry (1,1) vat.geometry.RotatableMeshGeometry
@@ -47,11 +54,12 @@ classdef PixelForceTorqueCalculator < handle
                 num_pixel (1,1) {mustBeInteger, mustBePositive} = 1000
                 options.MinCosDelta (1,1) double {mustBePositive, mustBeLessThanOrEqual(options.MinCosDelta, 1)} = 1e-3
                 options.KeepPressureImage (1,1) logical = false
+                options.Hyperthermal (1,1) logical = false
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             this.handle_ = int32(MexGateway("loads.PixelForceTorqueCalculator.new", ...
                 int32(geometry.handle_), int32(gsi_model.handle_), int32(num_pixel), ...
-                double(options.MinCosDelta), int32(options.KeepPressureImage)));
+                double(options.MinCosDelta), int32(options.KeepPressureImage), int32(options.Hyperthermal)));
             this.geometry_ = geometry;
             this.gsi_model_ = gsi_model;
         end
@@ -106,6 +114,14 @@ classdef PixelForceTorqueCalculator < handle
                 this (1,1) vat.loads.PixelForceTorqueCalculator
             end
             [wetted__m2, projected__m2] = MexGateway("loads.PixelForceTorqueCalculator.get_last_areas", int32(this.handle_));
+        end
+
+        function value = get.Hyperthermal(this)
+            value = logical(MexGateway("loads.PixelForceTorqueCalculator.get_hyperthermal", int32(this.handle_)));
+        end
+
+        function set.Hyperthermal(this, value)
+            MexGateway("loads.PixelForceTorqueCalculator.set_hyperthermal", int32(this.handle_), int32(value));
         end
 
         function delete(this)
