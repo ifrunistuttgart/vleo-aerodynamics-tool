@@ -12,6 +12,8 @@ add_library(gsi_models
         schaaf_chambre.h
 		newton.cpp
 		newton.h
+		projected_area.cpp
+		projected_area.h
 		storch.cpp
 		storch.h
         gsi.h)

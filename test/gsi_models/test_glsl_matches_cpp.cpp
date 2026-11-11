@@ -16,6 +16,7 @@
 #include "cook.h"
 #include "maxwell.h"
 #include "newton.h"
+#include "projected_area.h"
 #include "schaaf_chambre.h"
 #include "sentman.h"
 #include "storch.h"
@@ -127,6 +128,9 @@ std::vector<glm::vec4> run_glsl(const IGSIModel& model, const AeroConditions& ae
 struct ModelCase {
     std::string name;
     std::function<std::unique_ptr<IGSIModel>()> make;
+    // True for models whose output is not a pressure (e.g. ProjectedArea, which returns an
+    // area fraction): error is then judged against 1 instead of rho*v^2.
+    bool dimensionless = false;
 };
 
 class GlslMatchesCpp : public ::testing::TestWithParam<ModelCase> {
@@ -173,10 +177,14 @@ TEST_P(GlslMatchesCpp, OnRandomWindwardInputs) {
 
             // Relative to rho*v^2 per projected area, the natural scale of every model,
             // so results close to zero are judged on the same footing as large ones.
-            const double scale = aero.density__kg_per_m3 * glm::dot(glm::dvec3(v), glm::dvec3(v)) / cos_d;
+            const double scale = GetParam().dimensionless
+                ? 1.0
+                : aero.density__kg_per_m3 * glm::dot(glm::dvec3(v), glm::dvec3(v)) / cos_d;
             const double error = glm::length(glm::dvec3(gpu[i]) - expected) / scale;
             max_error = std::max(max_error, error);
-            ASSERT_LT(error, 1e-5) << GetParam().name << " sample " << i
+            // The C++ side divides a float cos_d (cancellation in dot(n, v) at grazing incidence)
+            // by a double one, which costs ~1e-5 relative; looser bound for the unit-scale model.
+            ASSERT_LT(error, GetParam().dimensionless ? 1e-4 : 1e-5) << GetParam().name << " sample " << i
                 << " n=(" << n.x << ", " << n.y << ", " << n.z << ") v=(" << v.x << ", " << v.y << ", " << v.z
                 << ") Tw=" << wall_temp << " cos_d=" << cos_d;
         }
@@ -231,6 +239,7 @@ void main()
 
 INSTANTIATE_TEST_SUITE_P(AllModels, GlslMatchesCpp, ::testing::Values(
     ModelCase{"Newton", [] { return std::make_unique<Newton>(); }},
+    ModelCase{"ProjectedArea", [] { return std::make_unique<ProjectedArea>(); }, true},
     ModelCase{"Cook", [] { return std::make_unique<Cook>(0.9f); }},
     ModelCase{"Maxwell", [] { return std::make_unique<Maxwell>(0.9f); }},
     ModelCase{"SchaafChambre", [] { return std::make_unique<SchaafChambre>(0.9f, 0.9f); }},
