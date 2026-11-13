@@ -4,6 +4,7 @@
 
 #include "gl_helpers.h"
 #include "pixel_load_integrator.h"
+#include "leeward_classification.h"
 #include "shaders/pixel_loads_glsl.h"
 
 namespace vat::loads {
@@ -72,6 +73,7 @@ PixelLoadIntegrator::Sums PixelLoadIntegrator::integrate(unsigned int position_t
 	m_shader->SetUniform1f("u_surface_temp", surface_temp__K);
 	m_shader->SetUniform1f("u_pixel_area", pixel_area__m2);
 	m_shader->SetUniform1f("u_min_cos_delta", min_cos_delta);
+	m_shader->SetUniform1f("u_edge_on_threshold", edge_on_threshold(glm::length(v_rel__m_per_s)));
 	for (const GlslUniform& uniform : gsi_uniforms) {
 		std::visit([&](auto value) {
 			if constexpr (std::is_same_v<decltype(value), int>) {

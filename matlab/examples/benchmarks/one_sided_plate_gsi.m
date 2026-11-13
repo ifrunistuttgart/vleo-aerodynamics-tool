@@ -17,8 +17,8 @@ alpha_e           = 0.9;
 sigma_n           = 0.9;
 sigma_t           = 0.9;
 V_w__m_per_s      = 100.0;
-num_pixel         = 500;
-alphas__deg       = 170:0.1:190;
+num_pixel         = 1000;
+alphas__deg       = 178:0.01:182;
 hyperthermal      = false;
 
 aero_cond = vat.AeroConditions(rho__kg_per_m3, T_atmospheric__K, particle_mass__kg);
@@ -27,7 +27,7 @@ mesh_file = fullfile(folder, '..', 'geometries', 'one_sided_plate.obj');
 geometry = vat.geometry.RotatableMeshGeometry(mesh_file);
 
 model_names = {'Newton', 'Maxwell', 'Cook', 'Schaaf-Chambre', 'Storch', 'Sentman'};
-shading_names = {'Binary', 'Binary MSAA','CoP', 'pixel'};
+shading_names = {'Binary 8x MSAA','CoP', 'pixel'};
 num_models = numel(model_names);
 num_shading = numel(shading_names);
 num_angles = numel(alphas__deg);
@@ -41,10 +41,8 @@ for model_index = 1:num_models
     gsi_model = make_model(model_names{model_index}, alpha_e, sigma_n, sigma_t, V_w__m_per_s);
     calculators = {
         vat.loads.HybridForceTorqueCalculator(geometry, ...
-            vat.shading.ShadingPipeline(geometry, 0, num_pixel), gsi_model, Hyperthermal=hyperthermal)
+            vat.shading.ShadingPipeline(geometry, 0, num_pixel, 8), gsi_model, Hyperthermal=hyperthermal)
         vat.loads.HybridForceTorqueCalculator(geometry,...
-            vat.shading.ShadingPipeline(geometry, 2, num_pixel), gsi_model)
-        vat.loads.HybridForceTorqueCalculator(geometry, ...
             vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model, Hyperthermal=hyperthermal)
         vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel, Hyperthermal=hyperthermal)
     };

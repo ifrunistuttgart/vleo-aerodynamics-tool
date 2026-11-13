@@ -1,4 +1,7 @@
+#include <cmath>
+#include <limits>
 #include "pixel_force_torque_calculator.h"
+#include "leeward_classification.h"
 #include <array>
 #include <span>
 #include <stdexcept>
@@ -133,6 +136,13 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     m_projected_area__m2 = 0.0;
 
     const float rel_speed = glm::length(v_rel__m_per_s);
+    if (!std::isfinite(rel_speed)) {
+        SPDLOG_ERROR("calc_aero_torque_force called with a non-finite relative velocity ({}, {}, {}); the load is undefined, returning NaN and an error code",
+            v_rel__m_per_s.x, v_rel__m_per_s.y, v_rel__m_per_s.z);
+        torque__Nm = glm::vec3(std::numeric_limits<float>::quiet_NaN());
+        force__N = glm::vec3(std::numeric_limits<float>::quiet_NaN());
+        return -1;
+    }
     if (rel_speed <= 0.0f) {
         SPDLOG_WARN("calc_aero_torque_force called with zero relative velocity; returning zero force/torque");
         return 0;
@@ -199,9 +209,9 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
         std::span<const float> centroids = m_geometry.get_transformed_centroids();
         for (unsigned int i = 0; i < m_geometry.get_num_triangles(); i++) {
             const glm::vec3 normal{normals[3 * i], normals[3 * i + 1], normals[3 * i + 2]};
-            // Written as !(... <= 0) so degenerate triangles, whose normal is NaN, are
-            // skipped too: they have no area and would otherwise poison the sum.
-            if (!(glm::dot(normal, v_rel__m_per_s) <= 0.0f)) {
+            // is_leeward is false for a NaN dot product, so degenerate triangles, which
+            // have no area and would otherwise poison the sum, are skipped too.
+            if (!is_leeward(glm::dot(normal, v_rel__m_per_s), rel_speed)) {
                 continue;
             }
             const glm::vec3 centroid{centroids[3 * i], centroids[3 * i + 1], centroids[3 * i + 2]};

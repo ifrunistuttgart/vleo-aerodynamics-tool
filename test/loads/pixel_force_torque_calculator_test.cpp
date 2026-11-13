@@ -2,6 +2,7 @@
 #include <spdlog/spdlog.h>
 #include <gtest/gtest.h>
 #include <filesystem>
+#include <limits>
 #include <memory>
 #include <glm/glm.hpp>
 
@@ -107,6 +108,30 @@ TEST(PixelForceTorqueCalculatorTest, HyperthermalMatchesHybridHyperthermal) {
     pixel.set_flow_regime(FlowRegime::Hypothermal);
     pixel.calc_aero_torque_force(v_rel, 300.0f, aero, torque_pixel, force_pixel);
     EXPECT_NE(force_pixel, force_hyper);
+}
+
+// Zero speed gives zero load; a non-finite speed makes the load undefined and is an error.
+TEST(PixelForceTorqueCalculatorTest, NonFiniteRelativeVelocityIsAnError) {
+    StaticMeshGeometry geometry(tetrahedron_path());
+    Newton newton;
+    AeroConditions aero = leo_conditions();
+    PixelForceTorqueCalculator pixel(geometry, newton, 256);
+
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float inf = std::numeric_limits<float>::infinity();
+    const glm::vec3 bad_velocities[] = {
+        {nan, 0.0f, 0.0f}, {7800.0f, nan, 0.0f}, {inf, 0.0f, 0.0f}, {0.0f, -inf, 0.0f}, {nan, inf, 0.0f}};
+    for (const glm::vec3& v_rel : bad_velocities) {
+        glm::vec3 force(1.0f), torque(1.0f);
+        EXPECT_NE(pixel.calc_aero_torque_force(v_rel, 300.0f, aero, torque, force), 0);
+        EXPECT_TRUE(glm::all(glm::isnan(force)));
+        EXPECT_TRUE(glm::all(glm::isnan(torque)));
+    }
+
+    glm::vec3 force(1.0f), torque(1.0f);
+    EXPECT_EQ(pixel.calc_aero_torque_force(glm::vec3(0.0f), 300.0f, aero, torque, force), 0);
+    EXPECT_EQ(force, glm::vec3(0.0f));
+    EXPECT_EQ(torque, glm::vec3(0.0f));
 }
 
 // A model may leave its GPU implementation empty; the calculator must refuse it.

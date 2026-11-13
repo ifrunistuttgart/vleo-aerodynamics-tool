@@ -2,6 +2,7 @@
 #include <spdlog/spdlog.h>
 #include <gtest/gtest.h>
 #include <filesystem>
+#include <limits>
 #include <memory>
 #include <glm/glm.hpp>
 
@@ -70,6 +71,26 @@ TEST_F(HybridForceTorqueIntegrationTest, TestShading) {
 	EXPECT_NEAR(torque.y, -0.3820e-4f, 1e-5f);
 	EXPECT_NEAR(torque.z, 0.0f, 1e-5f);
 	SPDLOG_INFO("[TEST] Aero torque and force calculation test completed.");
+}
+
+TEST_F(HybridForceTorqueIntegrationTest, NonFiniteRelativeVelocityIsAnError) {
+	AeroConditions conditions = create_leo_conditions();
+	const float nan = std::numeric_limits<float>::quiet_NaN();
+	const float inf = std::numeric_limits<float>::infinity();
+	const glm::vec3 bad_velocities[] = {
+		{nan, 0.0f, 0.0f}, {7800.0f, nan, 0.0f}, {inf, 0.0f, 0.0f}, {0.0f, -inf, 0.0f}, {nan, inf, 0.0f}};
+	for (const glm::vec3& v_rel : bad_velocities) {
+		glm::vec3 force(1.0f), torque(1.0f);
+		EXPECT_NE(force_torque_calculator->calc_aero_torque_force(v_rel, 300.0f, conditions, torque, force), 0);
+		EXPECT_TRUE(glm::all(glm::isnan(force)));
+		EXPECT_TRUE(glm::all(glm::isnan(torque)));
+	}
+
+	// Zero speed is not an error: the load is zero.
+	glm::vec3 force(1.0f), torque(1.0f);
+	EXPECT_EQ(force_torque_calculator->calc_aero_torque_force(glm::vec3(0.0f), 300.0f, conditions, torque, force), 0);
+	EXPECT_EQ(force, glm::vec3(0.0f));
+	EXPECT_EQ(torque, glm::vec3(0.0f));
 }
 
 // Hyperthermal = hypothermal minus the unshadowed load of the leeward triangles.
