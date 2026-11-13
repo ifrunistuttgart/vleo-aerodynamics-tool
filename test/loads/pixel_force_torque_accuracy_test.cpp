@@ -192,6 +192,45 @@ TEST(PixelAccuracyTest, ConvexBodiesAgreeWithHybridForEveryModel) {
     }
 }
 
+// (b) continued: a two-sided plate is two coincident faces with opposite normals. The
+// result must not depend on which face comes first or which side the flow hits.
+TEST(PixelAccuracyTest, TwoSidedPlateAgreesWithHybridForEitherFaceOrder) {
+    Newton newton;
+    Sentman sentman(1, 0.9f);
+    const std::vector<std::pair<const char*, IGSIModel*>> models{{"Newton", &newton}, {"Sentman", &sentman}};
+
+    // A tilted parallelogram, so its outline is not aligned with the pixel grid.
+    const glm::vec3 p0(0.1f, -0.4f, -0.3f), e1(0.1f, 0.8f, 0.1f), e2(-0.2f, 0.1f, 0.7f);
+    const glm::vec3 p1 = p0 + e1, p2 = p0 + e1 + e2, p3 = p0 + e2;
+    InMemoryGeometry front_first, back_first;
+    front_first.add_quad(p0, p1, p2, p3);
+    front_first.add_quad(p0, p3, p2, p1);
+    back_first.add_quad(p0, p3, p2, p1);
+    back_first.add_quad(p0, p1, p2, p3);
+    const std::vector<std::pair<const char*, IGeometryShadingData*>> bodies{
+        {"front first", &front_first}, {"back first", &back_first}};
+
+    const glm::vec3 v(7000.0f, 1500.0f, -2500.0f);
+    constexpr unsigned int N = 1024;
+    for (const auto& [body_name, geometry] : bodies) {
+        const double radius = geometry->get_bounding_sphere_radius();
+        ShadingPipeline pipeline(*geometry, ShadingAlgorithmType::Binary, N);
+        for (const auto& [model_name, model] : models) {
+            HybridForceTorqueCalculator hybrid(*geometry, pipeline, *model);
+            PixelForceTorqueCalculator pixel(*geometry, *model, N);
+            for (float side : {1.0f, -1.0f}) {
+                const Loads reference = evaluate(hybrid, side * v);
+                const Errors e = relative_errors(evaluate(pixel, side * v), reference, radius);
+                std::printf("[          ] %-11s %-7s side %+.0f force %.2e torque %.2e\n",
+                    body_name, model_name, side, e.force, e.torque);
+                ASSERT_GT(glm::length(reference.force__N), 0.0) << body_name << " " << model_name;
+                EXPECT_LT(e.force, 4.0 / N) << body_name << " " << model_name << " side " << side;
+                EXPECT_LT(e.torque, 4.0 / N) << body_name << " " << model_name << " side " << side;
+            }
+        }
+    }
+}
+
 // (c) The front plate shades part of the back plate. The pixel result must match the
 // analytic visible area, force and moment, which Hybrid cannot: it either counts the
 // partly shaded back plate fully or not at all.

@@ -188,10 +188,10 @@ void run_timings(RotatableMeshGeometry& sat, const std::vector<unsigned int>& re
     }));
 
     std::printf("[C] shade() and end-to-end\n");
-    std::printf("    %6s %11s %11s %11s %11s\n", "P", "CoP", "Binary", "full", "full-shade");
+    std::printf("    %6s %11s %11s %11s %11s %11s\n", "P", "CoP", "Binary", "Binary 8x", "full", "full-shade");
     for (unsigned int P : resolutions) {
         const int reps = P >= 4000 ? 3 : 5;
-        double t_cop, t_binary, t_full;
+        double t_cop, t_binary, t_msaa, t_full;
         {
             ShadingPipeline pipeline(sat, ShadingAlgorithmType::CoP, P);
             t_cop = time_ms(reps, [&] { auto r = pipeline.shade(vhat); (void)r.size(); });
@@ -203,7 +203,11 @@ void run_timings(RotatableMeshGeometry& sat, const std::vector<unsigned int>& re
             ShadingPipeline pipeline(sat, ShadingAlgorithmType::Binary, P);
             t_binary = time_ms(reps, [&] { auto r = pipeline.shade(vhat); (void)r.size(); });
         }
-        std::printf("    %6u %11.3f %11.3f %11.3f %11.3f\n", P, t_cop, t_binary, t_full, t_full - t_cop);
+        {
+            ShadingPipeline pipeline(sat, ShadingAlgorithmType::Binary, P, 8);
+            t_msaa = time_ms(reps, [&] { auto r = pipeline.shade(vhat); (void)r.size(); });
+        }
+        std::printf("    %6u %11.3f %11.3f %11.3f %11.3f %11.3f\n", P, t_cop, t_binary, t_msaa, t_full, t_full - t_cop);
     }
     std::printf("\n");
 }
@@ -265,6 +269,11 @@ void run_pixel_comparison(RotatableMeshGeometry& sat, const std::vector<unsigned
             ShadingPipeline pipeline(sat, ShadingAlgorithmType::Binary, P);
             HybridForceTorqueCalculator calc(sat, pipeline, gsi);
             report(P, "hybrid-bin", calc);
+        }
+        {
+            ShadingPipeline pipeline(sat, ShadingAlgorithmType::Binary, P, 8);
+            HybridForceTorqueCalculator calc(sat, pipeline, gsi);
+            report(P, "hybrid-bin8x", calc);
         }
         {
             ShadingPipeline pipeline(sat, ShadingAlgorithmType::CoP, P);

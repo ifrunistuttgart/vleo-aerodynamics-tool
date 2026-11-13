@@ -2,6 +2,7 @@
 #include <spdlog/spdlog.h>
 #include <gtest/gtest.h>
 #include <filesystem>
+#include <limits>
 #include <memory>
 #include <glm/glm.hpp>
 
@@ -70,4 +71,65 @@ TEST_F(HybridForceTorqueIntegrationTest, TestShading) {
 	EXPECT_NEAR(torque.y, -0.3820e-4f, 1e-5f);
 	EXPECT_NEAR(torque.z, 0.0f, 1e-5f);
 	SPDLOG_INFO("[TEST] Aero torque and force calculation test completed.");
+}
+
+TEST_F(HybridForceTorqueIntegrationTest, NonFiniteRelativeVelocityIsAnError) {
+	AeroConditions conditions = create_leo_conditions();
+	const float nan = std::numeric_limits<float>::quiet_NaN();
+	const float inf = std::numeric_limits<float>::infinity();
+	const glm::vec3 bad_velocities[] = {
+		{nan, 0.0f, 0.0f}, {7800.0f, nan, 0.0f}, {inf, 0.0f, 0.0f}, {0.0f, -inf, 0.0f}, {nan, inf, 0.0f}};
+	for (const glm::vec3& v_rel : bad_velocities) {
+		glm::vec3 force(1.0f), torque(1.0f);
+		EXPECT_NE(force_torque_calculator->calc_aero_torque_force(v_rel, 300.0f, conditions, torque, force), 0);
+		EXPECT_TRUE(glm::all(glm::isnan(force)));
+		EXPECT_TRUE(glm::all(glm::isnan(torque)));
+	}
+
+	// Zero speed is not an error: the load is zero.
+	glm::vec3 force(1.0f), torque(1.0f);
+	EXPECT_EQ(force_torque_calculator->calc_aero_torque_force(glm::vec3(0.0f), 300.0f, conditions, torque, force), 0);
+	EXPECT_EQ(force, glm::vec3(0.0f));
+	EXPECT_EQ(torque, glm::vec3(0.0f));
+}
+
+// Hyperthermal = hypothermal minus the unshadowed load of the leeward triangles.
+TEST_F(HybridForceTorqueIntegrationTest, HyperthermalDropsLeewardTriangles) {
+	AeroConditions conditions = create_leo_conditions();
+	const glm::vec3 v_rel(7000.0f, 2000.0f, 3000.0f);
+
+	EXPECT_EQ(force_torque_calculator->get_flow_regime(), FlowRegime::Hypothermal);
+	glm::vec3 torque_hypo, force_hypo, torque_hyper, force_hyper;
+	force_torque_calculator->calc_aero_torque_force(v_rel, 300.0f, conditions, torque_hypo, force_hypo);
+
+	force_torque_calculator->set_flow_regime(FlowRegime::Hyperthermal);
+	EXPECT_EQ(force_torque_calculator->get_flow_regime(), FlowRegime::Hyperthermal);
+	force_torque_calculator->calc_aero_torque_force(v_rel, 300.0f, conditions, torque_hyper, force_hyper);
+
+	glm::vec3 force_leeward(0.0f), torque_leeward(0.0f);
+	auto areas = geometry->get_areas();
+	auto normals = geometry->get_transformed_normals();
+	auto centroids = geometry->get_transformed_centroids();
+	int num_leeward = 0;
+	for (unsigned int i = 0; i < geometry->get_num_triangles(); i++) {
+		glm::vec3 n{normals[3 * i], normals[3 * i + 1], normals[3 * i + 2]};
+		if (glm::dot(n, v_rel) > 0.0f) continue;
+		num_leeward++;
+		glm::vec3 c{centroids[3 * i], centroids[3 * i + 1], centroids[3 * i + 2]};
+		glm::vec3 f, t;
+		sentman->calc_aero_force_and_torque(areas[i], n, c, v_rel, 300.0f, conditions, f, t);
+		force_leeward += f;
+		torque_leeward += t;
+	}
+	ASSERT_GT(num_leeward, 0);
+
+	const float scale = glm::length(force_hypo) + 1e-12f;
+	EXPECT_LT(glm::length(force_hyper - (force_hypo - force_leeward)), 1e-4f * scale);
+	EXPECT_LT(glm::length(torque_hyper - (torque_hypo - torque_leeward)), 1e-4f * scale);
+
+	// Switching back restores the original result.
+	force_torque_calculator->set_flow_regime(FlowRegime::Hypothermal);
+	glm::vec3 torque_again, force_again;
+	force_torque_calculator->calc_aero_torque_force(v_rel, 300.0f, conditions, torque_again, force_again);
+	EXPECT_EQ(force_again, force_hypo);
 }

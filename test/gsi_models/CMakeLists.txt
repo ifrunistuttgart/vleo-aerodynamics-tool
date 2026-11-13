@@ -1,6 +1,6 @@
 find_package(GTest)
 
-add_executable(gsi_test test_sentman.cpp test_lift_sign.cpp test_backface.cpp)
+add_executable(gsi_test test_sentman.cpp test_lift_sign.cpp test_backface.cpp test_projected_area.cpp)
 
 target_link_libraries(gsi_test PRIVATE GTest::gtest_main Vat::gsi_models Vat::core)
 

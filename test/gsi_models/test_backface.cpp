@@ -3,6 +3,7 @@
 #include "cook.h"
 #include "maxwell.h"
 #include "newton.h"
+#include "projected_area.h"
 #include "schaaf_chambre.h"
 #include "storch.h"
 #include "sentman.h"
@@ -68,6 +69,7 @@ void expect_leeward_negligible(IGSIModel& model, const char* name) {
 TEST(BackFaceTest, Cook) { Cook m(0.9f); expect_leeward_negligible(m, "Cook"); }
 TEST(BackFaceTest, Maxwell) { Maxwell m(0.9f); expect_leeward_negligible(m, "Maxwell"); }
 TEST(BackFaceTest, Newton) { Newton m; expect_leeward_negligible(m, "Newton"); }
+TEST(BackFaceTest, ProjectedArea) { ProjectedArea m; expect_leeward_negligible(m, "ProjectedArea"); }
 TEST(BackFaceTest, SchaafChambre) { SchaafChambre m(0.9f, 0.9f); expect_leeward_negligible(m, "SchaafChambre"); }
 TEST(BackFaceTest, Storch) { Storch m(100.0f, 0.9f, 0.9f); expect_leeward_negligible(m, "Storch"); }
 

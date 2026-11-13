@@ -2,10 +2,12 @@
 #include <spdlog/spdlog.h>
 #include <gtest/gtest.h>
 #include <filesystem>
+#include <limits>
 #include <memory>
 #include <glm/glm.hpp>
 
 #include "newton.h"
+#include "sentman.h"
 #include "hybrid_aero_load_calculator.h"
 #include "pixel_force_torque_calculator.h"
 #include "core.h"
@@ -82,6 +84,54 @@ TEST(PixelForceTorqueCalculatorTest, PressureImageIsReadBackOnRequest) {
     // Newton at normal incidence: p = 2q = rho v^2. No surface is quite normal here, so only bound it.
     EXPECT_GT(max_pressure, 0.0f);
     EXPECT_LE(max_pressure, aero.density__kg_per_m3 * 7800.0f * 7800.0f * 1.0001f);
+}
+
+TEST(PixelForceTorqueCalculatorTest, HyperthermalMatchesHybridHyperthermal) {
+    StaticMeshGeometry geometry(tetrahedron_path());
+    Sentman sentman(1, 0.9f);
+    AeroConditions aero = leo_conditions();
+    const glm::vec3 v_rel(7000.0f, 2000.0f, 3000.0f);
+
+    ShadingPipeline pipeline(geometry, ShadingAlgorithmType::Binary, 1024);
+    HybridForceTorqueCalculator hybrid(geometry, pipeline, sentman, FlowRegime::Hyperthermal);
+    PixelForceTorqueCalculator pixel(geometry, sentman, 1024, PixelLoadOptions{}, FlowRegime::Hyperthermal);
+    EXPECT_EQ(pixel.get_flow_regime(), FlowRegime::Hyperthermal);
+
+    glm::vec3 force_hybrid, torque_hybrid, force_pixel, torque_pixel;
+    hybrid.calc_aero_torque_force(v_rel, 300.0f, aero, torque_hybrid, force_hybrid);
+    pixel.calc_aero_torque_force(v_rel, 300.0f, aero, torque_pixel, force_pixel);
+    ASSERT_GT(glm::length(force_hybrid), 0.0f);
+    EXPECT_LT(glm::length(force_pixel - force_hybrid) / glm::length(force_hybrid), 2e-2f);
+
+    // The mode is switchable at run time and the hypothermal result differs for Sentman.
+    glm::vec3 force_hyper = force_pixel;
+    pixel.set_flow_regime(FlowRegime::Hypothermal);
+    pixel.calc_aero_torque_force(v_rel, 300.0f, aero, torque_pixel, force_pixel);
+    EXPECT_NE(force_pixel, force_hyper);
+}
+
+// Zero speed gives zero load; a non-finite speed makes the load undefined and is an error.
+TEST(PixelForceTorqueCalculatorTest, NonFiniteRelativeVelocityIsAnError) {
+    StaticMeshGeometry geometry(tetrahedron_path());
+    Newton newton;
+    AeroConditions aero = leo_conditions();
+    PixelForceTorqueCalculator pixel(geometry, newton, 256);
+
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float inf = std::numeric_limits<float>::infinity();
+    const glm::vec3 bad_velocities[] = {
+        {nan, 0.0f, 0.0f}, {7800.0f, nan, 0.0f}, {inf, 0.0f, 0.0f}, {0.0f, -inf, 0.0f}, {nan, inf, 0.0f}};
+    for (const glm::vec3& v_rel : bad_velocities) {
+        glm::vec3 force(1.0f), torque(1.0f);
+        EXPECT_NE(pixel.calc_aero_torque_force(v_rel, 300.0f, aero, torque, force), 0);
+        EXPECT_TRUE(glm::all(glm::isnan(force)));
+        EXPECT_TRUE(glm::all(glm::isnan(torque)));
+    }
+
+    glm::vec3 force(1.0f), torque(1.0f);
+    EXPECT_EQ(pixel.calc_aero_torque_force(glm::vec3(0.0f), 300.0f, aero, torque, force), 0);
+    EXPECT_EQ(force, glm::vec3(0.0f));
+    EXPECT_EQ(torque, glm::vec3(0.0f));
 }
 
 // A model may leave its GPU implementation empty; the calculator must refuse it.

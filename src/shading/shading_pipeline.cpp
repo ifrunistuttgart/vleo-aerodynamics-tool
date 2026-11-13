@@ -30,7 +30,19 @@ unsigned int RequirePositive(unsigned int num_pixel) {
 ShadingPipeline::ShadingPipeline(
 	IGeometryShadingData& geometry,
 	ShadingAlgorithmType algorithm_type,
-	unsigned int num_pixel)
+	std::optional<unsigned int> num_pixel,
+	unsigned int num_msaa_samples)
+	: ShadingPipeline(geometry, algorithm_type,
+		num_pixel ? *num_pixel : suggest_num_pixel(geometry, algorithm_type, num_msaa_samples),
+		num_msaa_samples, ResolvedTag{}) {
+}
+
+ShadingPipeline::ShadingPipeline(
+	IGeometryShadingData& geometry,
+	ShadingAlgorithmType algorithm_type,
+	unsigned int num_pixel,
+	unsigned int num_msaa_samples,
+	ResolvedTag)
 	: m_context(std::make_unique<GlfwOpenGLContext>(RequirePositive(num_pixel), num_pixel, "Triangle Renderer", false)),
 	  m_geometry(geometry),
 	  m_num_pixel(num_pixel),
@@ -48,21 +60,18 @@ ShadingPipeline::ShadingPipeline(
 		throw std::invalid_argument("num_pixel = " + std::to_string(num_pixel) + " is outside what this GPU "
 			"supports (1 to " + std::to_string(gpu_limit) + ")");
 	}
-	m_algorithm = create_shading_algorithm(algorithm_type, num_pixel);
+	m_algorithm = create_shading_algorithm(algorithm_type, num_pixel, num_msaa_samples);
 
  std::span<const float> vertices = m_geometry.get_untransformed_vertices();
 	std::span<const std::uint32_t> triangleIDs = m_geometry.get_triangle_ids();
 	const int set_vertices_result = m_algorithm->set_vertices(vertices, triangleIDs);
 	if (set_vertices_result != 0) {
-		SPDLOG_ERROR("ShadingPipeline initialization failed in set_vertices (code={}, vertices={}, ids={})",
-			set_vertices_result, vertices.size(), triangleIDs.size());
+		// A half-initialised algorithm would crash in shade(), so fail here instead.
+		m_algorithm.reset();
+		throw std::runtime_error("ShadingPipeline initialization failed in set_vertices (code="
+			+ std::to_string(set_vertices_result) + ", vertices=" + std::to_string(vertices.size())
+			+ ", ids=" + std::to_string(triangleIDs.size()) + "); see the log for the cause");
 	}
-}
-
-ShadingPipeline::ShadingPipeline(
-	IGeometryShadingData& geometry,
-	ShadingAlgorithmType algorithm_type)
-	: ShadingPipeline(geometry, algorithm_type, suggest_num_pixel(geometry, algorithm_type)) {
 }
 
 ShadingPipeline::~ShadingPipeline() {

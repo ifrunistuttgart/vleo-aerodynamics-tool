@@ -1,4 +1,7 @@
+#include <cmath>
+#include <limits>
 #include "pixel_force_torque_calculator.h"
+#include "leeward_classification.h"
 #include <array>
 #include <span>
 #include <stdexcept>
@@ -56,11 +59,13 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
     IGeometryShadingData& geometry,
     IGSIModel& gsi_model,
     unsigned int num_pixel,
-    PixelLoadOptions options)
+    PixelLoadOptions options,
+    FlowRegime flow_regime)
     : m_geometry(geometry),
       m_gsi_model(gsi_model),
       m_num_pixel(num_pixel),
       m_options(options),
+      m_flow_regime(flow_regime),
       m_gpu(std::make_unique<GpuState>()) {
     const std::string gsi_glsl = m_gsi_model.glsl_force_per_projected_area();
     if (gsi_glsl.empty()) {
@@ -131,6 +136,13 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     m_projected_area__m2 = 0.0;
 
     const float rel_speed = glm::length(v_rel__m_per_s);
+    if (!std::isfinite(rel_speed)) {
+        SPDLOG_ERROR("calc_aero_torque_force called with a non-finite relative velocity ({}, {}, {}); the load is undefined, returning NaN and an error code",
+            v_rel__m_per_s.x, v_rel__m_per_s.y, v_rel__m_per_s.z);
+        torque__Nm = glm::vec3(std::numeric_limits<float>::quiet_NaN());
+        force__N = glm::vec3(std::numeric_limits<float>::quiet_NaN());
+        return -1;
+    }
     if (rel_speed <= 0.0f) {
         SPDLOG_WARN("calc_aero_torque_force called with zero relative velocity; returning zero force/torque");
         return 0;
@@ -145,9 +157,12 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
 
     m_gpu->g_buffer->Bind();
     GLCall(glViewport(0, 0, static_cast<GLsizei>(m_num_pixel), static_cast<GLsizei>(m_num_pixel)));
-    // No face culling: a surface facing away from the flow still shadows what lies
-    // behind it. Its own pixels carry no load; the integration pass skips them.
-    GLCall(glDisable(GL_CULL_FACE));
+    // Leeward faces are culled, as in the Binary and CoP shaders. On a two-sided plate
+    // the leeward face lies exactly on the windward one; drawn, it could win the depth
+    // tie and hide it. Closed or two-sided geometry needs no leeward face to shadow.
+    GLCall(glEnable(GL_CULL_FACE));
+    GLCall(glCullFace(GL_BACK));
+    GLCall(glFrontFace(GL_CCW));
     GLCall(glEnable(GL_DEPTH_TEST));
     GLCall(glDepthFunc(GL_LESS));
     GLCall(glDepthMask(GL_TRUE));
@@ -187,22 +202,25 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     m_projected_area__m2 = sums.windward_pixels * static_cast<double>(pixel_area__m2);
 
     // Leeward triangles are invisible to the camera: per triangle on the CPU, unshadowed.
-    std::span<const float> areas = m_geometry.get_areas();
-    std::span<const float> normals = m_geometry.get_transformed_normals();
-    std::span<const float> centroids = m_geometry.get_transformed_centroids();
-    for (unsigned int i = 0; i < m_geometry.get_num_triangles(); i++) {
-        const glm::vec3 normal{normals[3 * i], normals[3 * i + 1], normals[3 * i + 2]};
-        // Written as !(... <= 0) so degenerate triangles, whose normal is NaN, are
-        // skipped too: they have no area and would otherwise poison the sum.
-        if (!(glm::dot(normal, v_rel__m_per_s) <= 0.0f)) {
-            continue;
+    // Hyperthermal flow: leeward surfaces receive no load, so they are left out.
+    if (m_flow_regime.load() == FlowRegime::Hypothermal) {
+        std::span<const float> areas = m_geometry.get_areas();
+        std::span<const float> normals = m_geometry.get_transformed_normals();
+        std::span<const float> centroids = m_geometry.get_transformed_centroids();
+        for (unsigned int i = 0; i < m_geometry.get_num_triangles(); i++) {
+            const glm::vec3 normal{normals[3 * i], normals[3 * i + 1], normals[3 * i + 2]};
+            // is_leeward is false for a NaN dot product, so degenerate triangles, which
+            // have no area and would otherwise poison the sum, are skipped too.
+            if (!is_leeward(glm::dot(normal, v_rel__m_per_s), rel_speed)) {
+                continue;
+            }
+            const glm::vec3 centroid{centroids[3 * i], centroids[3 * i + 1], centroids[3 * i + 2]};
+            glm::vec3 aero_force__N;
+            glm::vec3 aero_torque__Nm;
+            m_gsi_model.calc_aero_force_and_torque(areas[i], normal, centroid, v_rel__m_per_s, surface_temp__K, aero, aero_force__N, aero_torque__Nm);
+            force_sum__N += glm::dvec3(aero_force__N);
+            torque_sum__Nm += glm::dvec3(aero_torque__Nm);
         }
-        const glm::vec3 centroid{centroids[3 * i], centroids[3 * i + 1], centroids[3 * i + 2]};
-        glm::vec3 aero_force__N;
-        glm::vec3 aero_torque__Nm;
-        m_gsi_model.calc_aero_force_and_torque(areas[i], normal, centroid, v_rel__m_per_s, surface_temp__K, aero, aero_force__N, aero_torque__Nm);
-        force_sum__N += glm::dvec3(aero_force__N);
-        torque_sum__Nm += glm::dvec3(aero_torque__Nm);
     }
 
     force__N = glm::vec3(force_sum__N);

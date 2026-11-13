@@ -59,6 +59,10 @@ uniform float u_surface_temp;
 uniform float u_pixel_area;
 uniform float u_min_cos_delta;
 
+// vat::edge_on_threshold(|v_rel|), computed on the CPU: pixels with dot(n, v_rel) at or
+// below it are leeward and are handled per triangle on the CPU, using the same value.
+uniform float u_edge_on_threshold;
+
 // Two entries per workgroup: (force, wetted area) and (torque, windward pixel count).
 layout(std430, binding = 0) buffer Partials
 {
@@ -87,9 +91,11 @@ void accumulate_pixel(ivec2 pixel, inout vec4 force, inout vec4 torque)
     if (position.w != 0.0)
     {
         vec3 n = texelFetch(u_g_normal, pixel, 0).xyz;
-        float cos_d = dot(n, u_v_rel) / length(u_v_rel);
-        // Leeward pixels only occlude; their triangles are evaluated on the CPU.
-        if (cos_d > 0.0)
+        float n_dot_v = dot(n, u_v_rel);
+        float cos_d = n_dot_v / length(u_v_rel);
+        // Culling goes by winding, so a triangle whose normal disagrees with it can
+        // still land here; leeward triangles are evaluated on the CPU.
+        if (n_dot_v > u_edge_on_threshold)
         {
             vec3 force_per_projected_area = gsi_force_per_projected_area(n, u_v_rel, u_surface_temp);
             vec3 dF = force_per_projected_area * u_pixel_area;
