@@ -20,10 +20,10 @@ classdef ShadingPipeline < handle
         geometry_
     end
     methods
-        function this = ShadingPipeline(geometry, shading_algorithm, num_pixel)
+        function this = ShadingPipeline(geometry, shading_algorithm, num_pixel, num_msaa_samples)
             % SHADINGPIPELINE Constructor for ShadingPipeline.
             %
-            %   obj = ShadingPipeline(geometry, shading_algorithm, num_pixel)
+            %   obj = ShadingPipeline(geometry, shading_algorithm, num_pixel, num_msaa_samples)
             %   initializes the pipeline for a specific geometry and algorithm.
             %
             %   Input Arguments:
@@ -40,20 +40,29 @@ classdef ShadingPipeline < handle
             %                           they do not (see get_num_pixel).
             %                           Build the pipeline in the geometry's most
             %                           extended pose, since num_pixel is fixed
-            %                           here.
+            %                           here. Pass [] to choose it from the mesh
+            %                           while still setting num_msaa_samples.
+            %       num_msaa_samples  - MSAA samples per pixel (anti-aliasing).
+            %                           Optional, default 1 = no anti-aliasing:
+            %                           a triangle must cover a pixel centre.
+            %                           > 1 enables MSAA with that many samples
+            %                           per pixel (e.g. 8), so triangles smaller
+            %                           than a pixel (grazing flow) are kept.
+            %                           Binary only; CoP errors for > 1.
             %
             arguments
                 geometry (1,1) vat.geometry.RotatableMeshGeometry
                 shading_algorithm (1,1) {mustBeInteger, mustBeMember(shading_algorithm, [0, 1])} = 0
                 num_pixel double {mustBeScalarOrEmpty, mustBeInteger, mustBePositive} = []
+                num_msaa_samples (1,1) double {mustBeInteger, mustBePositive} = 1
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
+            if isempty(num_pixel)
+                num_pixel = 0;   % 0 tells the gateway to choose it from the mesh
+            end
             try
-                if isempty(num_pixel)
-                    this.handle_ = MexGateway("shading.ShadingPipeline.new", int32(geometry.handle_), int32(shading_algorithm));
-                else
-                    this.handle_ = MexGateway("shading.ShadingPipeline.new", int32(geometry.handle_), int32(shading_algorithm), int32(num_pixel));
-                end
+                this.handle_ = MexGateway("shading.ShadingPipeline.new", int32(geometry.handle_), ...
+                    int32(shading_algorithm), int32(num_pixel), int32(num_msaa_samples));
                 this.geometry_ = geometry;
             catch ME
                 error("Failed to create Shading pipeline: %s", ME.message);

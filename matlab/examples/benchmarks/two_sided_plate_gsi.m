@@ -16,7 +16,8 @@ sigma_n           = 0.9;
 sigma_t           = 0.9;
 V_w__m_per_s      = 100.0;
 num_pixel         = 500;
-alphas__deg       = 0:0.1:180;
+alphas__deg       = 170:0.1:180;
+hyperthermal      = false;
 
 aero_cond = vat.AeroConditions(rho__kg_per_m3, T_atmospheric__K, particle_mass__kg);
 folder = fileparts(mfilename('fullpath'));
@@ -24,7 +25,7 @@ mesh_file = fullfile(folder, '..', 'geometries', 'two_sided_plate.obj');
 geometry = vat.geometry.RotatableMeshGeometry(mesh_file);
 
 model_names = {'Newton', 'Maxwell', 'Cook', 'Schaaf-Chambre', 'Storch', 'Sentman'};
-shading_names = {'Binary', 'CoP','pixel'};
+shading_names = {'Binary', 'CoP','pixel'};%
 num_models = numel(model_names);
 num_shading = numel(shading_names);
 num_angles = numel(alphas__deg);
@@ -38,10 +39,10 @@ for model_index = 1:num_models
     gsi_model = make_model(model_names{model_index}, alpha_e, sigma_n, sigma_t, V_w__m_per_s);
     calculators = {
         vat.loads.HybridForceTorqueCalculator(geometry, ...
-            vat.shading.ShadingPipeline(geometry, 0, num_pixel), gsi_model)
+            vat.shading.ShadingPipeline(geometry, 0, num_pixel), gsi_model, Hyperthermal=hyperthermal)
         vat.loads.HybridForceTorqueCalculator(geometry, ...
-            vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model)
-        vat.loads.PixelForceTorqueCalculator(geometry,gsi_model,1000)
+            vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model, Hyperthermal=hyperthermal)
+        vat.loads.PixelForceTorqueCalculator(geometry,gsi_model,500,Hyperthermal=hyperthermal)
     };
 
     for angle_index = 1:num_angles
@@ -56,6 +57,9 @@ for model_index = 1:num_models
         [force_back__N, ~] = gsi_model.calc_aero_force_torque( ...
             area__m2, normal_back, [0, 0, 0], v_rel_global__m_per_s, ...
             T_wall__K, aero_cond);
+        if hyperthermal
+            force_back__N = [0, 0, 0];
+        end
         force_two_sided__N = force_front__N(:) + force_back__N(:);
         reference_drag__N(angle_index, model_index) = -force_two_sided__N(1);
         reference_lift__N(angle_index, model_index) = -force_two_sided__N(3);
@@ -113,23 +117,23 @@ function plot_loads(alphas, model_names, shading_names, reference_drag, ...
     figure('Name', 'Two-sided plate: direct GSI and numerical loads', ...
         'Position', [100 100 1200 800]);
     tiledlayout(3, 4, 'TileSpacing', 'compact');
-    colors = lines(numel(shading_names));
+    colors = lines(numel(shading_names)+1);
     for i = 1:numel(model_names)
         nexttile(2 * i - 1);
-        plot(alphas, reference_drag(:, i), 'k-', 'LineWidth', 1.5, 'DisplayName', 'Direct GSI');
+        plot(alphas, reference_drag(:, i), '-', 'Color', colors(1, :), 'LineWidth', 1.5, 'DisplayName', 'Direct GSI');
         hold on;
         for j = 1:numel(shading_names)
-            plot(alphas, numerical_drag(:, i, j), '-', 'Color', colors(j, :), ...
+            plot(alphas, numerical_drag(:, i, j), '-', 'Color', colors(j+1, :), ...
                 'DisplayName', shading_names{j});
         end
         grid on; title([model_names{i} ' drag']); ylabel('drag [N]');
         if i > 4, xlabel('AOA [deg]'); end
         legend('Location', 'best');
         nexttile(2 * i);
-        plot(alphas, reference_lift(:, i), 'k-', 'LineWidth', 1.5, 'DisplayName', 'Direct GSI');
+        plot(alphas, reference_lift(:, i), '-', 'Color', colors(1, :), 'LineWidth', 1.5, 'DisplayName', 'Direct GSI');
         hold on;
         for j = 1:numel(shading_names)
-            plot(alphas, numerical_lift(:, i, j), '-', 'Color', colors(j, :), ...
+            plot(alphas, numerical_lift(:, i, j), '-', 'Color', colors(j+1, :), ...
                 'DisplayName', shading_names{j});
         end
         grid on; title([model_names{i} ' lift']); ylabel('lift [N]');
@@ -143,16 +147,26 @@ function plot_errors(alphas, model_names, shading_names, drag_error, lift_error)
     colors = lines(numel(shading_names));
     for i = 1:numel(model_names)
         nexttile(2 * i - 1);
-        semilogy(alphas, 100 * drag_error(:, i, 1), '-', 'Color', colors(1, :), 'LineWidth', 1);
-        hold on; plot(alphas, 100 * drag_error(:, i, 2), '-', 'Color', colors(2, :));
-        plot(alphas, 100*drag_error(:,i,3),'-', 'Color', colors(3, :));
+        for j = 1:numel(shading_names)
+            if j == 1
+                semilogy(alphas, 100 * drag_error(:, i, j), '-', 'Color', colors(1, :), 'LineWidth', 1);
+                hold on;
+            else
+                plot(alphas, 100 * drag_error(:, i, j), '-', 'Color', colors(j, :));
+            end
+        end
         grid on; title([model_names{i} ' drag error']); ylabel('relative error [%]');
         if i > 4, xlabel('AOA [deg]'); end
         legend(shading_names, 'Location', 'best');
         nexttile(2 * i);
-        semilogy(alphas, 100 * lift_error(:, i, 1), '-', 'Color', colors(1, :));
-        hold on; plot(alphas, 100 * lift_error(:, i, 2), '-', 'Color', colors(2, :));
-        plot(alphas, 100*lift_error(:,i,3),'-', 'Color', colors(3, :));
+        for j = 1:numel(shading_names)
+            if j == 1
+                semilogy(alphas, 100 * lift_error(:, i, j), '-', 'Color', colors(1, :), 'LineWidth', 1);
+                hold on;
+            else
+                plot(alphas, 100 * lift_error(:, i, j), '-', 'Color', colors(j, :));
+            end
+        end
         grid on; title([model_names{i} ' lift error']); ylabel('relative error [%]');
         if i > 4, xlabel('AOA [deg]'); end
     end

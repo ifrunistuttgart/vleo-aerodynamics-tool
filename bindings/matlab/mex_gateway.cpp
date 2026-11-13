@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <exception>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -505,9 +506,10 @@ public:
             if (cls == "shading.ShadingPipeline") {
                 if (cmd == "new") {
                     matlab_logger->log(LEVEL_INFO, "Creating new Shading instance.","mex_gateway.cpp",__LINE__);
-                    // num_pixel is optional: without it the pipeline chooses it from the mesh.
-                    if (inputs.size() != 3 && inputs.size() != 4) {
-                        validate_input_size(inputs, 4);
+                    // num_pixel and num_msaa_samples are optional. num_pixel = 0 (or omitted) lets the
+                    // pipeline choose it from the mesh; num_msaa_samples defaults to 1 (no anti-aliasing).
+                    if (inputs.size() < 3 || inputs.size() > 5) {
+                        validate_input_size(inputs, 5);
                     }
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
@@ -528,13 +530,28 @@ public:
                             matlab_logger->log(LEVEL_ERROR, "Unknown shading algorithm type: " + std::to_string(shading_key),"mex_gateway.cpp",__LINE__);
                             throw std::invalid_argument(std::string("Unknown shading algorithm type: ") + std::to_string(shading_key));
                     };
-                    std::unique_ptr<ShadingPipeline> pipeline;
-                    if (inputs.size() == 4) {
+                    // 0 is the MATLAB layer's "choose from the mesh"; the pipeline does that for nullopt.
+                    std::optional<unsigned int> num_pixel;
+                    if (inputs.size() >= 4) {
                         validate_argument(inputs, 3, "int", 1);
-                        pipeline = std::make_unique<ShadingPipeline>(geometry, algorithm_type, inputs[3][0]);
-                    } else {
-                        pipeline = std::make_unique<ShadingPipeline>(geometry, algorithm_type);
+                        const int requested = inputs[3][0];
+                        if (requested < 0) {
+                            throw std::invalid_argument("num_pixel must not be negative (0 = choose from the mesh)");
+                        }
+                        if (requested > 0) {
+                            num_pixel = static_cast<unsigned int>(requested);
+                        }
                     }
+                    unsigned int num_msaa_samples = 1;
+                    if (inputs.size() == 5) {
+                        validate_argument(inputs, 4, "int", 1);
+                        const int requested = inputs[4][0];
+                        if (requested < 1) {
+                            throw std::invalid_argument("num_msaa_samples must be at least 1 (1 = no anti-aliasing)");
+                        }
+                        num_msaa_samples = static_cast<unsigned int>(requested);
+                    }
+                    auto pipeline = std::make_unique<ShadingPipeline>(geometry, algorithm_type, num_pixel, num_msaa_samples);
                     shading_pipeline_map.insert({shading_pipeline_max_id, std::move(pipeline)});
                     outputs[0] = factory.createScalar<int>(shading_pipeline_max_id);
                     shading_pipeline_max_id++;
