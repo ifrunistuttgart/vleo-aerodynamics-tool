@@ -1,5 +1,6 @@
 // Projected area of a flat plate versus the angle between plate and flow, from the
-// load calculators (hybrid with Binary without and with 8x MSAA, and CoP shading, and per pixel)
+// load calculators (hybrid with Binary without and with 8x MSAA, and CoP shading, and per pixel
+// without and with 8x MSAA)
 // and from the analytic solution.
 //
 // The ProjectedArea GSI model returns the force (projected area, 0, 0) for every
@@ -40,8 +41,8 @@ void write_error_plot(const std::string& path, const std::vector<double>& theta_
 	const std::vector<std::vector<double>>& errors, const std::vector<std::string>& labels) {
 	const double floor = 1e-10, ceiling = 1e-2;
 	const double left = 80, right = 760, top = 30, bottom = 380;
-	const char* colors[] = {"#1f77b4", "#9467bd", "#d62728", "#2ca02c"};
-	const char* dashes[] = {"", "4 2", "8 4", "2 3"}; // the hybrid curves overlap, so tell them apart
+	const char* colors[] = {"#1f77b4", "#9467bd", "#d62728", "#2ca02c", "#ff7f0e"};
+	const char* dashes[] = {"", "4 2", "8 4", "2 3", "1 2"}; // the hybrid curves overlap, so tell them apart
 
 	auto x_of = [&](double t) { return left + (right - left) * t / 180.0; };
 	auto y_of = [&](double e) {
@@ -98,6 +99,9 @@ int main() {
 	vat::loads::HybridForceTorqueCalculator hybrid_msaa(geometry, msaa_pipeline, gsi_model);
 	vat::loads::HybridForceTorqueCalculator hybrid_cop(geometry, cop_pipeline, gsi_model);
 	vat::loads::PixelForceTorqueCalculator pixel(geometry, gsi_model, num_pixel);
+	vat::loads::PixelLoadOptions pixel_msaa_options;
+	pixel_msaa_options.num_msaa_samples = 8;
+	vat::loads::PixelForceTorqueCalculator pixel_msaa(geometry, gsi_model, num_pixel, pixel_msaa_options);
 
 	// Neither the atmosphere nor the surface temperature enters this model.
 	vat::AeroConditions aero_conditions{
@@ -118,11 +122,11 @@ int main() {
 	};
 
 	// 4. Sweep the flow from face-on (0 deg) to the back face (180 deg)
-	std::printf("%7s %10s | %10s %10s %10s %10s | %10s %10s %10s %10s\n", "theta", "analytic",
-		"binary", "msaa", "cop", "pixel", "err_binary", "err_msaa", "err_cop", "err_pixel");
-	double max_error_binary = 0.0, max_error_msaa = 0.0, max_error_cop = 0.0, max_error_pixel = 0.0;
+	std::printf("%7s %10s | %10s %10s %10s %10s %10s | %10s %10s %10s %10s %10s\n", "theta", "analytic",
+		"binary", "msaa", "cop", "pixel", "pixel8x", "err_binary", "err_msaa", "err_cop", "err_pixel", "err_pix8x");
+	double max_error_binary = 0.0, max_error_msaa = 0.0, max_error_cop = 0.0, max_error_pixel = 0.0, max_error_pixel_msaa = 0.0;
 	std::vector<double> angles__deg;
-	std::vector<std::vector<double>> errors(4);
+	std::vector<std::vector<double>> errors(5);
 	for (float theta__deg = -1; theta__deg <= 181; theta__deg += 0.5) {
 		const double theta__rad = theta__deg * std::numbers::pi / 180.0;
 		const glm::vec3 v_rel__m_per_s(0.0f,
@@ -134,31 +138,35 @@ int main() {
 		const double msaa = projected_area(hybrid_msaa, v_rel__m_per_s);
 		const double cop = projected_area(hybrid_cop, v_rel__m_per_s);
 		const double pixel_area = projected_area(pixel, v_rel__m_per_s);
+		const double pixel_msaa_area = projected_area(pixel_msaa, v_rel__m_per_s);
 
 		const double err_binary = std::abs(binary - analytic);
 		const double err_msaa = std::abs(msaa - analytic);
 		const double err_cop = std::abs(cop - analytic);
 		const double err_pixel = std::abs(pixel_area - analytic);
+		const double err_pixel_msaa = std::abs(pixel_msaa_area - analytic);
 		max_error_binary = std::max(max_error_binary, err_binary);
 		max_error_msaa = std::max(max_error_msaa, err_msaa);
 		max_error_cop = std::max(max_error_cop, err_cop);
 		max_error_pixel = std::max(max_error_pixel, err_pixel);
+		max_error_pixel_msaa = std::max(max_error_pixel_msaa, err_pixel_msaa);
 		angles__deg.push_back(theta__deg);
 		errors[0].push_back(err_binary);
 		errors[1].push_back(err_msaa);
 		errors[2].push_back(err_cop);
 		errors[3].push_back(err_pixel);
+		errors[4].push_back(err_pixel_msaa);
 
-		std::printf("%7.1f %10.5f | %10.5f %10.5f %10.5f %10.5f | %10.2e %10.2e %10.2e %10.2e\n", theta__deg, analytic,
-			binary, msaa, cop, pixel_area, err_binary, err_msaa, err_cop, err_pixel);
+		std::printf("%7.1f %10.5f | %10.5f %10.5f %10.5f %10.5f %10.5f | %10.2e %10.2e %10.2e %10.2e %10.2e\n", theta__deg, analytic,
+			binary, msaa, cop, pixel_area, pixel_msaa_area, err_binary, err_msaa, err_cop, err_pixel, err_pixel_msaa);
 	}
 
-	std::printf("\nMax absolute error [m^2]: hybrid/binary %.3e, hybrid/msaa %.3e, hybrid/cop %.3e, pixel %.3e\n",
-		max_error_binary, max_error_msaa, max_error_cop, max_error_pixel);
+	std::printf("\nMax absolute error [m^2]: hybrid/binary %.3e, hybrid/msaa %.3e, hybrid/cop %.3e, pixel %.3e, pixel/msaa %.3e\n",
+		max_error_binary, max_error_msaa, max_error_cop, max_error_pixel, max_error_pixel_msaa);
 
 	// 5. Plot the errors (written to the working directory, i.e. the repo root under pixi)
 	const std::string plot_path = "projected_area_plate_errors.svg";
-	write_error_plot(plot_path, angles__deg, errors, {"hybrid + binary", "hybrid + binary 8x", "hybrid + CoP", "pixel"});
+	write_error_plot(plot_path, angles__deg, errors, {"hybrid + binary", "hybrid + binary 8x", "hybrid + CoP", "pixel", "pixel 8x"});
 	SPDLOG_INFO("Wrote {}", std::filesystem::absolute(plot_path).string());
 	return 0;
 }

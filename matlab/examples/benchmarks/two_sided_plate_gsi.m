@@ -25,7 +25,7 @@ mesh_file = fullfile(folder, '..', 'geometries', 'two_sided_plate.obj');
 geometry = vat.geometry.RotatableMeshGeometry(mesh_file);
 
 model_names = {'Newton', 'Maxwell', 'Cook', 'Schaaf-Chambre', 'Storch', 'Sentman'};
-shading_names = {'Binary', 'CoP','pixel'};%
+shading_names = {'Binary', 'CoP','pixel', 'pixel 8x MSAA'};%
 num_models = numel(model_names);
 num_shading = numel(shading_names);
 num_angles = numel(alphas__deg);
@@ -43,6 +43,7 @@ for model_index = 1:num_models
         vat.loads.HybridForceTorqueCalculator(geometry, ...
             vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model, Hyperthermal=hyperthermal)
         vat.loads.PixelForceTorqueCalculator(geometry,gsi_model,500,Hyperthermal=hyperthermal)
+        vat.loads.PixelForceTorqueCalculator(geometry,gsi_model,500,Hyperthermal=hyperthermal,NumMsaaSamples=8)
     };
 
     for angle_index = 1:num_angles

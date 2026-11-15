@@ -3,8 +3,14 @@
 namespace vat::loads::pixel_glsl {
 
 // Pass 1: G-buffer. Writes the body-frame position and the body-frame normal of the
-// front-most surface in each pixel. No GSI physics happens here, so this pass is the
-// same for every model.
+// front-most surface in each sample of each pixel. No GSI physics happens here, so this
+// pass is the same for every model.
+//
+// The position is interpolated with `sample`: every sample stores the position of the
+// surface at that sample's own location, so a pixel's resolved position does not depend on
+// how the surface is split into triangles, and it is never extrapolated from a pixel centre
+// outside the triangle. This runs the fragment shader once per sample, which costs little
+// here. With one sample the sample is the pixel centre, so nothing changes.
 inline constexpr const char* g_buffer_vertex_shader = R"GLSL(
 #version 430 core
 layout (location = 0) in vec3 a_position;
@@ -14,7 +20,7 @@ uniform mat4 u_model;
 uniform mat3 u_normal_matrix;
 uniform mat4 u_view_projection;
 
-out vec3 v_position;
+sample out vec3 v_position;
 flat out vec3 v_normal;
 
 void main()
@@ -28,7 +34,7 @@ void main()
 
 inline constexpr const char* g_buffer_fragment_shader = R"GLSL(
 #version 430 core
-in vec3 v_position;
+sample in vec3 v_position;
 flat in vec3 v_normal;
 
 layout (location = 0) out vec4 g_position;
@@ -42,8 +48,14 @@ void main()
 )GLSL";
 
 // Pass 2: evaluate the GSI model per pixel and reduce. Assembled as
-//   #version, optional #define VAT_WRITE_PRESSURE, integration_header,
-//   the model's gsi_force_per_projected_area(), integration_main.
+//   #version, optional #define VAT_WRITE_PRESSURE, #define VAT_MSAA_SAMPLES n,
+//   integration_header, the model's gsi_force_per_projected_area(), integration_main.
+//
+// With VAT_MSAA_SAMPLES > 1 the G-buffer is multisampled. The samples of a pixel are
+// resolved here, in a fixed order: coverage = covered samples / VAT_MSAA_SAMPLES, the
+// position is the mean over the covered samples and the normal the normalised mean. The
+// GSI model is then evaluated once per pixel and scaled by the coverage. With one sample
+// the code is the plain per-pixel evaluation, unchanged.
 //
 // Each 16x16 workgroup covers a 32x32 pixel tile: every invocation sums its own 2x2
 // block in a fixed order, then the workgroup reduces its 256 sums as a binary tree in
@@ -52,8 +64,13 @@ void main()
 inline constexpr const char* integration_header = R"GLSL(
 layout(local_size_x = 16, local_size_y = 16) in;
 
+#if VAT_MSAA_SAMPLES > 1
+uniform sampler2DMS u_g_position;
+uniform sampler2DMS u_g_normal;
+#else
 uniform sampler2D u_g_position;
 uniform sampler2D u_g_normal;
+#endif
 uniform vec3 u_v_rel;
 uniform float u_surface_temp;
 uniform float u_pixel_area;
@@ -63,7 +80,9 @@ uniform float u_min_cos_delta;
 // below it are leeward and are handled per triangle on the CPU, using the same value.
 uniform float u_edge_on_threshold;
 
-// Two entries per workgroup: (force, wetted area) and (torque, windward pixel count).
+// Two entries per workgroup: (force, wetted area) and (torque, windward sample count).
+// The sample count is divided by VAT_MSAA_SAMPLES on the CPU; with one sample it is the
+// windward pixel count.
 layout(std430, binding = 0) buffer Partials
 {
     vec4 partials[];
@@ -78,6 +97,57 @@ shared vec4 s_torque[256];
 )GLSL";
 
 inline constexpr const char* integration_main = R"GLSL(
+#if VAT_MSAA_SAMPLES > 1
+void accumulate_pixel(ivec2 pixel, inout vec4 force, inout vec4 torque)
+{
+    ivec2 size = textureSize(u_g_position);
+    if (pixel.x >= size.x || pixel.y >= size.y)
+    {
+        return;
+    }
+
+    // Resolve: fixed sample order, so the result is reproducible.
+    float covered = 0.0;
+    vec3 position_sum = vec3(0.0);
+    vec3 normal_sum = vec3(0.0);
+    for (int s = 0; s < VAT_MSAA_SAMPLES; ++s)
+    {
+        vec4 sample_position = texelFetch(u_g_position, pixel, s);
+        if (sample_position.w != 0.0)
+        {
+            covered += 1.0;
+            position_sum += sample_position.xyz;
+            normal_sum += texelFetch(u_g_normal, pixel, s).xyz;
+        }
+    }
+
+    float pressure = 0.0;
+    if (covered > 0.0 && dot(normal_sum, normal_sum) > 0.0)
+    {
+        float coverage = covered / float(VAT_MSAA_SAMPLES);
+        vec3 position = position_sum / covered;
+        vec3 n = normalize(normal_sum);
+        float n_dot_v = dot(n, u_v_rel);
+        float cos_d = n_dot_v / length(u_v_rel);
+        // Culling goes by winding, so a triangle whose normal disagrees with it can
+        // still land here; leeward triangles are evaluated on the CPU.
+        if (n_dot_v > u_edge_on_threshold)
+        {
+            vec3 force_per_projected_area = gsi_force_per_projected_area(n, u_v_rel, u_surface_temp);
+            // A pixel the surface fills only partly carries only that part of the load.
+            float covered_area = u_pixel_area * coverage;
+            vec3 dF = force_per_projected_area * covered_area;
+            force += vec4(dF, covered_area / max(cos_d, u_min_cos_delta));
+            torque += vec4(cross(position, dF), covered);
+            // The pressure is a property of the surface, so it is not scaled by the coverage.
+            pressure = -dot(force_per_projected_area, n) * cos_d;
+        }
+    }
+#ifdef VAT_WRITE_PRESSURE
+    imageStore(u_pressure, pixel, vec4(pressure));
+#endif
+}
+#else
 void accumulate_pixel(ivec2 pixel, inout vec4 force, inout vec4 torque)
 {
     ivec2 size = textureSize(u_g_position, 0);
@@ -108,6 +178,7 @@ void accumulate_pixel(ivec2 pixel, inout vec4 force, inout vec4 torque)
     imageStore(u_pressure, pixel, vec4(pressure));
 #endif
 }
+#endif
 
 void main()
 {

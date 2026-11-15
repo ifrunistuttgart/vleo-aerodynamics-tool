@@ -26,7 +26,7 @@ geometry  = vat.geometry.RotatableMeshGeometry(obj_file);
 
 alpha      = 0:0.25:90;   % [deg]
 num_pixels = [500 1000 2000 4000];
-methods    = {'hybrid, Binary', 'hybrid, CoP','per pixel'};
+methods    = {'hybrid, Binary', 'hybrid, CoP','per pixel', 'per pixel 8x MSAA'};
 speed_val  = 7800;
 
 %% Reference Solution
@@ -44,6 +44,7 @@ for k = 1:numel(num_pixels)
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, N), gsi_model)
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 1, N), gsi_model)
         vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, N)
+        vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, N, NumMsaaSamples=8)
     };
     for m = 1:numel(calculators)
         pitch(:, m, k) = sweep(calculators{m}, alpha, T_wall, aero_cond, speed_val);

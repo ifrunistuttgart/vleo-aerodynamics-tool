@@ -669,7 +669,7 @@ public:
             }
             if (cls == "loads.PixelForceTorqueCalculator") {
                 if (cmd == "new") {
-                    validate_input_size(inputs, 7);
+                    validate_input_size(inputs, 8);
                     validate_output_size(outputs, 1);
                     validate_argument(inputs, 1, "int", 1);
                     validate_argument(inputs, 2, "int", 1);
@@ -677,6 +677,7 @@ public:
                     validate_argument(inputs, 4, "double", 1);
                     validate_argument(inputs, 5, "int", 1);
                     validate_argument(inputs, 6, "int", 1);
+                    validate_argument(inputs, 7, "int", 1);
 
                     const int geometry_id = inputs[1][0];
                     const int gsi_id = inputs[2][0];
@@ -684,9 +685,14 @@ public:
                     if (num_pixel <= 0) {
                         throw std::invalid_argument("num_pixel must be positive");
                     }
+                    const int num_msaa_samples = inputs[7][0];
+                    if (num_msaa_samples <= 0) {
+                        throw std::invalid_argument("num_msaa_samples must be positive");
+                    }
                     PixelLoadOptions options;
                     options.min_cos_delta = static_cast<float>(static_cast<double>(inputs[4][0]));
                     options.keep_pressure_image = static_cast<int>(inputs[5][0]) != 0;
+                    options.num_msaa_samples = static_cast<unsigned int>(num_msaa_samples);
                     const FlowRegime flow_regime = static_cast<int>(inputs[6][0]) != 0 ? FlowRegime::Hyperthermal : FlowRegime::Hypothermal;
 
                     pixel_aero_load_calculator_map.insert(
