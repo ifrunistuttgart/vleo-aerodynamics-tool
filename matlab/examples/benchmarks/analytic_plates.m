@@ -23,7 +23,7 @@ T_wall    = 300;
 folder  = fullfile(fileparts(mfilename('fullpath')), '..', 'geometries');
 meshes  = {'two_two_sided_plates.obj', '2 triangles per face'; ...
            'two_two_sided_plates_fine.obj', 'fine two-sided plates'};
-methods = {'hybrid, Binary no MSAA', 'hybrid, Binary 8x MSAA','hybrid, CoP', 'per pixel'};
+methods = {'hybrid, Binary no MSAA', 'hybrid, Binary 8x MSAA','hybrid, CoP', 'per pixel', 'per pixel 8x MSAA'};
 
 %% 1. Error over num_pixel, flow at 12 deg
 % At 12 deg the shadow edge on the back plate cuts through the cells of the
@@ -31,6 +31,8 @@ methods = {'hybrid, Binary no MSAA', 'hybrid, Binary 8x MSAA','hybrid, CoP', 'pe
 % hybrid calculator would be exact by coincidence.
 % 4000 is left out of the sweep: the 8x MSAA depth buffer alone is then
 % 4000^2 * 8 * 4 B = 512 MB, and every run is repeated for all flow angles below.
+% The 8x per-pixel calculator takes 2 * 16 B * num_pixel^2 * 8 for its G-buffer
+% (about 1 GB at 2000); it lowers its sample count if that does not fit.
 num_pixels  = [250 500 1000 2000];
 num_warmup = 20;   % untimed calls per calculator before measuring
 % Per-call time statistics [ms]: median and 25th/75th percentile.
@@ -216,10 +218,12 @@ end
 
 function calculators = make_calculators(geometry, gsi_model, num_pixel)
     % Same order as `methods`: hybrid with Binary (no anti-aliasing and
-    % 8 samples per pixel) and CoP shading, then per pixel.
+    % 8 samples per pixel) and CoP shading, then per pixel without and with 8 samples.
     calculators = {
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel, 1), gsi_model)
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel, 8), gsi_model)
-        vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model)        vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel)
+        vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model)
+        vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel)
+        vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel, NumMsaaSamples=8)
     };
 end

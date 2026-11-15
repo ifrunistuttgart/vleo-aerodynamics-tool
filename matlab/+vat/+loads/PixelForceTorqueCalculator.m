@@ -5,6 +5,9 @@ classdef PixelForceTorqueCalculator < handle
     % Interaction (GSI) model in every pixel the flow reaches, so partly
     % shaded triangles count with exactly their exposed part and the result
     % depends on the resolution only, not on how the geometry is meshed.
+    % With NumMsaaSamples > 1 a pixel that a surface covers only partly
+    % counts with its covered fraction, so silhouettes and shadow edges are
+    % resolved to a fraction of a pixel.
     % Surfaces facing away from the flow are evaluated per triangle, without
     % shadowing, as in HybridForceTorqueCalculator. Needs no ShadingPipeline.
     %
@@ -34,6 +37,7 @@ classdef PixelForceTorqueCalculator < handle
             %
             %   obj = PixelForceTorqueCalculator(geometry, gsi_model, num_pixel)
             %   obj = PixelForceTorqueCalculator(..., MinCosDelta=1e-3, KeepPressureImage=true)
+            %   obj = PixelForceTorqueCalculator(..., NumMsaaSamples=8)
             %
             %   Input Arguments:
             %       geometry          - A RotatableMeshGeometry object representing the geometry.
@@ -47,6 +51,14 @@ classdef PixelForceTorqueCalculator < handle
             %                           evaluation, see pressure_image (default false).
             %       Hyperthermal      - If true, surfaces facing away from the flow are
             %                           ignored (default false).
+            %       NumMsaaSamples    - Samples per pixel (anti-aliasing), default 1 = none:
+            %                           a pixel counts fully if its centre is covered.
+            %                           > 1 (e.g. 8): a pixel covered only partly counts
+            %                           with its covered fraction. The render target takes
+            %                           about 32 bytes * num_pixel^2 * NumMsaaSamples of
+            %                           GPU memory; the count is reduced if it does not
+            %                           fit. Where two orientations meet in one pixel the
+            %                           averaged normal is an approximation.
             %
             arguments
                 geometry (1,1) vat.geometry.RotatableMeshGeometry
@@ -55,11 +67,13 @@ classdef PixelForceTorqueCalculator < handle
                 options.MinCosDelta (1,1) double {mustBePositive, mustBeLessThanOrEqual(options.MinCosDelta, 1)} = 1e-3
                 options.KeepPressureImage (1,1) logical = false
                 options.Hyperthermal (1,1) logical = false
+                options.NumMsaaSamples (1,1) {mustBeInteger, mustBePositive} = 1
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             this.handle_ = int32(MexGateway("loads.PixelForceTorqueCalculator.new", ...
                 int32(geometry.handle_), int32(gsi_model.handle_), int32(num_pixel), ...
-                double(options.MinCosDelta), int32(options.KeepPressureImage), int32(options.Hyperthermal)));
+                double(options.MinCosDelta), int32(options.KeepPressureImage), int32(options.Hyperthermal), ...
+                int32(options.NumMsaaSamples)));
             this.geometry_ = geometry;
             this.gsi_model_ = gsi_model;
         end

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include "pixel_force_torque_calculator.h"
@@ -55,6 +56,58 @@ struct PixelForceTorqueCalculator::GpuState {
     }
 };
 
+namespace {
+
+// Two RGBA32F targets (position, normal), sampled texel by texel and never filtered, with
+// `num_samples` samples per pixel (1 = ordinary textures), plus the framebuffer over them.
+// Returns false, with nothing left allocated, if the memory is not available.
+bool create_g_buffer(std::array<unsigned int, 2>& g_buffer_textures, std::unique_ptr<FrameBuffer>& g_buffer,
+                     unsigned int num_pixel, unsigned int num_samples) {
+    const bool multisample = num_samples > 1;
+    const GLenum target = multisample ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
+
+    GLCall(glGenTextures(static_cast<GLsizei>(g_buffer_textures.size()), g_buffer_textures.data()));
+    // Allocation can legitimately fail for large num_pixel * num_samples, so check the error
+    // here instead of letting GLCall treat it as a programming error.
+    GLClearError();
+    GLenum alloc_error = GL_NO_ERROR;
+    for (unsigned int texture : g_buffer_textures) {
+        GLCall(glBindTexture(target, texture));
+        if (multisample) {
+            glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, static_cast<GLsizei>(num_samples), GL_RGBA32F,
+                static_cast<GLsizei>(num_pixel), static_cast<GLsizei>(num_pixel), GL_TRUE);
+        } else {
+            glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, static_cast<GLsizei>(num_pixel), static_cast<GLsizei>(num_pixel));
+        }
+        const GLenum error = glGetError();
+        if (alloc_error == GL_NO_ERROR) {
+            alloc_error = error;
+        }
+        if (!multisample) {
+            // Sampler state does not apply to multisample textures.
+            GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+            GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        }
+    }
+    GLCall(glBindTexture(target, 0));
+
+    if (alloc_error == GL_NO_ERROR) {
+        g_buffer = std::make_unique<FrameBuffer>(std::span<const unsigned int>(g_buffer_textures), num_pixel, num_pixel, num_samples);
+        g_buffer->UnBind();
+        if (g_buffer->is_complete()) {
+            return true;
+        }
+    } else {
+        SPDLOG_WARN("G-buffer allocation {}x{} with {} sample(s) failed (GL error {})", num_pixel, num_pixel, num_samples, alloc_error);
+    }
+    g_buffer.reset();
+    GLCall(glDeleteTextures(static_cast<GLsizei>(g_buffer_textures.size()), g_buffer_textures.data()));
+    g_buffer_textures = {0, 0};
+    return false;
+}
+
+} // namespace
+
 PixelForceTorqueCalculator::PixelForceTorqueCalculator(
     IGeometryShadingData& geometry,
     IGSIModel& gsi_model,
@@ -76,27 +129,44 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
         SPDLOG_ERROR("PixelForceTorqueCalculator: num_pixel must be positive");
         throw std::invalid_argument("PixelForceTorqueCalculator: num_pixel must be positive");
     }
+    if (options.num_msaa_samples == 0) {
+        SPDLOG_ERROR("PixelForceTorqueCalculator: num_msaa_samples must be at least 1 (1 = no anti-aliasing)");
+        throw std::invalid_argument("PixelForceTorqueCalculator: num_msaa_samples must be at least 1 (1 = no anti-aliasing)");
+    }
 
     // The window is never shown and never drawn to; all rendering goes to the G-buffer.
     m_gpu->context = std::make_unique<GlfwOpenGLContext>(64, 64, "Pixel Load Renderer", false);
     ScopedCurrentContext current(*m_gpu->context);
 
-    // G-buffer: two float targets, both sampled texel by texel, never filtered.
-    GLCall(glGenTextures(static_cast<GLsizei>(m_gpu->g_buffer_textures.size()), m_gpu->g_buffer_textures.data()));
-    for (unsigned int texture : m_gpu->g_buffer_textures) {
-        GLCall(glBindTexture(GL_TEXTURE_2D, texture));
-        GLCall(glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, num_pixel, num_pixel));
-        GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-        GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+    // The G-buffer has multisampled colour textures and a multisampled depth renderbuffer,
+    // so both limits apply.
+    GLint max_color_samples = 1;
+    GLint max_samples = 1;
+    GLCall(glGetIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES, &max_color_samples));
+    GLCall(glGetIntegerv(GL_MAX_SAMPLES, &max_samples));
+    const auto driver_limit = static_cast<unsigned int>(std::max(1, std::min(max_color_samples, max_samples)));
+    m_num_msaa_samples = std::min(m_options.num_msaa_samples, driver_limit);
+    if (m_num_msaa_samples < m_options.num_msaa_samples) {
+        SPDLOG_WARN("Requested {} MSAA samples, the driver allows {}; using {}.", m_options.num_msaa_samples, driver_limit, m_num_msaa_samples);
     }
-    GLCall(glBindTexture(GL_TEXTURE_2D, 0));
-    m_gpu->g_buffer = std::make_unique<FrameBuffer>(std::span<const unsigned int>(m_gpu->g_buffer_textures), num_pixel, num_pixel);
-    m_gpu->g_buffer->UnBind();
+
+    // The memory for num_pixel^2 * samples * 2 * 16 B can still be too much even within the
+    // driver's limit, so halve the sample count until the G-buffer can be allocated.
+    while (!create_g_buffer(m_gpu->g_buffer_textures, m_gpu->g_buffer, num_pixel, m_num_msaa_samples)) {
+        if (m_num_msaa_samples == 1) {
+            SPDLOG_ERROR("PixelForceTorqueCalculator: could not allocate the {}x{} G-buffer", num_pixel, num_pixel);
+            throw std::runtime_error("PixelForceTorqueCalculator: could not allocate the G-buffer");
+        }
+        const unsigned int fewer = m_num_msaa_samples / 2;
+        SPDLOG_WARN("Could not allocate the {}x{} G-buffer with {} samples; retrying with {}.",
+            num_pixel, num_pixel, m_num_msaa_samples, fewer);
+        m_num_msaa_samples = fewer;
+    }
 
     m_gpu->g_buffer_shader = std::make_unique<Shader>(pixel_glsl::g_buffer_vertex_shader, pixel_glsl::g_buffer_fragment_shader, true);
     m_gpu->g_buffer_shader->Unbind();
 
-    m_gpu->integrator = std::make_unique<PixelLoadIntegrator>(gsi_glsl, num_pixel, m_options.keep_pressure_image);
+    m_gpu->integrator = std::make_unique<PixelLoadIntegrator>(gsi_glsl, num_pixel, m_options.keep_pressure_image, m_num_msaa_samples);
 
     // Raw geometry: the model matrices are applied on the GPU. Normals are per
     // triangle, so each one is repeated for the triangle's three de-indexed vertices.
@@ -166,6 +236,7 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     GLCall(glEnable(GL_DEPTH_TEST));
     GLCall(glDepthFunc(GL_LESS));
     GLCall(glDepthMask(GL_TRUE));
+    GLCall(glEnable(GL_MULTISAMPLE)); // no effect on a single-sample framebuffer
     m_gpu->g_buffer->ClearFloat();
 
     m_gpu->g_buffer_shader->Bind();
@@ -188,7 +259,8 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     m_gpu->g_buffer->UnBind();
     GLCall(glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT));
 
-    // Pass 2: GSI per windward pixel, reduced on the GPU.
+    // Pass 2: the samples of each pixel are resolved, then one GSI evaluation per windward
+    // pixel, scaled by its coverage, reduced on the GPU.
     const float pixel_edge__m = 2.0f * bounding_sphere_radius / static_cast<float>(m_num_pixel);
     const float pixel_area__m2 = pixel_edge__m * pixel_edge__m;
     const PixelLoadIntegrator::Sums sums = m_gpu->integrator->integrate(
