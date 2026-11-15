@@ -23,7 +23,7 @@ T_wall    = 300;
 folder  = fullfile(fileparts(mfilename('fullpath')), '..', 'geometries');
 meshes  = {'two_two_sided_plates.obj', '2 triangles per face'; ...
            'two_two_sided_plates_fine.obj', 'fine two-sided plates'};
-methods = {'hybrid, Binary', 'hybrid, Binary 8x MSAA', 'hybrid, CoP', 'per pixel'};
+methods = {'hybrid, Binary no MSAA', 'hybrid, Binary 8x MSAA','hybrid, CoP', 'per pixel'};
 
 %% 1. Error over num_pixel, flow at 12 deg
 % At 12 deg the shadow edge on the back plate cuts through the cells of the
@@ -44,7 +44,8 @@ time_hi_ms = zeros(size(time_ms));
 step_size = 0.1;
 alphas = (-90+step_size):step_size:(90-step_size);   % [deg]; the shadow slides across the whole back plate
 error_alpha = zeros(numel(num_pixels), numel(alphas), ...
-    numel(methods), size(meshes, 1));
+    numel(methods), size(meshes, 1));   % relative force error
+error_abs_alpha = zeros(size(error_alpha));   % absolute force error [N]
 total_runs = size(meshes, 1) * numel(num_pixels) * numel(methods);
 run_count  = 0;
 t_total    = tic;
@@ -85,7 +86,8 @@ for g = 1:size(meshes, 1)
                 F_ref = exact_solution_shadowing( ...
                     alphas(i), gsi_model, speed, T_wall, aero_cond);
                 F_i = F(i, :);
-                error_alpha(p, i, m, g) = norm(F_i - F_ref) / norm(F_ref);
+                error_abs_alpha(p, i, m, g) = norm(F_i - F_ref);
+                error_alpha(p, i, m, g) = error_abs_alpha(p, i, m, g) / norm(F_ref);
             end
             fprintf('done in %.1f s (median %.2f ms/eval, IQR %.2f-%.2f)\n', ...
                 toc(t_run), time_ms(g, p, m), time_lo_ms(g, p, m), time_hi_ms(g, p, m));
@@ -94,21 +96,42 @@ for g = 1:size(meshes, 1)
 end
 fprintf('\nBenchmark finished in %.1f s. Plotting results...\n', toc(t_total));
 
-avg_error = mean(error_alpha, 2);
-std_error = std(error_alpha,1,2);
-
 %% Results
+% Every figure is made twice: once for the relative and once for the
+% absolute force error.
 colors = lines(numel(methods));
 styles = {'-o', '--s'};
-figure('Name', 'Error over num_pixel');
+cost_time_ms = squeeze(time_ms(2, :, :));
+cost_lo_ms   = squeeze(time_lo_ms(2, :, :));
+cost_hi_ms   = squeeze(time_hi_ms(2, :, :));
+shown_p = [1, numel(num_pixels)];   % columns of the flow angle figure
 
-ax = axes;
+kinds = struct( ...
+    'name',  {'relative', 'absolute'}, ...
+    'data',  {error_alpha, error_abs_alpha}, ...
+    'scale', {100, 1}, ...
+    'label', {'force error [%]', 'absolute force error [N]'});
+for k = 1:numel(kinds)
+    kind = kinds(k);
+    avg_error = kind.scale * mean(kind.data, 2);
+    std_error = kind.scale * std(kind.data, 1, 2);
+    plot_error_figures(kind, avg_error, std_error, kind.scale * kind.data, ...
+        meshes, methods, num_pixels, alphas, colors, styles, shown_p, ...
+        cost_time_ms, cost_lo_ms, cost_hi_ms);
+end
+
+%% Local functions
+function plot_error_figures(kind, avg_error, std_error, error_alpha, ...
+        meshes, methods, num_pixels, alphas, colors, styles, shown_p, ...
+        cost_time_ms, cost_lo_ms, cost_hi_ms)
+figure('Name', sprintf('Error over num_pixel (%s)', kind.name));
+
 hold on;
 
 for g = 1:size(meshes, 1)
     for m = 1:numel(methods)
-        y_val = 100 * squeeze(avg_error(:, :, m, g));
-        y_err = 100 * squeeze(std_error(:, :, m, g));
+        y_val = squeeze(avg_error(:, :, m, g));
+        y_err = squeeze(std_error(:, :, m, g));
 
         offset_factor = (m - (numel(methods) + 1) / 2) * 15;
         x_shifted = num_pixels + offset_factor;
@@ -122,22 +145,19 @@ end
 grid on;
 xticks(num_pixels);
 xlabel('num\_pixel');
-ylabel('force error [%]');
+ylabel(kind.label);
 legend('Location', 'southwest');
-title(sprintf('Two plates, average relative error'));
+title(sprintf('Two plates, average %s error', kind.name));
 
-figure('Name', 'Cost versus accuracy');
-cost_time_ms = squeeze(time_ms(2, :, :));
-cost_lo_ms   = squeeze(time_lo_ms(2, :, :));
-cost_hi_ms   = squeeze(time_hi_ms(2, :, :));
-cost_error = 100 * squeeze(avg_error(:, 1, :, 2));
+figure('Name', sprintf('Cost versus accuracy (%s)', kind.name));
+cost_error = squeeze(avg_error(:, 1, :, 2));
 hold on;
 for m = 1:numel(methods)
     % Horizontal bars span the 25th to 75th percentile of the per-call time.
     errorbar(cost_time_ms(:, m), cost_error(:, m), [], [], ...
         cost_time_ms(:, m) - cost_lo_ms(:, m), ...
         cost_hi_ms(:, m) - cost_time_ms(:, m), ...
-        '-o', 'Color', colors(m, :), 'LineWidth', 1.5);
+        '-o', 'Color', colors(m, :), 'LineWidth', 0.5);
 end
 set(gca, 'XScale', 'log', 'YScale', 'log');
 for i = 1:numel(num_pixels)
@@ -146,27 +166,41 @@ for i = 1:numel(num_pixels)
 end
 grid on;
 xlabel('median time per evaluation [ms] (bars: interquartile range)');
-ylabel('force error [%]');
+ylabel(kind.label);
 legend(methods, 'Location', 'southwest');
 title('Lower left is better');
-%%
 
-figure('Name', 'Error over flow angle');
+figure('Name', sprintf('Error over flow angle (%s)', kind.name));
+% One row per mesh; columns: lowest and highest num_pixel only.
+tl =tiledlayout(size(meshes, 1), numel(shown_p), 'TileSpacing', 'compact');
+axs = gobjects(size(meshes, 1), numel(shown_p));
 for g = 1:size(meshes, 1)
-    for m = 1:numel(methods)
-        semilogy(alphas, 100 * error_alpha(end, :, m, g), styles{g}, ...
-            'Color', colors(m, :), 'LineWidth', 1, 'MarkerSize', 3, ...
-            'DisplayName', sprintf('%s, %s', methods{m}, meshes{g, 2}));
-        hold on;
+    for c = 1:numel(shown_p)
+        p = shown_p(c);
+        axs(g, c) = nexttile;
+        for m = 1:numel(methods)
+            semilogy(alphas, error_alpha(p, :, m, g), '-', ...
+                'Color', colors(m, :), 'LineWidth', 1, ...
+                'DisplayName', methods{m});
+            hold on;
+        end
+        grid on;
+        if g == 1
+            title(sprintf('num\\_pixel = %d', num_pixels(p)));
+        end
+        if c == 1
+            ylabel({meshes{g, 2}, kind.label});
+        end
+        if g == 1 && c == 1
+            legend('Location', 'northwest');
+        end
     end
 end
-grid on;
-xlabel('flow angle in the x-y plane [deg]');
-ylabel('force error [%]');
-legend('Location', 'northwest');
-title('Two plates, num\_pixel = 4000');
+linkaxes(axs(:), 'xy');   % same scale so all panels are comparable
+xlabel(tl, 'flow angle in the x-y plane [deg]');
+title(tl, sprintf('Two plates, %s error over flow angle', kind.name));
+end
 
-%% Local functions
 function [med, lo, hi] = summarize_times(t)
     % Median and 25th/75th percentile without the Statistics Toolbox.
     t  = sort(t(:));
@@ -186,7 +220,6 @@ function calculators = make_calculators(geometry, gsi_model, num_pixel)
     calculators = {
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel, 1), gsi_model)
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel, 8), gsi_model)
-        vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model)
-        vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel)
+        vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model)        vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel)
     };
 end

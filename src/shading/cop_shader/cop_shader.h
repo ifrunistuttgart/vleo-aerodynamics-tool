@@ -1,6 +1,10 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
+#include <span>
+#include <vector>
+#include <glm/glm.hpp>
 
 #include "Ishading_algorithm.h"
 #include "frame_buffer.h"
@@ -10,6 +14,24 @@
 
 namespace vat::shading {
 
+/**
+ * Centre-of-pressure visibility: a triangle is visible (1.0) if its centroid survives the
+ * depth test, otherwise 0.0. The render structure is the one of BinaryShader.
+ *
+ * Two passes over a depth-only framebuffer:
+ *   1. depth pre-pass of the triangles (GL_LESS, depth writes on),
+ *   2. one point per centroid (GL_LEQUAL, depth writes off): the fragment shader sets
+ *      visible[id] = 1 for every point that passes the depth test.
+ * There is no ID image and no reduction pass.
+ *
+ * The centroid is moved a fixed 0.005 model units along its normal, so that it lies in
+ * front of its own triangle despite the small depth mismatch between a point and an
+ * interpolated triangle fragment. See cop_shader_offset_investigation_notes.md.
+ *
+ * Known limits:
+ *   - No MSAA (num_msaa_samples must be 1).
+ *   - Back faces are culled and their centroids skipped.
+ */
 class CoPShader : public IShadingAlgorithm {
 private:
     std::unique_ptr<gl::FrameBuffer> m_frame_buffer;
@@ -17,15 +39,16 @@ private:
     std::unique_ptr<gl::Shader> m_point_shader;
     std::unique_ptr<gl::VertexArray> m_triangle_vao;
     std::unique_ptr<gl::VertexArray> m_cop_vao;
+    std::unique_ptr<VisibilityReducer> m_visibility;
     const unsigned int MAX_TRIANGLES = (2u << 28) - 1; //keeps the per-triangle visibility buffer to a sane size
-    size_t m_lenVertices = 0;
     unsigned int m_numTriangles = 0;
-    unsigned int m_ID_texture = 0;
-    std::unique_ptr<VisibilityReducer> m_visibility_reducer;
     const unsigned int NUM_PIXEL = 800;
 public:
-    CoPShader(unsigned int num_pixel);
-    ~CoPShader();
+    /// Distance (model units) the centroid is moved along its normal.
+    static constexpr float NORMAL_OFFSET = 0.005f;
+
+    explicit CoPShader(unsigned int num_pixel);
+    ~CoPShader() override;
     int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) override;
     std::vector<float> shade_geometry(glm::vec3 v_rel_hat,
                                        float bounding_sphere_radius,

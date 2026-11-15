@@ -213,9 +213,12 @@ Both render under an orthographic projection along the flow direction, and both 
 - **`BinaryShader`** renders triangle IDs. A triangle counts as visible if any pixel carries
   its ID.
 - **`CoPShader`** renders triangle depth, then re-renders each triangle's *centre of pressure*
-  (its centroid) as a single point with a small depth bias. The triangle is visible if that
-  point survives the depth test. This carries less area-quantization bias than the binary
-  approach at the same resolution.
+  (its centroid) as a single point, moved 0.005 along its normal. The triangle is visible if
+  that point survives the depth test. This carries less area-quantization bias than the binary
+  approach at the same resolution. It uses `BinaryShader`'s render structure (a depth-only pass,
+  then `GL_LEQUAL` points with depth writes off, each marking its triangle in the visibility
+  buffer), so there is no ID image and no reduction pass. See
+  `cop_shader_offset_investigation_notes.md` for the offset.
 
 `num_pixel` is the square render resolution, and the single accuracy/runtime knob. Leave it
 out and `ShadingPipeline` chooses it from the mesh's narrowest triangles

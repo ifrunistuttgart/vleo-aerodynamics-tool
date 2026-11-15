@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #define FMT_UNICODE 0
 #include <spdlog/spdlog.h>
+#include <cstdint>
 #include <span>
+#include <stdexcept>
 #include <vector>
 #include <algorithm>
 #include <glm/glm.hpp>
@@ -104,4 +106,54 @@ TEST_F(CoPShaderTest, ShadeTetrahedron) {
     EXPECT_NEAR(isTriangleVisible[1], 1.0f, 1e-5);
     EXPECT_NEAR(isTriangleVisible[2], 1.0f, 1e-5);
     EXPECT_NEAR(isTriangleVisible[3], 0.0f, 1e-5);
+}
+
+namespace {
+
+// Two triangles forming a square of half-side `half` in the plane x = `x`, facing +x.
+// IDs start at `first_id`.
+void append_quad(std::vector<float>& quad_vertices, std::vector<std::uint32_t>& ids, float x, float half,
+    std::uint32_t first_id) {
+    const glm::vec3 a(x, -half, -half), b(x, half, -half), c(x, half, half), d(x, -half, half);
+    const glm::vec3 triangles[2][3] = { { a, b, c }, { a, c, d } };
+    std::uint32_t id = first_id;
+    for (const auto& tri : triangles) {
+        for (const auto& p : tri) {
+            quad_vertices.insert(quad_vertices.end(), { p.x, p.y, p.z });
+            ids.push_back(id);
+        }
+        ++id;
+    }
+}
+
+} // namespace
+
+// A large plate right in front of a smaller one: no centroid of the rear plate may leak
+// through the GL_LEQUAL marking pass, and the front plate must be fully visible.
+TEST_F(CoPShaderTest, OccludedPlateStaysHidden) {
+    std::vector<float> plate_vertices;
+    std::vector<std::uint32_t> plate_ids;
+    append_quad(plate_vertices, plate_ids, 0.1f, 0.5f, 1);   // front, IDs 1-2
+    append_quad(plate_vertices, plate_ids, -0.1f, 0.3f, 3);  // rear, IDs 3-4
+
+    CoPShader shader(800);
+    ASSERT_EQ(shader.set_vertices(plate_vertices, plate_ids), 0);
+    const std::vector<unsigned int> num_triangles_per_mesh{ 4 };
+    const std::vector<glm::mat4> model_matrices{ glm::mat4(1.0f) };
+    const std::vector<float> visible = shader.shade_geometry(glm::vec3(1.0f, 0.0f, 0.0f), 1.0f,
+        num_triangles_per_mesh, model_matrices);
+
+    ASSERT_EQ(visible.size(), 4u);
+    EXPECT_NEAR(visible[0], 1.0f, 1e-5);
+    EXPECT_NEAR(visible[1], 1.0f, 1e-5);
+    EXPECT_NEAR(visible[2], 0.0f, 1e-5);
+    EXPECT_NEAR(visible[3], 0.0f, 1e-5);
+}
+
+TEST_F(CoPShaderTest, ShadeBeforeSetVerticesThrows) {
+    CoPShader shader(800);
+    const std::vector<unsigned int> num_triangles_per_mesh{ 1 };
+    const std::vector<glm::mat4> model_matrices{ glm::mat4(1.0f) };
+    EXPECT_THROW(shader.shade_geometry(glm::vec3(1.0f, 0.0f, 0.0f), 1.0f, num_triangles_per_mesh, model_matrices),
+        std::logic_error);
 }

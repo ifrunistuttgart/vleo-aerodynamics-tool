@@ -1,7 +1,7 @@
 #include "cop_shader.h"
 #define FMT_UNICODE 0 // avoid error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
-#include <algorithm>
+#include <stdexcept>
 #include <glm/glm.hpp>
 
 //custom abstractions
@@ -21,69 +21,47 @@ using namespace gl;
 
 CoPShader::CoPShader(unsigned int num_pixel)
     : NUM_PIXEL(num_pixel) {
-};
-
-CoPShader::~CoPShader() {
-    m_shader.reset();
-    m_point_shader.reset();
-    m_frame_buffer.reset();
-    m_triangle_vao.reset();
-    m_cop_vao.reset();
-
-    if (m_ID_texture != 0) {
-        GLCall(glDeleteTextures(1, &m_ID_texture));
-    }
 }
+
+CoPShader::~CoPShader() = default;
 
 int CoPShader::set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) {
     m_numTriangles = static_cast<unsigned int>(triangleIDs.size() / 3); //assume 3 vertices per triangle
     if (m_numTriangles > MAX_TRIANGLES) {
-		SPDLOG_ERROR("Number of triangles ({}) exceeds the maximum supported ({}).", m_numTriangles, MAX_TRIANGLES);
+        SPDLOG_ERROR("Number of triangles ({}) exceeds the maximum supported ({}).", m_numTriangles, MAX_TRIANGLES);
         return -1;
-	}
-    // framebuffer for counting ids
-    SPDLOG_DEBUG("create framebuffer with ID texture of size {}x{}", NUM_PIXEL, NUM_PIXEL);
-    GLCall(glGenTextures(1, &m_ID_texture));
-    GLCall(glBindTexture(GL_TEXTURE_2D, m_ID_texture));
-    GLCall(glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, NUM_PIXEL, NUM_PIXEL, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr));
-    // Integer textures cannot be filtered, and the reduction shader samples this one.
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-    GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+    }
 
-    m_frame_buffer.reset(new FrameBuffer(m_ID_texture, NUM_PIXEL, NUM_PIXEL));
+    // Depth only: visibility is marked in the SSBO, so no colour attachment is needed.
+    SPDLOG_DEBUG("CoP shading: {}x{} px depth buffer", NUM_PIXEL, NUM_PIXEL);
+    m_frame_buffer = std::make_unique<FrameBuffer>(std::span<const unsigned int>{}, NUM_PIXEL, NUM_PIXEL, 1u);
     m_frame_buffer->UnBind();
+    if (!m_frame_buffer->is_complete()) {
+        SPDLOG_ERROR("Could not create the {}x{} depth buffer.", NUM_PIXEL, NUM_PIXEL);
+        m_frame_buffer.reset();
+        return -1;
+    }
 
-    m_visibility_reducer = std::make_unique<VisibilityReducer>(m_numTriangles);
-
-    // Create shader program from embedded sources
-    m_shader.reset(new Shader(cop_glsl::ID_vertex_shader, cop_glsl::ID_fragment_shader, true));
-    m_shader->Unbind();
-    m_point_shader.reset(new Shader(cop_glsl::ID_point_shader, cop_glsl::ID_fragment_shader, true));
-    m_point_shader->Unbind();
-
-    // Enable depth testing for proper occlusion
+    // Fixed for this pipeline's own context, so set once rather than every frame.
     GLCall(glEnable(GL_DEPTH_TEST));
-    GLCall(glDepthFunc(GL_LESS));
-    GLCall(glDepthMask(GL_TRUE));
-
-    // Enable face culling
     GLCall(glEnable(GL_CULL_FACE));
     GLCall(glCullFace(GL_BACK));
     GLCall(glFrontFace(GL_CCW)); // Counter-clockwise is front-facing
 
-    m_lenVertices = vertices.size();
-	m_triangle_vao.reset(new VertexArray());
+    m_visibility = std::make_unique<VisibilityReducer>(m_numTriangles);
+
+    // Create shader programs from embedded sources
+    m_shader.reset(new Shader(cop_glsl::triangle_vertex_shader, cop_glsl::triangle_fragment_shader, true));
+    m_shader->Unbind();
+    m_point_shader.reset(new Shader(cop_glsl::point_vertex_shader, cop_glsl::point_fragment_shader, true));
+    m_point_shader->Unbind();
+
+    // Triangles: positions only
+    m_triangle_vao.reset(new VertexArray());
     VertexBufferLayout layoutVertices;
     layoutVertices.Push<float>(3);           // vec3 position
     VertexBuffer vb(vertices.data(), static_cast<unsigned int>(sizeof(float) * vertices.size()));
     m_triangle_vao->AddBuffer(vb, layoutVertices);
-
-    //set triangle IDs to background IDs
-    VertexBufferLayout layout_background_ids;
-    layout_background_ids.Push<unsigned int>(1);         // triangle ID
-    std::vector<std::uint32_t> background_id(triangleIDs.size(),0);
-    VertexBuffer vb_triangle_ID(background_id.data(), static_cast<unsigned int>(sizeof(std::uint32_t) * background_id.size()));
-    m_triangle_vao->AddBuffer(vb_triangle_ID, layout_background_ids);
 
     //compute triangle centroids from vertices
     std::vector<float> cop(m_numTriangles*3,0);
@@ -118,7 +96,7 @@ int CoPShader::set_vertices(std::span<const float> vertices, std::span<const std
     }
     VertexBuffer vb_cop_ID(cop_triangle_ids.data(), static_cast<unsigned int>(sizeof(std::uint32_t) * cop_triangle_ids.size()));
     m_cop_vao->AddBuffer(vb_cop_ID, layout_cop_ids);
-    
+
     //set normals for Cops
     VertexBufferLayout layout_cop_normals;
     layout_cop_normals.Push<float>(3);
@@ -129,50 +107,66 @@ int CoPShader::set_vertices(std::span<const float> vertices, std::span<const std
 }
 
 std::vector<float> CoPShader::shade_geometry(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) {
+    if (!m_frame_buffer || !m_shader || !m_point_shader || !m_triangle_vao || !m_cop_vao || !m_visibility) {
+        throw std::logic_error("CoPShader::shade_geometry called before a successful set_vertices");
+    }
     const FlowCamera camera = make_flow_camera(v_rel_hat, bounding_sphere_radius);
     const glm::mat4& orthoProj = camera.projection;
     const glm::mat4& view = camera.view;
+
+    // Puts the depth state back on every exit path, including an exception from a draw.
+    struct DepthStateGuard {
+        ~DepthStateGuard() {
+            glDepthMask(GL_TRUE);
+            glDepthFunc(GL_LESS);
+        }
+    } depth_state_guard;
 
     m_frame_buffer->Bind();
     // The default viewport is the hidden window's size, which the OS may clamp to
     // the screen; without this, num_pixel above the screen size is silently lost.
     GLCall(glViewport(0, 0, static_cast<GLsizei>(NUM_PIXEL), static_cast<GLsizei>(NUM_PIXEL)));
-    m_frame_buffer->Clear();
+    m_frame_buffer->ClearDepth();
+    m_visibility->begin(0);
 
-	//render triangles and cops to Framebuffer
+    // Pass 1: depth of the triangles only. The SSBO stays untouched, because a centroid
+    // drawn before its occluder would otherwise be marked.
+    GLCall(glDepthFunc(GL_LESS));
+    GLCall(glDepthMask(GL_TRUE));
     m_shader->Bind();
-	m_triangle_vao->Bind();
-	unsigned int triangle_offset = 0;
-    for (int i = 0; i < num_triangles_per_mesh.size(); i++) {
-		glm::mat4 model = model_matrices[i];
+    m_triangle_vao->Bind();
+    unsigned int triangle_offset = 0;
+    for (size_t i = 0; i < num_triangles_per_mesh.size(); i++) {
+        glm::mat4 model = model_matrices[i];
         glm::mat4 u_MVP = orthoProj * view * model;
         m_shader->setUniformMat4f("u_MVP", u_MVP);
-        glDrawArrays(GL_TRIANGLES, triangle_offset, static_cast<GLsizei>(num_triangles_per_mesh[i] * 3));
+        GLCall(glDrawArrays(GL_TRIANGLES, static_cast<GLint>(triangle_offset), static_cast<GLsizei>(num_triangles_per_mesh[i] * 3)));
         triangle_offset += num_triangles_per_mesh[i] * 3;
     }
     m_triangle_vao->Unbind();
     m_shader->Unbind();
 
+    // Pass 2: every centroid that matches or beats the final depth marks its triangle.
+    GLCall(glDepthFunc(GL_LEQUAL));
+    GLCall(glDepthMask(GL_FALSE));
     m_point_shader->Bind();
+    m_point_shader->SetUniform1f("u_normal_offset", NORMAL_OFFSET);
     m_cop_vao->Bind();
     unsigned int cop_offset = 0;
-    for (int i = 0; i < num_triangles_per_mesh.size(); i++) {
+    for (size_t i = 0; i < num_triangles_per_mesh.size(); i++) {
         glm::mat4 model = model_matrices[i];
         glm::mat4 u_MV = view * model;
         glm::mat4 u_MVP = orthoProj * u_MV;
         m_point_shader->setUniformMat4f("u_MVP", u_MVP);
         m_point_shader->setUniformMat4f("u_MV", u_MV);
-        glDrawArrays(GL_POINTS, cop_offset, static_cast<GLsizei>(num_triangles_per_mesh[i]));
+        GLCall(glDrawArrays(GL_POINTS, static_cast<GLint>(cop_offset), static_cast<GLsizei>(num_triangles_per_mesh[i])));
         cop_offset += num_triangles_per_mesh[i];
     }
     m_cop_vao->Unbind();
     m_point_shader->Unbind();
-
-    // Make the rendered IDs visible to the reduction shader, then reduce on the GPU:
-    // only one flag per triangle is read back, not the whole NUM_PIXEL^2 image.
-    GLCall(glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT));
     m_frame_buffer->UnBind();
-    return m_visibility_reducer->reduce(m_ID_texture, NUM_PIXEL);
-};
+
+    return m_visibility->read_back();
+}
 
 } // namespace vat::shading
