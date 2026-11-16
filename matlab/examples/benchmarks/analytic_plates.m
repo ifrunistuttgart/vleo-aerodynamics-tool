@@ -21,6 +21,7 @@ speed     = 7800;
 T_wall    = 300;
 
 folder  = fullfile(fileparts(mfilename('fullpath')), '..', 'geometries');
+
 meshes  = {'two_two_sided_plates.obj', '2 triangles per face'; ...
            'two_two_sided_plates_fine.obj', 'fine two-sided plates'};
 methods = {'hybrid, Binary no MSAA', 'hybrid, Binary 8x MSAA','hybrid, CoP', 'per pixel', 'per pixel 8x MSAA'};
@@ -29,10 +30,6 @@ methods = {'hybrid, Binary no MSAA', 'hybrid, Binary 8x MSAA','hybrid, CoP', 'pe
 % At 12 deg the shadow edge on the back plate cuts through the cells of the
 % fine mesh; at angles where it falls exactly on a cell boundary, the
 % hybrid calculator would be exact by coincidence.
-% 4000 is left out of the sweep: the 8x MSAA depth buffer alone is then
-% 4000^2 * 8 * 4 B = 512 MB, and every run is repeated for all flow angles below.
-% The 8x per-pixel calculator takes 2 * 16 B * num_pixel^2 * 8 for its G-buffer
-% (about 1 GB at 2000); it lowers its sample count if that does not fit.
 num_pixels  = [250 500 1000 2000];
 num_warmup = 20;   % untimed calls per calculator before measuring
 % Per-call time statistics [ms]: median and 25th/75th percentile.
@@ -51,6 +48,8 @@ assert(all(abs(alphas) < 90), ...
 error_alpha = zeros(numel(num_pixels), numel(alphas), ...
     numel(methods), size(meshes, 1));   % relative force error
 error_abs_alpha = zeros(size(error_alpha));   % absolute force error [N]
+torque_error_alpha = zeros(size(error_alpha));       % relative torque error
+torque_error_abs_alpha = zeros(size(error_alpha));   % absolute torque error [N m]
 total_runs = size(meshes, 1) * numel(num_pixels) * numel(methods);
 run_count  = 0;
 t_total    = tic;
@@ -68,6 +67,7 @@ for g = 1:size(meshes, 1)
             fprintf('    [%d/%d] %s ... ', run_count, total_runs, methods{m});
             t_run = tic;
             F = zeros(numel(alphas), 3);
+            T = zeros(numel(alphas), 3);
 
             % Warm-up (untimed): first calls allocate buffers and the GPU
             % clocks are still ramping up.
@@ -80,19 +80,22 @@ for g = 1:size(meshes, 1)
             call_ms = zeros(1, numel(alphas));
             for i = 1:numel(alphas)
                 start = tic;
-                F(i,:) = calculators{m}.calc_aero_load( ...
-                    flow(alphas(i), speed), T_wall, aero_cond).';   % returned as a column
+                [force, torque] = calculators{m}.calc_aero_load( ...
+                    flow(alphas(i), speed), T_wall, aero_cond);
                 call_ms(i) = 1e3 * toc(start);
+                F(i,:) = force.';   % returned as columns
+                T(i,:) = torque.';
             end
             [time_ms(g, p, m), time_lo_ms(g, p, m), time_hi_ms(g, p, m)] = ...
                 summarize_times(call_ms);
 
             for i = 1:numel(alphas)
-                F_ref = exact_solution_shadowing( ...
+                [F_ref, T_ref] = exact_solution_shadowing( ...
                     alphas(i), gsi_model, speed, T_wall, aero_cond);
-                F_i = F(i, :);
-                error_abs_alpha(p, i, m, g) = norm(F_i - F_ref);
+                error_abs_alpha(p, i, m, g) = norm(F(i, :) - F_ref);
                 error_alpha(p, i, m, g) = error_abs_alpha(p, i, m, g) / norm(F_ref);
+                torque_error_abs_alpha(p, i, m, g) = norm(T(i, :) - T_ref);
+                torque_error_alpha(p, i, m, g) = torque_error_abs_alpha(p, i, m, g) / norm(T_ref);
             end
             fprintf('done in %.1f s (median %.2f ms/eval, IQR %.2f-%.2f)\n', ...
                 toc(t_run), time_ms(g, p, m), time_lo_ms(g, p, m), time_hi_ms(g, p, m));
@@ -102,8 +105,8 @@ end
 fprintf('\nBenchmark finished in %.1f s. Plotting results...\n', toc(t_total));
 
 %% Results
-% Every figure is made twice: once for the relative and once for the
-% absolute force error.
+% Every figure is made four times: for the relative and the absolute error,
+% each of the force and of the torque (about the body origin).
 colors = lines(numel(methods));
 styles = {'-o', '--s'};
 cost_time_ms = squeeze(time_ms(2, :, :));
@@ -112,10 +115,12 @@ cost_hi_ms   = squeeze(time_hi_ms(2, :, :));
 shown_p = [1, numel(num_pixels)];   % columns of the flow angle figure
 
 kinds = struct( ...
-    'name',  {'relative', 'absolute'}, ...
-    'data',  {error_alpha, error_abs_alpha}, ...
-    'scale', {100, 1}, ...
-    'label', {'force error [%]', 'absolute force error [N]'});
+    'quantity', {'force', 'force', 'torque', 'torque'}, ...
+    'name',  {'relative', 'absolute', 'relative', 'absolute'}, ...
+    'data',  {error_alpha, error_abs_alpha, torque_error_alpha, torque_error_abs_alpha}, ...
+    'scale', {100, 1, 100, 1}, ...
+    'label', {'force error [%]', 'absolute force error [N]', ...
+              'torque error [%]', 'absolute torque error [N m]'});
 for k = 1:numel(kinds)
     kind = kinds(k);
     avg_error = kind.scale * mean(kind.data, 2);
@@ -129,7 +134,7 @@ end
 function plot_error_figures(kind, avg_error, std_error, error_alpha, ...
         meshes, methods, num_pixels, alphas, colors, styles, shown_p, ...
         cost_time_ms, cost_lo_ms, cost_hi_ms)
-figure('Name', sprintf('Error over num_pixel (%s)', kind.name));
+figure('Name', sprintf('%s error over num_pixel (%s)', kind.quantity, kind.name));
 
 hold on;
 
@@ -152,9 +157,9 @@ xticks(num_pixels);
 xlabel('num\_pixel');
 ylabel(kind.label);
 legend('Location', 'southwest');
-title(sprintf('Two plates, average %s error', kind.name));
+title(sprintf('Two plates, average %s %s error', kind.name, kind.quantity));
 
-figure('Name', sprintf('Cost versus accuracy (%s)', kind.name));
+figure('Name', sprintf('Cost versus %s accuracy (%s)', kind.quantity, kind.name));
 cost_error = squeeze(avg_error(:, 1, :, 2));
 hold on;
 for m = 1:numel(methods)
@@ -175,7 +180,7 @@ ylabel(kind.label);
 legend(methods, 'Location', 'southwest');
 title('Lower left is better');
 
-figure('Name', sprintf('Error over flow angle (%s)', kind.name));
+figure('Name', sprintf('%s error over flow angle (%s)', kind.quantity, kind.name));
 % One row per mesh; columns: lowest and highest num_pixel only.
 tl =tiledlayout(size(meshes, 1), numel(shown_p), 'TileSpacing', 'compact');
 axs = gobjects(size(meshes, 1), numel(shown_p));
@@ -203,7 +208,7 @@ for g = 1:size(meshes, 1)
 end
 linkaxes(axs(:), 'xy');   % same scale so all panels are comparable
 xlabel(tl, 'flow angle in the x-y plane [deg]');
-title(tl, sprintf('Two plates, %s error over flow angle', kind.name));
+title(tl, sprintf('Two plates, %s %s error over flow angle', kind.name, kind.quantity));
 end
 
 function [med, lo, hi] = summarize_times(t)
@@ -224,7 +229,7 @@ function calculators = make_calculators(geometry, gsi_model, num_pixel)
     % 8 samples per pixel) and CoP shading, then per pixel without and with 8 samples.
     calculators = {
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel, 1), gsi_model)
-        vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel, 2), gsi_model)
+        vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel, 8), gsi_model)
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model)
         vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel)
         vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel, NumMsaaSamples=8)

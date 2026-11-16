@@ -402,6 +402,9 @@ TEST(PixelAccuracyTest, OneSampleIsBitIdenticalToTheDefault) {
 
 // The shadow and silhouette edges of the two plates are resolved to a fraction of a pixel,
 // so at the same num_pixel the error against the analytic result is clearly smaller.
+// This also guards the hardware resolve: GL leaves it to the driver how glBlitFramebuffer
+// combines the samples, and a driver that picked one sample instead of averaging would give
+// coverage 0 or 1 again and fail here.
 TEST(PixelAccuracyTest, MsaaReducesTheEdgeErrorOfTheShadowedPlates) {
     Newton newton;
     InMemoryGeometry plates;

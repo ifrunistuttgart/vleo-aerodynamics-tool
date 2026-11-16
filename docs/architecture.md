@@ -189,16 +189,32 @@ loads to 1e-5, and the error against analytic results falls like 1/N
 ([pixel_force_torque_accuracy_test.cpp](../test/loads/pixel_force_torque_accuracy_test.cpp)).
 
 **Anti-aliasing.** `PixelLoadOptions::num_msaa_samples` (default 1) renders the G-buffer with that
-many samples per pixel. The integration pass resolves the samples of each pixel in a fixed
-order: the coverage `c` is the covered fraction of the samples, the position the mean of the
-covered samples' positions (each interpolated at its own sample location) and the normal the
-normalised mean of their normals. The GSI model is still evaluated once per pixel, and the
-result is scaled by `c`, so a pixel a silhouette or shadow edge cuts through counts with only
-its covered part. Where two orientations or two depths meet inside one pixel, the averaged
-normal and position are an approximation; only such edge pixels are affected. Cost: the
-G-buffer takes `2 * 16 B * N^2 * samples` (the sample count is reduced if that does not fit),
-and the integration pass fetches every sample. With 8 samples on the plate of
-`projected_area_plate` the worst projected-area error falls from 2.6e-3 to 3.1e-4 m^2.
+many samples per pixel. `glBlitFramebuffer` then resolves it into a single-sample copy
+(`gl::FrameBuffer::resolve_color_into`), which averages the samples of each pixel, uncovered
+ones (cleared to 0) included. From that average the integration pass gets:
+- the coverage `c`, the covered fraction of the samples (`w`);
+- the position, the mean of the covered samples' positions (`xyz / c`). The fragment shader
+  runs once per pixel and triangle, not once per sample: it evaluates the position at the mean
+  location of the samples the triangle covers (`gl_SampleMaskIn`) and writes it to all of them.
+  The position is affine across a triangle, so this gives the same sum as per-sample shading,
+  except that samples lost in the depth test still count in the mean (a sub-pixel effect at
+  occlusion edges that only touches the torque);
+- the normal, the normalised mean of the covered samples' normals.
+
+The GSI model is still evaluated once per pixel, and the result is scaled by `c`, so a pixel a
+silhouette or shadow edge cuts through counts with only its covered part. Where two
+orientations or two depths meet inside one pixel, the averaged normal and position are an
+approximation; only such edge pixels are affected. GL leaves it to the driver how a blit
+combines the samples; `MsaaReducesTheEdgeErrorOfTheShadowedPlates` fails on a driver that
+does not average them.
+
+Cost: the G-buffer takes `2 * 16 B * N^2 * (samples + 1)` (the sample count is reduced if that
+does not fit). On the development GPU, 8 samples at N = 2000 add about 5 ms per call, mostly
+the resolve and the multisampled G-buffer writes; fetching every sample in the compute shader
+instead was about 7x slower in total ([pixel_msaa_runtime_notes.md](../pixel_msaa_runtime_notes.md)).
+`PixelLoadOptions::profile_stages` and `perf_probe --pixel-stages` measure the stages. With 8
+samples on the plate of `projected_area_plate` the worst projected-area error falls from
+2.6e-3 to 3.1e-4 m^2.
 
 **Grazing incidence.** Working per projected area turns `A_px / cos(delta)` into a finite factor
 for the hyperthermal models: Newton, Cook and Storch divide the `cos(delta)` out analytically.

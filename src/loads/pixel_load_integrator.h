@@ -15,7 +15,7 @@ namespace vat::loads {
  * Evaluates a GSI model in every pixel of a G-buffer and sums the loads on the GPU.
  *
  * One compute dispatch does both: each pixel's force and torque, then a fixed-order
- * tree reduction to one partial sum per 32x32 tile. Only the partial sums are read
+ * tree reduction to one partial sum per tile (32x32 pixels, 16x16 with MSAA). Only the partial sums are read
  * back, and they are added up in double in a fixed order, so the result is
  * reproducible bit for bit on a given GPU and driver.
  */
@@ -32,8 +32,9 @@ public:
 	 * @param gsi_glsl The model's gsi_force_per_projected_area() source.
 	 * @param num_pixel Edge length of the square G-buffer.
 	 * @param keep_pressure_image Also write and read back the per-pixel pressure.
-	 * @param num_samples Samples per pixel of the G-buffer; 1 means it is an ordinary
-	 *                    GL_TEXTURE_2D, > 1 a GL_TEXTURE_2D_MULTISAMPLE with that many samples.
+	 * @param num_samples Samples per pixel the G-buffer was rendered with. With > 1 the
+	 *                    integrator expects the G-buffer resolved (sample mean) into
+	 *                    single-sample textures and scales each pixel by its coverage.
 	 */
 	PixelLoadIntegrator(const std::string& gsi_glsl, unsigned int num_pixel, bool keep_pressure_image,
 	                    unsigned int num_samples = 1);
@@ -43,12 +44,12 @@ public:
 	PixelLoadIntegrator& operator=(const PixelLoadIntegrator&) = delete;
 
 	/**
-	 * @param position_texture RGBA32F body-frame positions, w = 1 where covered; one value
-	 *                         per sample if the integrator was built for several samples.
-	 *                         Its sample count must equal the integrator's.
-	 * @param normal_texture RGBA32F body-frame unit normals, laid out like the positions.
+	 * @param position_texture Single-sample RGBA32F body-frame positions, w = 1 where covered;
+	 *                         with MSAA the resolved sample mean (w = coverage).
+	 * @param normal_texture Single-sample RGBA32F body-frame normals, laid out like the positions.
 	 * @param pressure_image Receives num_pixel^2 values, row 0 at the bottom, if the
 	 *                       integrator keeps the pressure image; untouched otherwise.
+	 * @throws std::invalid_argument if a texture is multisampled.
 	 */
 	Sums integrate(const gl::Texture2D& position_texture, const gl::Texture2D& normal_texture,
 	               const glm::vec3& v_rel__m_per_s, float surface_temp__K,
@@ -59,7 +60,6 @@ public:
 private:
 	std::unique_ptr<gl::ComputeShader> m_shader;
 	unsigned int m_num_pixel;
-	unsigned int m_num_samples;
 	unsigned int m_num_groups; // per axis
 	std::vector<glm::vec4> m_partials; // reused staging buffer for the readback
 	gl::ShaderStorageBuffer m_partials_buffer; // one force and one torque vec4 per workgroup

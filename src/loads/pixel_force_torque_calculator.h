@@ -25,10 +25,29 @@ struct PixelLoadOptions {
      * covered. > 1 = MSAA with that many samples: a partly covered pixel counts with its
      * covered fraction, so silhouettes and shadow edges are resolved to a fraction of a
      * pixel. Clamped to what the driver supports (with a warning). The G-buffer takes
-     * about 2 * 16 B * num_pixel^2 * num_msaa_samples. Keep this member last: callers
-     * initialise the options as an aggregate.
+     * about 2 * 16 B * num_pixel^2 * (num_msaa_samples + 1): the multisampled targets plus
+     * the single-sample copy they are resolved into.
      */
     unsigned int num_msaa_samples = 1;
+
+    /**
+     * Measure the wall-clock time of each stage of every evaluation, see
+     * PixelForceTorqueCalculator::last_stage_timings(). Waits for the GPU after every stage
+     * (glFinish), so it slows the evaluation down; for benchmarking only.
+     */
+    bool profile_stages = false;
+
+    // Keep new members at the end: callers initialise the options as an aggregate.
+};
+
+/** Wall-clock time of each stage of one evaluation [ms], see PixelLoadOptions::profile_stages. */
+struct PixelStageTimings {
+    double clear__ms = 0.0;     ///< state setup and clearing the G-buffer
+    double draw__ms = 0.0;      ///< rendering the G-buffer
+    double resolve__ms = 0.0;   ///< resolving the MSAA samples, if done as a separate pass
+    double integrate__ms = 0.0; ///< integration dispatch and read-back of the partial sums
+    double leeward__ms = 0.0;   ///< CPU loop over the leeward triangles
+    double total__ms = 0.0;     ///< the whole evaluation
 };
 
 /**
@@ -37,9 +56,10 @@ struct PixelLoadOptions {
  *
  * Pass 1 renders the body-frame position and normal of the front-most surface in
  * every pixel of an orthographic view along the flow, with num_msaa_samples samples
- * per pixel. Pass 2 resolves the samples of each pixel (coverage c = covered / total
- * samples, mean position and normalised mean normal of the covered samples) and
- * evaluates the GSI model once per windward pixel, dF = f(n, v) * A_px * c with f the
+ * per pixel. With several samples the G-buffer is then resolved in hardware
+ * (glBlitFramebuffer, which averages the samples), giving per pixel the coverage
+ * c = covered / total samples, the mean position and the normalised mean normal of the
+ * covered samples. Pass 2 evaluates the GSI model once per windward pixel, dF = f(n, v) * A_px * c with f the
  * force per projected area and A_px = (2R / num_pixel)^2, dT = r x dF, and sums both on
  * the GPU. With one sample c is 0 or 1. Where two orientations or two depths meet in
  * one pixel (a crease, a depth jump) the averaged normal and position are an
@@ -97,6 +117,9 @@ public:
     /** Area normal to the flow covered by windward surfaces (coverage weighted), from the last evaluation [m^2]. */
     [[nodiscard]] double last_projected_area() const { return m_projected_area__m2; }
 
+    /** Stage timings of the last evaluation; all zero unless PixelLoadOptions::profile_stages is set. */
+    [[nodiscard]] const PixelStageTimings& last_stage_timings() const { return m_stage_timings; }
+
 private:
     struct GpuState;
 
@@ -111,6 +134,7 @@ private:
     std::vector<float> m_pressure_image;
     double m_wetted_area__m2 = 0.0;
     double m_projected_area__m2 = 0.0;
+    PixelStageTimings m_stage_timings;
 };
 
 } // namespace vat::loads

@@ -1,5 +1,7 @@
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cstdio>
 #include <limits>
 #include "pixel_force_torque_calculator.h"
 #include "leeward_classification.h"
@@ -41,6 +43,9 @@ struct PixelForceTorqueCalculator::GpuState {
     std::unique_ptr<GlfwOpenGLContext> context;
     std::array<std::shared_ptr<Texture2D>, 2> g_buffer_textures; // position, normal
     std::unique_ptr<FrameBuffer> g_buffer;
+    // With MSAA: the G-buffer resolved (sample mean) into single-sample textures.
+    std::array<std::shared_ptr<Texture2D>, 2> resolved_textures;
+    std::unique_ptr<FrameBuffer> resolved;
     std::unique_ptr<Shader> g_buffer_shader;
     std::unique_ptr<VertexArray> vao;
     std::unique_ptr<PixelLoadIntegrator> integrator;
@@ -51,6 +56,10 @@ struct PixelForceTorqueCalculator::GpuState {
         }
         context->make_current();
         integrator.reset();
+        resolved.reset();
+        for (auto& texture : resolved_textures) {
+            texture.reset();
+        }
         vao.reset();
         g_buffer_shader.reset();
         g_buffer.reset();
@@ -146,7 +155,35 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
         m_num_msaa_samples = fewer;
     }
 
-    m_gpu->g_buffer_shader = std::make_unique<Shader>(pixel_glsl::g_buffer_vertex_shader, pixel_glsl::g_buffer_fragment_shader, true);
+    // With MSAA the samples are resolved in hardware (glBlitFramebuffer) into a single-sample
+    // copy, which the integration reads: much faster than fetching every sample there.
+    if (m_num_msaa_samples > 1 && !create_g_buffer(m_gpu->resolved_textures, m_gpu->resolved, num_pixel, 1)) {
+        SPDLOG_ERROR("PixelForceTorqueCalculator: could not allocate the {}x{} resolved G-buffer", num_pixel, num_pixel);
+        throw std::runtime_error("PixelForceTorqueCalculator: could not allocate the resolved G-buffer");
+    }
+    if (m_num_msaa_samples > 1) {
+        // Shade once per pixel and triangle, at the mean of the covered samples (see
+        // g_buffer_fragment_shader_msaa); the sample positions are baked in as constants.
+        m_gpu->g_buffer->Bind();
+        std::string offsets = "const vec2 k_sample_offsets[" + std::to_string(m_num_msaa_samples) + "] = vec2[](";
+        for (unsigned int s = 0; s < m_num_msaa_samples; ++s) {
+            GLfloat position[2] = {0.5f, 0.5f};
+            GLCall(glGetMultisamplefv(GL_SAMPLE_POSITION, s, position));
+            char buffer[96];
+            std::snprintf(buffer, sizeof(buffer), "%svec2(%.9g, %.9g)", s == 0 ? "" : ", ", position[0] - 0.5f, position[1] - 0.5f);
+            offsets += buffer;
+        }
+        offsets += ");\n";
+        m_gpu->g_buffer->UnBind();
+        const std::string version = "#version 430 core\n";
+        const std::string defines = version + "#define VAT_PIXEL_RATE_POSITION\n#define VAT_MSAA_SAMPLES " +
+            std::to_string(m_num_msaa_samples) + "\n";
+        std::string vertex = pixel_glsl::g_buffer_vertex_shader;
+        vertex.replace(vertex.find(version), version.size(), defines);
+        m_gpu->g_buffer_shader = std::make_unique<Shader>(vertex, defines + offsets + pixel_glsl::g_buffer_fragment_shader_msaa, true);
+    } else {
+        m_gpu->g_buffer_shader = std::make_unique<Shader>(pixel_glsl::g_buffer_vertex_shader, pixel_glsl::g_buffer_fragment_shader, true);
+    }
     m_gpu->g_buffer_shader->Unbind();
 
     m_gpu->integrator = std::make_unique<PixelLoadIntegrator>(gsi_glsl, num_pixel, m_options.keep_pressure_image, m_num_msaa_samples);
@@ -203,6 +240,23 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
 
     ScopedCurrentContext current(*m_gpu->context);
 
+    // Optional stage timing: wait for the GPU at the end of each stage, so each stage's
+    // wall time is its own and not hidden in the next stage's wait.
+    using Clock = std::chrono::steady_clock;
+    const bool profile = m_options.profile_stages;
+    m_stage_timings = {};
+    const Clock::time_point call_start = Clock::now();
+    Clock::time_point stage_start = call_start;
+    auto end_stage = [&](double& stage__ms) {
+        if (!profile) {
+            return;
+        }
+        GLCall(glFinish());
+        const Clock::time_point now = Clock::now();
+        stage__ms = std::chrono::duration<double, std::milli>(now - stage_start).count();
+        stage_start = now;
+    };
+
     // Pass 1: G-buffer of the front-most surface along the flow.
     const float bounding_sphere_radius = m_geometry.get_bounding_sphere_radius();
     const FlowCamera camera = make_flow_camera(glm::normalize(v_rel__m_per_s), bounding_sphere_radius);
@@ -221,6 +275,7 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     GLCall(glDepthMask(GL_TRUE));
     GLCall(glEnable(GL_MULTISAMPLE)); // no effect on a single-sample framebuffer
     m_gpu->g_buffer->Clear();
+    end_stage(m_stage_timings.clear__ms);
 
     m_gpu->g_buffer_shader->Bind();
     m_gpu->g_buffer_shader->setUniformMat4f("u_view_projection", view_projection);
@@ -241,15 +296,24 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     m_gpu->g_buffer_shader->Unbind();
     m_gpu->g_buffer->UnBind();
     memory_barrier(Barrier::TextureFetch);
+    end_stage(m_stage_timings.draw__ms);
 
-    // Pass 2: the samples of each pixel are resolved, then one GSI evaluation per windward
-    // pixel, scaled by its coverage, reduced on the GPU.
+    // MSAA: average the samples of each pixel in hardware. Uncovered samples hold the clear
+    // value 0, so w becomes the coverage and xyz the covered positions' sum / samples.
+    if (m_gpu->resolved) {
+        m_gpu->g_buffer->resolve_color_into(*m_gpu->resolved);
+    }
+    end_stage(m_stage_timings.resolve__ms);
+    const auto& integrated_textures = m_gpu->resolved ? m_gpu->resolved_textures : m_gpu->g_buffer_textures;
+
+    // Pass 2
     const float pixel_edge__m = 2.0f * bounding_sphere_radius / static_cast<float>(m_num_pixel);
     const float pixel_area__m2 = pixel_edge__m * pixel_edge__m;
     const PixelLoadIntegrator::Sums sums = m_gpu->integrator->integrate(
-        *m_gpu->g_buffer_textures[0], *m_gpu->g_buffer_textures[1],
+        *integrated_textures[0], *integrated_textures[1],
         v_rel__m_per_s, surface_temp__K, pixel_area__m2, m_options.min_cos_delta,
         m_gsi_model.glsl_uniforms(aero), m_pressure_image);
+    end_stage(m_stage_timings.integrate__ms);
 
     glm::dvec3 force_sum__N = sums.force__N;
     glm::dvec3 torque_sum__Nm = sums.torque__Nm;
@@ -278,8 +342,13 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
         }
     }
 
+    end_stage(m_stage_timings.leeward__ms);
+
     force__N = glm::vec3(force_sum__N);
     torque__Nm = glm::vec3(torque_sum__Nm);
+    if (profile) {
+        m_stage_timings.total__ms = std::chrono::duration<double, std::milli>(Clock::now() - call_start).count();
+    }
 
     SPDLOG_DEBUG("calc_aero_torque_force done (|F|={}, |T|={}, wetted area={} m^2)",
         glm::length(force__N), glm::length(torque__Nm), m_wetted_area__m2);

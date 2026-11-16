@@ -18,7 +18,11 @@ using namespace gl;
 
 namespace {
 
-constexpr unsigned int TILE_SIZE = 32; // pixels per workgroup and axis, see pixel_loads_glsl.h
+// Pixels per workgroup and axis, see pixel_loads_glsl.h: 32 without anti-aliasing (a 2x2
+// block per invocation), 16 with it (one pixel per invocation).
+unsigned int tile_size(unsigned int num_samples) {
+	return num_samples > 1 ? 16u : 32u;
+}
 
 std::string assemble_integration_shader(const std::string& gsi_glsl, bool keep_pressure_image, unsigned int num_samples) {
 	std::string source = "#version 430\n";
@@ -38,8 +42,7 @@ PixelLoadIntegrator::PixelLoadIntegrator(const std::string& gsi_glsl, unsigned i
                                          unsigned int num_samples)
 	: m_shader(std::make_unique<ComputeShader>(assemble_integration_shader(gsi_glsl, keep_pressure_image, num_samples), true)),
 	  m_num_pixel(num_pixel),
-	  m_num_samples(num_samples),
-	  m_num_groups((num_pixel + TILE_SIZE - 1) / TILE_SIZE),
+	  m_num_groups((num_pixel + tile_size(num_samples) - 1) / tile_size(num_samples)),
 	  m_partials(2 * static_cast<size_t>(m_num_groups) * m_num_groups),
 	  m_partials_buffer(m_partials.size() * sizeof(glm::vec4), BufferUsage::DynamicRead) {
 	if (keep_pressure_image) {
@@ -61,10 +64,10 @@ PixelLoadIntegrator::Sums PixelLoadIntegrator::integrate(const Texture2D& positi
                                                          float pixel_area__m2, float min_cos_delta,
                                                          const std::vector<GlslUniform>& gsi_uniforms,
                                                          std::vector<float>& pressure_image) {
-	// Checked first, so a mismatch leaves no GL state behind.
-	if (static_cast<unsigned int>(position_texture.get_num_samples()) != m_num_samples ||
-	    static_cast<unsigned int>(normal_texture.get_num_samples()) != m_num_samples) {
-		throw std::invalid_argument("PixelLoadIntegrator::integrate: G-buffer sample count differs from the integrator's");
+	// Checked first, so a mismatch leaves no GL state behind. A multisampled G-buffer must be
+	// resolved before it is integrated.
+	if (position_texture.is_multisample() || normal_texture.is_multisample()) {
+		throw std::invalid_argument("PixelLoadIntegrator::integrate: the G-buffer must be single-sample (resolve it first)");
 	}
 
 	m_shader->Bind();
@@ -114,8 +117,6 @@ PixelLoadIntegrator::Sums PixelLoadIntegrator::integrate(const Texture2D& positi
 		sums.torque__Nm += glm::dvec3(torque);
 		sums.windward_pixels += torque.w;
 	}
-	// The shader counts windward samples (exact integers); a pixel weighs 1 / num_samples per sample.
-	sums.windward_pixels /= static_cast<double>(m_num_samples);
 	return sums;
 }
 

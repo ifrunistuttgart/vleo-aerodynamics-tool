@@ -124,4 +124,29 @@ void FrameBuffer::ClearDepth() const
 	GLCall(glClear(GL_DEPTH_BUFFER_BIT));
 }
 
+void FrameBuffer::resolve_color_into(const FrameBuffer& target) const
+{
+	if (target.m_width != m_width || target.m_height != m_height ||
+		target.m_NumColorAttachments != m_NumColorAttachments || target.m_num_msaa_samples > 1) {
+		throw std::invalid_argument("FrameBuffer::resolve_color_into: target must be single-sample with the same size and attachments");
+	}
+	const auto width = static_cast<GLint>(m_width);
+	const auto height = static_cast<GLint>(m_height);
+	GLCall(glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FrameBufferID));
+	GLCall(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target.m_FrameBufferID));
+	for (unsigned int i = 0; i < m_NumColorAttachments; ++i) {
+		GLCall(glReadBuffer(GL_COLOR_ATTACHMENT0 + i));
+		GLCall(glDrawBuffer(GL_COLOR_ATTACHMENT0 + i));
+		GLCall(glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+	}
+	// Put back what attach_color_textures set: every attachment a draw buffer, no read buffer.
+	std::vector<GLenum> drawBuffers;
+	for (unsigned int i = 0; i < m_NumColorAttachments; ++i) {
+		drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + i);
+	}
+	GLCall(glDrawBuffers(static_cast<GLsizei>(drawBuffers.size()), drawBuffers.data()));
+	GLCall(glReadBuffer(GL_NONE));
+	GLCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+}
+
 } // namespace vat::gl

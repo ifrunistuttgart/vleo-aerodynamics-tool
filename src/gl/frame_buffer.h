@@ -49,6 +49,11 @@ public:
 	void Clear() const;
 	// Clears the depth buffer only.
 	void ClearDepth() const;
+	// Resolves every colour attachment of this (multisampled) framebuffer into the same attachment
+	// of `target` (single-sample, same size and attachment count) with glBlitFramebuffer. How the
+	// samples are combined is up to the driver; GL only says they are typically averaged.
+	// Leaves no framebuffer bound. Throws std::invalid_argument on a size or attachment mismatch.
+	void resolve_color_into(const FrameBuffer& target) const;
 	[[nodiscard]] unsigned int get_width() const { return m_width; }
 	[[nodiscard]] unsigned int get_height() const { return m_height; }
 	[[nodiscard]] unsigned int get_num_msaa_samples() const { return m_num_msaa_samples; }

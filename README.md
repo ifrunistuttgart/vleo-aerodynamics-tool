@@ -78,7 +78,8 @@ render time. Leave it out and the pipeline picks it from the mesh.
 `PixelForceTorqueCalculator` goes one step further: it evaluates the GSI model in every pixel
 the flow reaches, on the GPU, and sums force and torque there. Shadow edges then cut through
 triangles instead of switching whole triangles on or off. Surfaces facing away from the flow are
-still evaluated per triangle.
+still evaluated per triangle. With `PixelLoadOptions::num_msaa_samples` (MATLAB:
+`NumMsaaSamples`) above 1, a pixel an edge cuts through counts with its covered fraction.
 
 **Flow direction convention.** `v_rel_B__m_per_s` is the velocity of the *geometry relative to
 the atmosphere*, expressed in the body frame — the orange vector above.

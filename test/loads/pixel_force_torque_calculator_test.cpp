@@ -14,7 +14,6 @@
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
 #include "static_mesh_geometry.h"
-
 using namespace vat;
 using namespace vat::gsi_models;
 using namespace vat::geometry;
