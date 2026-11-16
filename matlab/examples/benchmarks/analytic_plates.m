@@ -16,7 +16,7 @@ vat.setLogLevel("warn");
 
 rho       = 1.2482e-11;
 aero_cond = vat.AeroConditions(rho, 934.0, 16 * 1.6605390689252e-27);
-gsi_model = vat.gsi_models.Newton();
+gsi_model = vat.gsi_models.Sentman(1, 0.9);
 speed     = 7800;
 T_wall    = 300;
 
@@ -45,6 +45,9 @@ time_hi_ms = zeros(size(time_ms));
 % each of meshes x num_pixels x methods, so raise step_size for a quick run.
 step_size = 0.1;
 alphas = (-90+step_size):step_size:(90-step_size);   % [deg]; the shadow slides across the whole back plate
+% The analytic solution is only valid for |alpha| < 90 deg (flow not parallel to the plates).
+assert(all(abs(alphas) < 90), ...
+    'Flow angles must lie strictly inside (-90, 90) deg for the analytic solution.');
 error_alpha = zeros(numel(num_pixels), numel(alphas), ...
     numel(methods), size(meshes, 1));   % relative force error
 error_abs_alpha = zeros(size(error_alpha));   % absolute force error [N]
@@ -221,7 +224,7 @@ function calculators = make_calculators(geometry, gsi_model, num_pixel)
     % 8 samples per pixel) and CoP shading, then per pixel without and with 8 samples.
     calculators = {
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel, 1), gsi_model)
-        vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel, 8), gsi_model)
+        vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 0, num_pixel, 2), gsi_model)
         vat.loads.HybridForceTorqueCalculator(geometry, vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model)
         vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel)
         vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, num_pixel, NumMsaaSamples=8)

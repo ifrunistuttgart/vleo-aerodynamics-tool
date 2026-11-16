@@ -1,4 +1,11 @@
 function [F, T] = exact_solution_shadowing(alpha__deg, gsi_model, speed, T_wall, aero_cond)
+    % Exact load on the two two-sided plates for any IGSIModel (e.g. Sentman).
+    % Valid for flow in the x-y plane with |alpha| < 90 deg. Beyond
+    % atand(2) = 63.4 deg the shadow has left the back plate (overlap 0),
+    % which the formulas below handle. At +-90 deg the shift diverges.
+    assert(isscalar(alpha__deg) && abs(alpha__deg) < 90, ...
+        ['exact_solution_shadowing is only valid for |alpha| < 90 deg ' ...
+        '(shadow shift 0.5*tand(alpha) diverges at 90 deg), got %g.'], alpha__deg);
     v_rel = flow(alpha__deg, speed);
     [visible_area, visible_centroid] = downstream_visible_surface(alpha__deg);
 
