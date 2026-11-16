@@ -1,10 +1,13 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
+#include <span>
+#include <stdexcept>
 #include <type_traits>
 
 #include "gl_helpers.h"
 #include "pixel_load_integrator.h"
 #include "leeward_classification.h"
+#include "memory_barrier.h"
 #include "shaders/pixel_loads_glsl.h"
 
 namespace vat::loads {
@@ -37,38 +40,33 @@ PixelLoadIntegrator::PixelLoadIntegrator(const std::string& gsi_glsl, unsigned i
 	  m_num_pixel(num_pixel),
 	  m_num_samples(num_samples),
 	  m_num_groups((num_pixel + TILE_SIZE - 1) / TILE_SIZE),
-	  m_partials(2 * static_cast<size_t>(m_num_groups) * m_num_groups) {
-	GLCall(glGenBuffers(1, &m_partials_buffer));
-	GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_partials_buffer));
-	GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER,
-		static_cast<GLsizeiptr>(m_partials.size() * sizeof(glm::vec4)), nullptr, GL_DYNAMIC_READ));
-	GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
-
+	  m_partials(2 * static_cast<size_t>(m_num_groups) * m_num_groups),
+	  m_partials_buffer(m_partials.size() * sizeof(glm::vec4), BufferUsage::DynamicRead) {
 	if (keep_pressure_image) {
-		GLCall(glGenTextures(1, &m_pressure_texture));
-		GLCall(glBindTexture(GL_TEXTURE_2D, m_pressure_texture));
-		GLCall(glTexStorage2D(GL_TEXTURE_2D, 1, GL_R32F, num_pixel, num_pixel));
-		GLCall(glBindTexture(GL_TEXTURE_2D, 0));
+		m_pressure_texture = std::make_unique<Texture2D>(static_cast<int>(num_pixel), static_cast<int>(num_pixel),
+			GL_R32F, GL_RED, GL_FLOAT);
+		if (!m_pressure_texture->is_valid()) {
+			throw std::runtime_error("PixelLoadIntegrator: could not allocate the pressure image");
+		}
 	}
 
 	SPDLOG_DEBUG("PixelLoadIntegrator ready for {}x{} pixels, {} sample(s) ({} workgroups, {} bytes read back per call)",
 		num_pixel, num_pixel, num_samples, m_num_groups * m_num_groups, m_partials.size() * sizeof(glm::vec4));
 }
 
-PixelLoadIntegrator::~PixelLoadIntegrator() {
-	if (m_partials_buffer != 0) {
-		GLCall(glDeleteBuffers(1, &m_partials_buffer));
-	}
-	if (m_pressure_texture != 0) {
-		GLCall(glDeleteTextures(1, &m_pressure_texture));
-	}
-}
+PixelLoadIntegrator::~PixelLoadIntegrator() = default;
 
-PixelLoadIntegrator::Sums PixelLoadIntegrator::integrate(unsigned int position_texture, unsigned int normal_texture,
+PixelLoadIntegrator::Sums PixelLoadIntegrator::integrate(const Texture2D& position_texture, const Texture2D& normal_texture,
                                                          const glm::vec3& v_rel__m_per_s, float surface_temp__K,
                                                          float pixel_area__m2, float min_cos_delta,
                                                          const std::vector<GlslUniform>& gsi_uniforms,
                                                          std::vector<float>& pressure_image) {
+	// Checked first, so a mismatch leaves no GL state behind.
+	if (static_cast<unsigned int>(position_texture.get_num_samples()) != m_num_samples ||
+	    static_cast<unsigned int>(normal_texture.get_num_samples()) != m_num_samples) {
+		throw std::invalid_argument("PixelLoadIntegrator::integrate: G-buffer sample count differs from the integrator's");
+	}
+
 	m_shader->Bind();
 	m_shader->SetUniform1i("u_g_position", 0);
 	m_shader->SetUniform1i("u_g_normal", 1);
@@ -87,35 +85,23 @@ PixelLoadIntegrator::Sums PixelLoadIntegrator::integrate(unsigned int position_t
 		}, uniform.value);
 	}
 
-	const GLenum g_buffer_target = m_num_samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
-	GLCall(glActiveTexture(GL_TEXTURE0));
-	GLCall(glBindTexture(g_buffer_target, position_texture));
-	GLCall(glActiveTexture(GL_TEXTURE1));
-	GLCall(glBindTexture(g_buffer_target, normal_texture));
-	GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_partials_buffer));
-	if (m_pressure_texture != 0) {
-		GLCall(glBindImageTexture(0, m_pressure_texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F));
+	position_texture.bind(0);
+	normal_texture.bind(1);
+	m_partials_buffer.bind_base(0);
+	if (m_pressure_texture) {
+		m_pressure_texture->bind_as_image(0, GL_WRITE_ONLY);
 	}
 
-	GLCall(glDispatchCompute(m_num_groups, m_num_groups, 1));
-	GLCall(glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT));
+	m_shader->dispatch(m_num_groups, m_num_groups);
+	memory_barrier(Barrier::ShaderStorage | Barrier::BufferUpdate | Barrier::TextureUpdate);
+	m_partials_buffer.read_back(std::span<glm::vec4>(m_partials));
 
-	GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_partials_buffer));
-	GLCall(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0,
-		static_cast<GLsizeiptr>(m_partials.size() * sizeof(glm::vec4)), m_partials.data()));
-	GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
-
-	if (m_pressure_texture != 0) {
-		pressure_image.resize(static_cast<size_t>(m_num_pixel) * m_num_pixel);
-		GLCall(glBindTexture(GL_TEXTURE_2D, m_pressure_texture));
-		GLCall(glPixelStorei(GL_PACK_ALIGNMENT, 4));
-		GLCall(glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, pressure_image.data()));
-		GLCall(glBindTexture(GL_TEXTURE_2D, 0));
+	if (m_pressure_texture) {
+		pressure_image = m_pressure_texture->read_back_float();
 	}
 
-	GLCall(glBindTexture(g_buffer_target, 0));
-	GLCall(glActiveTexture(GL_TEXTURE0));
-	GLCall(glBindTexture(g_buffer_target, 0));
+	normal_texture.unbind(1);
+	position_texture.unbind(0);
 	m_shader->Unbind();
 
 	// Summed in workgroup order, which the dispatch fixes, so the total is reproducible.

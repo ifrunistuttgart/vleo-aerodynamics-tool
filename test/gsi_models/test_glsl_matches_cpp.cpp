@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <random>
+#include <span>
 #include <string>
 #include <type_traits>
 #include <variant>
@@ -13,6 +14,8 @@
 #include "compute_shader.h"
 #include "gl_helpers.h"
 #include "glfw_opengl_context.h"
+#include "memory_barrier.h"
+#include "shader_storage_buffer.h"
 #include "cook.h"
 #include "maxwell.h"
 #include "newton.h"
@@ -95,14 +98,10 @@ std::vector<Sample> make_samples(std::mt19937& rng) {
 std::vector<glm::vec4> run_glsl(const IGSIModel& model, const AeroConditions& aero, const std::vector<Sample>& samples) {
     gl::ComputeShader shader(std::string(HARNESS_HEADER) + model.glsl_force_per_projected_area() + HARNESS_MAIN, true);
 
-    GLuint buffers[2];
-    GLCall(glGenBuffers(2, buffers));
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffers[0]));
-    GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER, static_cast<GLsizeiptr>(samples.size() * sizeof(Sample)), samples.data(), GL_STATIC_DRAW));
-    GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffers[0]));
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffers[1]));
-    GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER, static_cast<GLsizeiptr>(samples.size() * sizeof(glm::vec4)), nullptr, GL_DYNAMIC_READ));
-    GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, buffers[1]));
+    const gl::ShaderStorageBuffer input(std::as_bytes(std::span<const Sample>(samples)), gl::BufferUsage::StaticDraw);
+    const gl::ShaderStorageBuffer output(samples.size() * sizeof(glm::vec4), gl::BufferUsage::DynamicRead);
+    input.bind_base(0);
+    output.bind_base(1);
 
     shader.Bind();
     shader.SetUniform1f("u_min_cos_delta", MIN_COS_DELTA);
@@ -115,13 +114,12 @@ std::vector<glm::vec4> run_glsl(const IGSIModel& model, const AeroConditions& ae
             }
         }, uniform.value);
     }
-    GLCall(glDispatchCompute(static_cast<GLuint>((samples.size() + 63) / 64), 1, 1));
-    GLCall(glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT));
+    shader.dispatch(static_cast<unsigned int>((samples.size() + 63) / 64));
+    gl::memory_barrier(gl::Barrier::BufferUpdate);
 
     std::vector<glm::vec4> results(samples.size());
-    GLCall(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, static_cast<GLsizeiptr>(results.size() * sizeof(glm::vec4)), results.data()));
+    output.read_back(std::span<glm::vec4>(results));
     shader.Unbind();
-    GLCall(glDeleteBuffers(2, buffers));
     return results;
 }
 
@@ -211,17 +209,13 @@ void main()
     for (float v = -9.0f; v <= 9.0f; v += 1.0f / 512.0f) x.push_back(v);
     std::vector<float> result = x;
 
-    GLuint buffer;
-    GLCall(glGenBuffers(1, &buffer));
-    GLCall(glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer));
-    GLCall(glBufferData(GL_SHADER_STORAGE_BUFFER, static_cast<GLsizeiptr>(result.size() * sizeof(float)), result.data(), GL_DYNAMIC_READ));
-    GLCall(glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer));
+    const gl::ShaderStorageBuffer buffer(std::as_bytes(std::span<const float>(result)), gl::BufferUsage::DynamicRead);
+    buffer.bind_base(0);
     shader.Bind();
-    GLCall(glDispatchCompute(static_cast<GLuint>((result.size() + 63) / 64), 1, 1));
-    GLCall(glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT));
-    GLCall(glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, static_cast<GLsizeiptr>(result.size() * sizeof(float)), result.data()));
+    shader.dispatch(static_cast<unsigned int>((result.size() + 63) / 64));
+    gl::memory_barrier(gl::Barrier::BufferUpdate);
+    buffer.read_back(std::span<float>(result));
     shader.Unbind();
-    GLCall(glDeleteBuffers(1, &buffer));
 
     double max_absolute = 0.0, max_relative_negative = 0.0;
     for (size_t i = 0; i < x.size(); ++i) {

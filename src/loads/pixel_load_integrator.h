@@ -5,6 +5,8 @@
 #include <glm/glm.hpp>
 
 #include "compute_shader.h"
+#include "shader_storage_buffer.h"
+#include "texture_2d.h"
 #include "Igsi_model.h"
 
 namespace vat::loads {
@@ -43,11 +45,12 @@ public:
 	/**
 	 * @param position_texture RGBA32F body-frame positions, w = 1 where covered; one value
 	 *                         per sample if the integrator was built for several samples.
+	 *                         Its sample count must equal the integrator's.
 	 * @param normal_texture RGBA32F body-frame unit normals, laid out like the positions.
 	 * @param pressure_image Receives num_pixel^2 values, row 0 at the bottom, if the
 	 *                       integrator keeps the pressure image; untouched otherwise.
 	 */
-	Sums integrate(unsigned int position_texture, unsigned int normal_texture,
+	Sums integrate(const gl::Texture2D& position_texture, const gl::Texture2D& normal_texture,
 	               const glm::vec3& v_rel__m_per_s, float surface_temp__K,
 	               float pixel_area__m2, float min_cos_delta,
 	               const std::vector<GlslUniform>& gsi_uniforms,
@@ -58,9 +61,9 @@ private:
 	unsigned int m_num_pixel;
 	unsigned int m_num_samples;
 	unsigned int m_num_groups; // per axis
-	unsigned int m_partials_buffer = 0;
-	unsigned int m_pressure_texture = 0;
 	std::vector<glm::vec4> m_partials; // reused staging buffer for the readback
+	gl::ShaderStorageBuffer m_partials_buffer; // one force and one torque vec4 per workgroup
+	std::unique_ptr<gl::Texture2D> m_pressure_texture; // R32F, only if the pressure image is kept
 };
 
 } // namespace vat::loads

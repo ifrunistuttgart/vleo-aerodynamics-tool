@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "compute_shader.h"
+#include "shader_storage_buffer.h"
 
 namespace vat::shading {
 
@@ -49,7 +50,7 @@ public:
 
 private:
 	std::unique_ptr<gl::ComputeShader> m_shader;
-	unsigned int m_visibility_buffer = 0;
+	gl::ShaderStorageBuffer m_visibility_buffer; // one flag per triangle, plus slot 0 for the background
 	unsigned int m_num_triangles = 0;
 	std::vector<std::uint32_t> m_flags; // reused staging buffer for the readback
 };

@@ -34,7 +34,7 @@ int CoPShader::set_vertices(std::span<const float> vertices, std::span<const std
 
     // Depth only: visibility is marked in the SSBO, so no colour attachment is needed.
     SPDLOG_DEBUG("CoP shading: {}x{} px depth buffer", NUM_PIXEL, NUM_PIXEL);
-    m_frame_buffer = std::make_unique<FrameBuffer>(std::span<const unsigned int>{}, NUM_PIXEL, NUM_PIXEL, 1u);
+    m_frame_buffer = std::make_unique<FrameBuffer>(NUM_PIXEL, NUM_PIXEL, 1u);
     m_frame_buffer->UnBind();
     if (!m_frame_buffer->is_complete()) {
         SPDLOG_ERROR("Could not create the {}x{} depth buffer.", NUM_PIXEL, NUM_PIXEL);

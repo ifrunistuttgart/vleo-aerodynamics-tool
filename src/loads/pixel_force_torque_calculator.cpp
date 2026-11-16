@@ -17,8 +17,10 @@
 #include "frame_buffer.h"
 #include "gl_helpers.h"
 #include "glfw_opengl_context.h"
+#include "memory_barrier.h"
 #include "scoped_context.h"
 #include "shader.h"
+#include "texture_2d.h"
 #include "vertex_array.h"
 #include "vertex_buffer.h"
 #include "vertex_buffer_layout.h"
@@ -37,7 +39,7 @@ using namespace gl;
 // destroyed last, after every object that owns GL names in it.
 struct PixelForceTorqueCalculator::GpuState {
     std::unique_ptr<GlfwOpenGLContext> context;
-    std::array<unsigned int, 2> g_buffer_textures{0, 0}; // position, normal
+    std::array<std::shared_ptr<Texture2D>, 2> g_buffer_textures; // position, normal
     std::unique_ptr<FrameBuffer> g_buffer;
     std::unique_ptr<Shader> g_buffer_shader;
     std::unique_ptr<VertexArray> vao;
@@ -52,7 +54,9 @@ struct PixelForceTorqueCalculator::GpuState {
         vao.reset();
         g_buffer_shader.reset();
         g_buffer.reset();
-        GLCall(glDeleteTextures(static_cast<GLsizei>(g_buffer_textures.size()), g_buffer_textures.data()));
+        for (auto& texture : g_buffer_textures) {
+            texture.reset();
+        }
     }
 };
 
@@ -61,48 +65,27 @@ namespace {
 // Two RGBA32F targets (position, normal), sampled texel by texel and never filtered, with
 // `num_samples` samples per pixel (1 = ordinary textures), plus the framebuffer over them.
 // Returns false, with nothing left allocated, if the memory is not available.
-bool create_g_buffer(std::array<unsigned int, 2>& g_buffer_textures, std::unique_ptr<FrameBuffer>& g_buffer,
+bool create_g_buffer(std::array<std::shared_ptr<Texture2D>, 2>& g_buffer_textures, std::unique_ptr<FrameBuffer>& g_buffer,
                      unsigned int num_pixel, unsigned int num_samples) {
-    const bool multisample = num_samples > 1;
-    const GLenum target = multisample ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
-
-    GLCall(glGenTextures(static_cast<GLsizei>(g_buffer_textures.size()), g_buffer_textures.data()));
-    // Allocation can legitimately fail for large num_pixel * num_samples, so check the error
-    // here instead of letting GLCall treat it as a programming error.
-    GLClearError();
-    GLenum alloc_error = GL_NO_ERROR;
-    for (unsigned int texture : g_buffer_textures) {
-        GLCall(glBindTexture(target, texture));
-        if (multisample) {
-            glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, static_cast<GLsizei>(num_samples), GL_RGBA32F,
-                static_cast<GLsizei>(num_pixel), static_cast<GLsizei>(num_pixel), GL_TRUE);
-        } else {
-            glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, static_cast<GLsizei>(num_pixel), static_cast<GLsizei>(num_pixel));
-        }
-        const GLenum error = glGetError();
-        if (alloc_error == GL_NO_ERROR) {
-            alloc_error = error;
-        }
-        if (!multisample) {
-            // Sampler state does not apply to multisample textures.
-            GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-            GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-        }
+    const int size = static_cast<int>(num_pixel);
+    bool allocated = true;
+    for (auto& texture : g_buffer_textures) {
+        texture = std::make_shared<Texture2D>(size, size, GL_RGBA32F, GL_RGBA, GL_FLOAT, static_cast<int>(num_samples));
+        allocated = allocated && texture->is_valid();
     }
-    GLCall(glBindTexture(target, 0));
 
-    if (alloc_error == GL_NO_ERROR) {
-        g_buffer = std::make_unique<FrameBuffer>(std::span<const unsigned int>(g_buffer_textures), num_pixel, num_pixel, num_samples);
+    if (allocated) {
+        g_buffer = std::make_unique<FrameBuffer>(num_pixel, num_pixel, num_samples);
+        g_buffer->attach_color_textures(g_buffer_textures);
         g_buffer->UnBind();
         if (g_buffer->is_complete()) {
             return true;
         }
-    } else {
-        SPDLOG_WARN("G-buffer allocation {}x{} with {} sample(s) failed (GL error {})", num_pixel, num_pixel, num_samples, alloc_error);
     }
     g_buffer.reset();
-    GLCall(glDeleteTextures(static_cast<GLsizei>(g_buffer_textures.size()), g_buffer_textures.data()));
-    g_buffer_textures = {0, 0};
+    for (auto& texture : g_buffer_textures) {
+        texture.reset();
+    }
     return false;
 }
 
@@ -237,7 +220,7 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     GLCall(glDepthFunc(GL_LESS));
     GLCall(glDepthMask(GL_TRUE));
     GLCall(glEnable(GL_MULTISAMPLE)); // no effect on a single-sample framebuffer
-    m_gpu->g_buffer->ClearFloat();
+    m_gpu->g_buffer->Clear();
 
     m_gpu->g_buffer_shader->Bind();
     m_gpu->g_buffer_shader->setUniformMat4f("u_view_projection", view_projection);
@@ -257,14 +240,14 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     m_gpu->vao->Unbind();
     m_gpu->g_buffer_shader->Unbind();
     m_gpu->g_buffer->UnBind();
-    GLCall(glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT));
+    memory_barrier(Barrier::TextureFetch);
 
     // Pass 2: the samples of each pixel are resolved, then one GSI evaluation per windward
     // pixel, scaled by its coverage, reduced on the GPU.
     const float pixel_edge__m = 2.0f * bounding_sphere_radius / static_cast<float>(m_num_pixel);
     const float pixel_area__m2 = pixel_edge__m * pixel_edge__m;
     const PixelLoadIntegrator::Sums sums = m_gpu->integrator->integrate(
-        m_gpu->g_buffer_textures[0], m_gpu->g_buffer_textures[1],
+        *m_gpu->g_buffer_textures[0], *m_gpu->g_buffer_textures[1],
         v_rel__m_per_s, surface_temp__K, pixel_area__m2, m_options.min_cos_delta,
         m_gsi_model.glsl_uniforms(aero), m_pressure_image);
 

@@ -26,6 +26,10 @@ public:
     void Bind() const;
     void Unbind() const;
 
+    // Runs the shader on a grid of work groups; it must be bound. Follow with
+    // memory_barrier() before reading what the shader wrote.
+    void dispatch(unsigned int groups_x, unsigned int groups_y = 1, unsigned int groups_z = 1) const;
+
     // set uniforms
     void SetUniform1i(const std::string& name, int value);
     void SetUniform1f(const std::string& name, float value);

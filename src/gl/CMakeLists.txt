@@ -15,14 +15,21 @@ add_library(gl
 	gl_helpers.h
 	glfw_opengl_context.cpp
 	glfw_opengl_context.h
+	memory_barrier.cpp
+	memory_barrier.h
 	scoped_context.h
 	shader.cpp
 	shader.h
+	shader_storage_buffer.cpp
+	shader_storage_buffer.h
+	texture_2d.cpp
+	texture_2d.h
 	vertex_array.cpp
 	vertex_array.h
 	vertex_buffer.cpp
 	vertex_buffer.h
-	vertex_buffer_layout.h)
+	vertex_buffer_layout.h
+)
 
 target_compile_features(gl PRIVATE cxx_std_20)
 target_include_directories(gl

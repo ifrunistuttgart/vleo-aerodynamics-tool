@@ -173,8 +173,9 @@ It owns its own hidden OpenGL context and needs no shading pipeline.
 2. **Integration pass** ([pixel_load_integrator.cpp](../src/loads/pixel_load_integrator.cpp)).
    One compute shader, assembled from the model's GLSL, visits every pixel whose surface faces
    the flow (`cos(delta) = dot(n, v_hat) > 0`) and adds
-   `dF = f(n, v, T_w) * A_px` and `dT = r x dF`, where `f` is the model's force per *projected*
-   area (`force_per_area / cos(delta)`), `A_px = (2R/N)^2` and `r` the interpolated position. Each
+   `dF = f(n, v, T_w) * A_px * c` and `dT = r x dF`, where `f` is the model's force per *projected*
+   area (`force_per_area / cos(delta)`), `A_px = (2R/N)^2`, `r` the interpolated position and `c`
+   the fraction of the pixel the surface covers (1 without anti-aliasing). Each
    16x16 workgroup reduces a 32x32 tile in shared memory, in a fixed order, and writes one
    partial sum; the CPU adds those in double, also in a fixed order. No float atomics, so the
    result is bit-for-bit reproducible on a given GPU and driver.
@@ -186,6 +187,18 @@ Partly shaded triangles therefore count with exactly their exposed part, and the
 on `num_pixel` only, not on the meshing: a plate as 2 or as 10,000 triangles gives the same
 loads to 1e-5, and the error against analytic results falls like 1/N
 ([pixel_force_torque_accuracy_test.cpp](../test/loads/pixel_force_torque_accuracy_test.cpp)).
+
+**Anti-aliasing.** `PixelLoadOptions::num_msaa_samples` (default 1) renders the G-buffer with that
+many samples per pixel. The integration pass resolves the samples of each pixel in a fixed
+order: the coverage `c` is the covered fraction of the samples, the position the mean of the
+covered samples' positions (each interpolated at its own sample location) and the normal the
+normalised mean of their normals. The GSI model is still evaluated once per pixel, and the
+result is scaled by `c`, so a pixel a silhouette or shadow edge cuts through counts with only
+its covered part. Where two orientations or two depths meet inside one pixel, the averaged
+normal and position are an approximation; only such edge pixels are affected. Cost: the
+G-buffer takes `2 * 16 B * N^2 * samples` (the sample count is reduced if that does not fit),
+and the integration pass fetches every sample. With 8 samples on the plate of
+`projected_area_plate` the worst projected-area error falls from 2.6e-3 to 3.1e-4 m^2.
 
 **Grazing incidence.** Working per projected area turns `A_px / cos(delta)` into a finite factor
 for the hyperthermal models: Newton, Cook and Storch divide the `cos(delta)` out analytically.

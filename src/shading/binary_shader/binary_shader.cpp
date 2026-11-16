@@ -49,7 +49,7 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
 	for (;;) {
 		SPDLOG_DEBUG("Binary shading: {}x{} px, {} sample(s), {:.0f} MB depth buffer", NUM_PIXEL, NUM_PIXEL, m_num_msaa_samples,
 			static_cast<double>(NUM_PIXEL) * NUM_PIXEL * m_num_msaa_samples * 4.0 / (1024.0 * 1024.0));
-		m_frame_buffer = std::make_unique<FrameBuffer>(std::span<const unsigned int>{}, NUM_PIXEL, NUM_PIXEL, m_num_msaa_samples);
+		m_frame_buffer = std::make_unique<FrameBuffer>(NUM_PIXEL, NUM_PIXEL, m_num_msaa_samples);
 		m_frame_buffer->UnBind();
 		if (m_frame_buffer->is_complete()) {
 			break;

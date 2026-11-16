@@ -33,6 +33,11 @@ void ComputeShader::Unbind() const
     GLCall(glUseProgram(0));
 }
 
+void ComputeShader::dispatch(unsigned int groups_x, unsigned int groups_y, unsigned int groups_z) const
+{
+    GLCall(glDispatchCompute(groups_x, groups_y, groups_z));
+}
+
 void ComputeShader::SetUniform1i(const std::string& name, int value)
 {
     GLCall(glUniform1i(GetUniformLocation(name), value));
