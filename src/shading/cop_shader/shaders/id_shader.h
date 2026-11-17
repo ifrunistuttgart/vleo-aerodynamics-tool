@@ -33,7 +33,11 @@ layout (location = 2) in vec3 aNormal;
 flat out uint vID;
 
 uniform mat4 u_MVP;
-uniform mat4 u_MV;
+uniform float u_edge_on_threshold;
+uniform mat3 u_normal_matrix;
+// Unit flow direction v_rel / |v_rel| in the body frame.
+uniform vec3 u_v_rel_hat;
+
 // Distance (model units) the centroid is moved along its normal, towards the viewer of a
 // front face. Keeps the point in front of its own triangle for the GL_LEQUAL test, since the
 // point's depth and the triangle's interpolated depth are not bit-identical.
@@ -41,11 +45,8 @@ uniform float u_normal_offset;
 
 void main()
 {
-    // Skip centroids of triangles whose normals face away from the camera. Only the
-    // model-view transform is used to judge front/back orientation; it is exact for
-    // rotations and uniform scale.
-    vec3 normalView = normalize(mat3(u_MV) * aNormal);
-    if (normalView.z <= 0.0) {
+    vec3 normal_body = normalize(u_normal_matrix * aNormal);
+    if (dot(normal_body, u_v_rel_hat) <= u_edge_on_threshold) {
         gl_Position = vec4(0.0, 0.0, 2.0, 1.0); // outside the clip volume
         vID = 0u;
         return;

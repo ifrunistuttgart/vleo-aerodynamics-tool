@@ -8,6 +8,7 @@
 #include "vertex_buffer.h"
 #include "gl_helpers.h"
 #include "flow_camera.h"
+#include "leeward_classification.h"
 #include "vertex_buffer_layout.h"
 
 // embedded shader headers
@@ -151,14 +152,17 @@ std::vector<float> CoPShader::shade_geometry(glm::vec3 v_rel_hat, float bounding
     GLCall(glDepthMask(GL_FALSE));
     m_point_shader->Bind();
     m_point_shader->SetUniform1f("u_normal_offset", NORMAL_OFFSET);
+    m_point_shader->SetUniform3f("u_v_rel_hat", v_rel_hat);
+    m_point_shader->SetUniform1f("u_edge_on_threshold", edge_on_threshold(glm::length(v_rel_hat)));
     m_cop_vao->Bind();
     unsigned int cop_offset = 0;
     for (size_t i = 0; i < num_triangles_per_mesh.size(); i++) {
         glm::mat4 model = model_matrices[i];
-        glm::mat4 u_MV = view * model;
-        glm::mat4 u_MVP = orthoProj * u_MV;
+        glm::mat4 u_MVP = orthoProj * view * model;
+        // Same normal transform as RotatableMeshGeometry applies on the CPU.
+        const glm::mat3 normal_matrix = glm::transpose(glm::inverse(glm::mat3(model)));
         m_point_shader->setUniformMat4f("u_MVP", u_MVP);
-        m_point_shader->setUniformMat4f("u_MV", u_MV);
+        m_point_shader->setUniformMat3f("u_normal_matrix", normal_matrix);
         GLCall(glDrawArrays(GL_POINTS, static_cast<GLint>(cop_offset), static_cast<GLsizei>(num_triangles_per_mesh[i])));
         cop_offset += num_triangles_per_mesh[i];
     }
