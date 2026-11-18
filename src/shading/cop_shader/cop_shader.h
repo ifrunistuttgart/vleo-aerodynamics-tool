@@ -26,7 +26,7 @@ namespace vat::shading {
  *
  * The centroid is moved a fixed 0.005 model units along its normal, so that it lies in
  * front of its own triangle despite the small depth mismatch between a point and an
- * interpolated triangle fragment. See cop_shader_offset_investigation_notes.md.
+ * interpolated triangle fragment.
  *
  * Known limits:
  *   - No MSAA (num_msaa_samples must be 1).

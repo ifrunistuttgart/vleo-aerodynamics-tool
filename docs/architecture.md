@@ -248,8 +248,8 @@ Both render under an orthographic projection along the flow direction, and both 
   that point survives the depth test. This carries less area-quantization bias than the binary
   approach at the same resolution. It uses `BinaryShader`'s render structure (a depth-only pass,
   then `GL_LEQUAL` points with depth writes off, each marking its triangle in the visibility
-  buffer), so there is no ID image and no reduction pass. See
-  `cop_shader_offset_investigation_notes.md` for the offset.
+  buffer), so there is no ID image and no reduction pass. The offset puts the point in front of
+  its own triangle despite the small depth mismatch between a point and a triangle fragment.
 
 `num_pixel` is the square render resolution, and the single accuracy/runtime knob. Leave it
 out and `ShadingPipeline` chooses it from the mesh's narrowest triangles
