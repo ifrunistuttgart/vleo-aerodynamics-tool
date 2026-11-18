@@ -61,6 +61,18 @@ TEST(MeshDataTest, FileWithoutMeshesThrows) {
     EXPECT_THROW(StaticMeshGeometry{std::string(empty_file)}, std::runtime_error);
 }
 
+TEST(MeshDataTest, FileWithoutTrianglesThrows) {
+    const std::string lines_only = GetTestDataPath(__FILE__, "../geometries/lines_only.obj");
+    EXPECT_THROW(load_mesh_data(lines_only), std::runtime_error);
+}
+
+TEST(MeshDataTest, StrayLinesAreDroppedButTrianglesKept) {
+    const std::vector<MeshData> meshes =
+        load_mesh_data(GetTestDataPath(__FILE__, "../geometries/triangle_with_line.obj"));
+    ASSERT_EQ(meshes.size(), 1u);
+    EXPECT_EQ(meshes[0].indices.size(), 3u);
+}
+
 TEST(MeshDataTest, ArrayConstructionMatchesFileConstructionExactly) {
     StaticMeshGeometry from_file(TetraPath());
     std::vector<MeshData> meshes;
