@@ -1,5 +1,6 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
+#include <stdexcept>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -51,11 +52,10 @@ std::vector<MeshData> load_mesh_data(const std::string& file) {
     );
 
     if (!scene || scene->mNumMeshes == 0) {
-        SPDLOG_ERROR("Failed to load model: {}", file);
-        if (importer.GetErrorString()) {
-            SPDLOG_ERROR("ASSIMP Error: {}", importer.GetErrorString());
-        }
-        return {};
+        const std::string error = importer.GetErrorString();
+        const std::string reason = error.empty() ? "file contains no meshes" : error;
+        SPDLOG_ERROR("Failed to load model '{}': {}", file, reason);
+        throw std::runtime_error("Failed to load model '" + file + "': " + reason);
     }
     SPDLOG_DEBUG("Successfully loaded {} meshes", scene->mNumMeshes);
     WarnIfFileUsesGroups(scene, file);
@@ -64,6 +64,7 @@ std::vector<MeshData> load_mesh_data(const std::string& file) {
     // .obj, and is the unit turn_mesh_around_axis() rotates.
     std::vector<MeshData> meshes;
     meshes.reserve(scene->mNumMeshes);
+    std::size_t num_triangles = 0;
     for (unsigned int mesh_idx = 0; mesh_idx < scene->mNumMeshes; ++mesh_idx) {
         const aiMesh* mesh = scene->mMeshes[mesh_idx];
         SPDLOG_DEBUG("Processing mesh {} (\"{}\") with {} faces and {} vertices",
@@ -80,6 +81,7 @@ std::vector<MeshData> load_mesh_data(const std::string& file) {
         }
 
         data.indices.reserve(3 * mesh->mNumFaces);
+        unsigned int num_dropped = 0;
         for (unsigned int face_idx = 0; face_idx < mesh->mNumFaces; ++face_idx) {
             const aiFace& face = mesh->mFaces[face_idx];
             // Triangulation can still leave point and line primitives behind.
@@ -87,8 +89,22 @@ std::vector<MeshData> load_mesh_data(const std::string& file) {
                 data.indices.push_back(face.mIndices[0]);
                 data.indices.push_back(face.mIndices[1]);
                 data.indices.push_back(face.mIndices[2]);
+            } else {
+                ++num_dropped;
             }
         }
+        if (num_dropped > 0) {
+            SPDLOG_WARN("{}: mesh {} (\"{}\") contains {} point/line element(s); they are "
+                "ignored, only triangles enter the calculation. Check the export settings.",
+                file, mesh_idx, data.name, num_dropped);
+        }
+        num_triangles += data.indices.size() / 3;
+    }
+
+    if (num_triangles == 0) {
+        const std::string reason = "file contains no triangles (only points or lines)";
+        SPDLOG_ERROR("Failed to load model '{}': {}", file, reason);
+        throw std::runtime_error("Failed to load model '" + file + "': " + reason);
     }
     return meshes;
 }
