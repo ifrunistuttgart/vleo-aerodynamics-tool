@@ -9,7 +9,8 @@
             "installDir": "${sourceDir}/out/install/${presetName}",
             "cacheVariables": {
                 "CMAKE_PREFIX_PATH": "$env{CONDA_PREFIX}",
-                "BUILD_TESTING": "ON"
+                "BUILD_TESTING": "ON",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
             }
         },
         {
