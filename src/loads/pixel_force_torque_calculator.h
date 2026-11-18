@@ -31,24 +31,7 @@ struct PixelLoadOptions {
      */
     unsigned int num_msaa_samples = 1;
 
-    /**
-     * Measure the wall-clock time of each stage of every evaluation, see
-     * PixelForceTorqueCalculator::last_stage_timings(). Waits for the GPU after every stage
-     * (glFinish), so it slows the evaluation down; for benchmarking only.
-     */
-    bool profile_stages = false;
-
     // Keep new members at the end: callers initialise the options as an aggregate.
-};
-
-/** Wall-clock time of each stage of one evaluation [ms], see PixelLoadOptions::profile_stages. */
-struct PixelStageTimings {
-    double clear__ms = 0.0;     ///< state setup and clearing the G-buffer
-    double draw__ms = 0.0;      ///< rendering the G-buffer
-    double resolve__ms = 0.0;   ///< resolving the MSAA samples, if done as a separate pass
-    double integrate__ms = 0.0; ///< integration dispatch and read-back of the partial sums
-    double leeward__ms = 0.0;   ///< CPU loop over the leeward triangles
-    double total__ms = 0.0;     ///< the whole evaluation
 };
 
 /**
@@ -122,9 +105,6 @@ public:
     /** Area normal to the flow covered by windward surfaces (coverage weighted), from the last evaluation [m^2]. */
     [[nodiscard]] double last_projected_area() const { return m_projected_area__m2; }
 
-    /** Stage timings of the last evaluation; all zero unless PixelLoadOptions::profile_stages is set. */
-    [[nodiscard]] const PixelStageTimings& last_stage_timings() const { return m_stage_timings; }
-
 private:
     struct GpuState;
 
@@ -139,7 +119,6 @@ private:
     std::vector<float> m_pressure_image;
     double m_wetted_area__m2 = 0.0;
     double m_projected_area__m2 = 0.0;
-    PixelStageTimings m_stage_timings;
 };
 
 } // namespace vat::loads

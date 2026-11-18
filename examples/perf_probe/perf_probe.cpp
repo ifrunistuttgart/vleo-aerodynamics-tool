@@ -4,9 +4,6 @@
 //   perf_probe <mesh.obj> --timings [P..] per-phase timings
 //   perf_probe <mesh.obj> --pixel [P..]   PixelForceTorqueCalculator against Hybrid:
 //                                         runtime and deviation from a converged result
-//   perf_probe <mesh.obj> --pixel-stages P S reps
-//                                         stage timings of one pixel-calculator configuration
-//                                         (P pixels, S MSAA samples); see pixel_stage_benchmark.ps1
 //
 // The fingerprint matrix deliberately contains both an unrotated and a rotated
 // configuration. Correctness work on the rotation path may change the rotated
@@ -297,56 +294,6 @@ void run_pixel_comparison(RotatableMeshGeometry& sat, const std::vector<unsigned
     std::printf("\n");
 }
 
-// Stage timings of one PixelForceTorqueCalculator configuration. Meant to be run once per
-// configuration and process (see pixel_stage_benchmark.ps1): several calculators in one
-// process disturb each other's timings. Prints one STAGES line with min/q25/median per stage,
-// then the loads of two fixed flow directions with full precision, to check that an
-// optimisation does not change the result.
-void run_pixel_stages(RotatableMeshGeometry& sat, unsigned int num_pixel, unsigned int num_samples, int reps) {
-    constexpr int WARMUP = 10;
-    AeroConditions aero = make_conditions();
-    Sentman gsi(1, ALPHA_E);
-    PixelLoadOptions options;
-    options.num_msaa_samples = num_samples;
-    options.profile_stages = true;
-    PixelForceTorqueCalculator calc(sat, gsi, num_pixel, options);
-    const std::array<glm::vec3, 2> directions{flow_directions()[1], flow_directions()[2]};
-
-    std::vector<PixelStageTimings> timings;
-    for (int r = 0; r < WARMUP + reps; ++r) {
-        glm::vec3 force, torque;
-        calc.calc_aero_torque_force(directions[r % 2] * SPEED__M_PER_S, SURFACE_TEMP__K, aero, torque, force);
-        if (r >= WARMUP) {
-            timings.push_back(calc.last_stage_timings());
-        }
-    }
-
-    std::printf("STAGES P=%u S=%u used_S=%u", num_pixel, num_samples, calc.num_msaa_samples());
-    const std::array<std::pair<const char*, double PixelStageTimings::*>, 6> stages{{
-        {"clear", &PixelStageTimings::clear__ms},
-        {"draw", &PixelStageTimings::draw__ms},
-        {"resolve", &PixelStageTimings::resolve__ms},
-        {"integrate", &PixelStageTimings::integrate__ms},
-        {"leeward", &PixelStageTimings::leeward__ms},
-        {"total", &PixelStageTimings::total__ms},
-    }};
-    for (const auto& [name, member] : stages) {
-        std::vector<double> values;
-        for (const PixelStageTimings& t : timings) values.push_back(t.*member);
-        std::sort(values.begin(), values.end());
-        const size_t last = values.size() - 1;
-        std::printf(" %s=%.4f/%.4f/%.4f", name, values.front(), values[last / 4], values[last / 2]);
-    }
-    std::printf("\n");
-
-    for (size_t d = 0; d < directions.size(); ++d) {
-        glm::vec3 force, torque;
-        calc.calc_aero_torque_force(directions[d] * SPEED__M_PER_S, SURFACE_TEMP__K, aero, torque, force);
-        std::printf("LOADS dir=%zu F=%.9e,%.9e,%.9e T=%.9e,%.9e,%.9e\n", d,
-                    force.x, force.y, force.z, torque.x, torque.y, torque.z);
-    }
-}
-
 } // namespace
 
 int main(int argc, char** argv) {
@@ -354,8 +301,7 @@ int main(int argc, char** argv) {
     spdlog::set_level(spdlog::level::off);
 
     if (argc < 3) {
-        std::printf("usage: perf_probe <mesh.obj> --fingerprint | --timings [P ...] | --pixel [P ...]"
-                    " | --pixel-stages P S reps\n");
+        std::printf("usage: perf_probe <mesh.obj> --fingerprint | --timings [P ...] | --pixel [P ...]\n");
         return 1;
     }
     const std::string mesh = argv[1];
@@ -376,13 +322,6 @@ int main(int argc, char** argv) {
         for (int i = 3; i < argc; ++i) resolutions.push_back(static_cast<unsigned int>(std::atoi(argv[i])));
         if (resolutions.empty()) resolutions = {500u, 1000u, 2000u, 4000u};
         run_pixel_comparison(sat, resolutions);
-    } else if (mode == "--pixel-stages") {
-        if (argc < 6) {
-            std::printf("usage: perf_probe <mesh.obj> --pixel-stages P S reps\n");
-            return 1;
-        }
-        run_pixel_stages(sat, static_cast<unsigned int>(std::atoi(argv[3])), static_cast<unsigned int>(std::atoi(argv[4])),
-                         std::atoi(argv[5]));
     } else if (mode == "--timings") {
         std::vector<unsigned int> resolutions;
         for (int i = 3; i < argc; ++i) resolutions.push_back(static_cast<unsigned int>(std::atoi(argv[i])));

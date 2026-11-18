@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <limits>
@@ -250,23 +249,6 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
 
     ScopedCurrentContext current(*m_gpu->context);
 
-    // Optional stage timing: wait for the GPU at the end of each stage, so each stage's
-    // wall time is its own and not hidden in the next stage's wait.
-    using Clock = std::chrono::steady_clock;
-    const bool profile = m_options.profile_stages;
-    m_stage_timings = {};
-    const Clock::time_point call_start = Clock::now();
-    Clock::time_point stage_start = call_start;
-    auto end_stage = [&](double& stage__ms) {
-        if (!profile) {
-            return;
-        }
-        GLCall(glFinish());
-        const Clock::time_point now = Clock::now();
-        stage__ms = std::chrono::duration<double, std::milli>(now - stage_start).count();
-        stage_start = now;
-    };
-
     // Pass 1: G-buffer of the front-most surface along the flow.
     const float bounding_sphere_radius = m_geometry.get_bounding_sphere_radius();
     const FlowCamera camera = make_flow_camera(glm::normalize(v_rel__m_per_s), bounding_sphere_radius);
@@ -285,7 +267,6 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     GLCall(glDepthMask(GL_TRUE));
     GLCall(glEnable(GL_MULTISAMPLE)); // no effect on a single-sample framebuffer
     m_gpu->g_buffer->Clear();
-    end_stage(m_stage_timings.clear__ms);
 
     m_gpu->g_buffer_shader->Bind();
     m_gpu->g_buffer_shader->setUniformMat4f("u_view_projection", view_projection);
@@ -323,14 +304,12 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     m_gpu->g_buffer_shader->Unbind();
     m_gpu->g_buffer->UnBind();
     memory_barrier(Barrier::TextureFetch);
-    end_stage(m_stage_timings.draw__ms);
 
     // MSAA: average the samples of each pixel in hardware. Uncovered samples hold the clear
     // value 0, so each pixel gets the mean load of its samples and w of target 0 the coverage.
     if (m_gpu->resolved) {
         m_gpu->g_buffer->resolve_color_into(*m_gpu->resolved);
     }
-    end_stage(m_stage_timings.resolve__ms);
     const auto& integrated_textures = m_gpu->resolved ? m_gpu->resolved_textures : m_gpu->g_buffer_textures;
 
     // Pass 2
@@ -340,7 +319,6 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
         integrated_textures,
         v_rel__m_per_s, surface_temp__K, pixel_area__m2, m_options.min_cos_delta,
         m_gsi_model.glsl_uniforms(aero), m_pressure_image);
-    end_stage(m_stage_timings.integrate__ms);
 
     glm::dvec3 force_sum__N = sums.force__N;
     glm::dvec3 torque_sum__Nm = sums.torque__Nm;
@@ -369,13 +347,9 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
         }
     }
 
-    end_stage(m_stage_timings.leeward__ms);
 
     force__N = glm::vec3(force_sum__N);
     torque__Nm = glm::vec3(torque_sum__Nm);
-    if (profile) {
-        m_stage_timings.total__ms = std::chrono::duration<double, std::milli>(Clock::now() - call_start).count();
-    }
 
     SPDLOG_DEBUG("calc_aero_torque_force done (|F|={}, |T|={}, wetted area={} m^2)",
         glm::length(force__N), glm::length(torque__Nm), m_wetted_area__m2);
