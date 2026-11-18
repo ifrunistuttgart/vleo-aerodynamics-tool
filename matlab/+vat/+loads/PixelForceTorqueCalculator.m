@@ -57,8 +57,8 @@ classdef PixelForceTorqueCalculator < handle
             %                           with its covered fraction. The render target takes
             %                           about 32 bytes * num_pixel^2 * NumMsaaSamples of
             %                           GPU memory; the count is reduced if it does not
-            %                           fit. Where two orientations meet in one pixel the
-            %                           averaged normal is an approximation.
+            %                           fit. A pixel where two faces meet gets the mean of
+            %                           their loads.
             %
             arguments
                 geometry (1,1) vat.geometry.RotatableMeshGeometry
