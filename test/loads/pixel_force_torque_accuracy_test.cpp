@@ -512,3 +512,49 @@ TEST(PixelAccuracyTest, MsaaConvexBodiesAgreeWithHybrid) {
         }
     }
 }
+
+// Box edges and the faceted sphere's triangle edges are creases inside pixels. The samples
+// of such a pixel are averaged after the model is evaluated per face, so MSAA must beat one
+// sample there too, for a model nonlinear in the normal (Sentman) as well. Averaging the
+// normals first instead made MSAA worse than one sample on the box (Newton) and the
+// sphere (Sentman).
+TEST(PixelAccuracyTest, MsaaBeatsOneSampleAtCreasesForNewtonAndSentman) {
+    Newton newton;
+    Sentman sentman(1, 0.9f);
+    InMemoryGeometry box;
+    box.add_box({-0.3f, -0.2f, -0.1f}, {0.5f, 0.4f, 0.3f});
+    InMemoryGeometry sphere;
+    sphere.add_sphere(0.5f, 4);
+    const std::vector<std::pair<const char*, IGeometryShadingData*>> bodies{{"box", &box}, {"sphere", &sphere}};
+    const std::vector<std::pair<const char*, IGSIModel*>> models{{"Newton", &newton}, {"Sentman", &sentman}};
+    const std::vector<glm::vec3> directions{
+        glm::normalize(glm::vec3(1.0f, 0.3f, -0.2f)),
+        glm::normalize(glm::vec3(-0.4f, 0.8f, 0.5f)),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::normalize(glm::vec3(-0.2f, -0.5f, -1.0f)),
+    };
+    constexpr unsigned int N = 512;
+
+    for (const auto& [body_name, geometry] : bodies) {
+        const double radius = geometry->get_bounding_sphere_radius();
+        ShadingPipeline pipeline(*geometry, ShadingAlgorithmType::Binary, 2048);
+        for (const auto& [model_name, model] : models) {
+            HybridForceTorqueCalculator hybrid(*geometry, pipeline, *model);
+            PixelForceTorqueCalculator plain(*geometry, *model, N);
+            PixelForceTorqueCalculator msaa(*geometry, *model, N, msaa_options(8));
+            if (msaa.num_msaa_samples() < 4) {
+                GTEST_SKIP() << "driver offers only " << msaa.num_msaa_samples() << " samples";
+            }
+            double worst_plain = 0.0, worst_msaa = 0.0;
+            for (const glm::vec3& direction : directions) {
+                const glm::vec3 v = direction * SPEED__M_PER_S;
+                const Loads reference = evaluate(hybrid, v);
+                worst_plain = std::max(worst_plain, relative_errors(evaluate(plain, v), reference, radius).force);
+                worst_msaa = std::max(worst_msaa, relative_errors(evaluate(msaa, v), reference, radius).force);
+            }
+            std::printf("[          ] %-6s %-7s worst force error %.2e -> %.2e (1 -> %u samples)\n",
+                body_name, model_name, worst_plain, worst_msaa, msaa.num_msaa_samples());
+            EXPECT_LT(worst_msaa, worst_plain / 2.0) << body_name << " " << model_name;
+        }
+    }
+}

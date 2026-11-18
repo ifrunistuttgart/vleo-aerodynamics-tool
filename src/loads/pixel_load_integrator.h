@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <span>
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
@@ -12,7 +13,11 @@
 namespace vat::loads {
 
 /**
- * Evaluates a GSI model in every pixel of a G-buffer and sums the loads on the GPU.
+ * Sums the loads over the pixels of a G-buffer on the GPU.
+ *
+ * Without MSAA the G-buffer holds position and normal, and the GSI model is evaluated in
+ * every pixel here. With MSAA it holds the resolved loads, which the G-buffer pass already
+ * evaluated (see pixel_loads_glsl.h), and they are only scaled and summed.
  *
  * One compute dispatch does both: each pixel's force and torque, then a fixed-order
  * tree reduction to one partial sum per tile (32x32 pixels, 16x16 with MSAA). Only the partial sums are read
@@ -33,8 +38,7 @@ public:
 	 * @param num_pixel Edge length of the square G-buffer.
 	 * @param keep_pressure_image Also write and read back the per-pixel pressure.
 	 * @param num_samples Samples per pixel the G-buffer was rendered with. With > 1 the
-	 *                    integrator expects the G-buffer resolved (sample mean) into
-	 *                    single-sample textures and scales each pixel by its coverage.
+	 *                    integrator expects the resolved loads of the MSAA G-buffer pass.
 	 */
 	PixelLoadIntegrator(const std::string& gsi_glsl, unsigned int num_pixel, bool keep_pressure_image,
 	                    unsigned int num_samples = 1);
@@ -43,15 +47,19 @@ public:
 	PixelLoadIntegrator(const PixelLoadIntegrator&) = delete;
 	PixelLoadIntegrator& operator=(const PixelLoadIntegrator&) = delete;
 
+	/** Number of G-buffer textures integrate() expects, see there. */
+	[[nodiscard]] size_t num_g_buffer_textures() const;
+
 	/**
-	 * @param position_texture Single-sample RGBA32F body-frame positions, w = 1 where covered;
-	 *                         with MSAA the resolved sample mean (w = coverage).
-	 * @param normal_texture Single-sample RGBA32F body-frame normals, laid out like the positions.
+	 * @param g_buffer Single-sample RGBA32F textures, num_g_buffer_textures() of them.
+	 *                 Without MSAA: body-frame positions (w = 1 where covered) and normals.
+	 *                 With MSAA, resolved: (f, coverage), (r x f, wetted-area weight) and,
+	 *                 with the pressure image, (pressure) per pixel; see pixel_loads_glsl.h.
 	 * @param pressure_image Receives num_pixel^2 values, row 0 at the bottom, if the
 	 *                       integrator keeps the pressure image; untouched otherwise.
-	 * @throws std::invalid_argument if a texture is multisampled.
+	 * @throws std::invalid_argument if the number of textures is wrong or one is multisampled.
 	 */
-	Sums integrate(const gl::Texture2D& position_texture, const gl::Texture2D& normal_texture,
+	Sums integrate(std::span<const std::shared_ptr<gl::Texture2D>> g_buffer,
 	               const glm::vec3& v_rel__m_per_s, float surface_temp__K,
 	               float pixel_area__m2, float min_cos_delta,
 	               const std::vector<GlslUniform>& gsi_uniforms,
@@ -60,6 +68,7 @@ public:
 private:
 	std::unique_ptr<gl::ComputeShader> m_shader;
 	unsigned int m_num_pixel;
+	bool m_msaa; // the G-buffer holds resolved loads, not geometry
 	unsigned int m_num_groups; // per axis
 	std::vector<glm::vec4> m_partials; // reused staging buffer for the readback
 	gl::ShaderStorageBuffer m_partials_buffer; // one force and one torque vec4 per workgroup

@@ -1,5 +1,6 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
+#include <array>
 #include <span>
 #include <stdexcept>
 #include <type_traits>
@@ -31,7 +32,10 @@ std::string assemble_integration_shader(const std::string& gsi_glsl, bool keep_p
 	}
 	source += "#define VAT_MSAA_SAMPLES " + std::to_string(num_samples) + "\n";
 	source += pixel_glsl::integration_header;
-	source += gsi_glsl;
+	// With MSAA the G-buffer pass already evaluated the model.
+	if (num_samples == 1) {
+		source += gsi_glsl;
+	}
 	source += pixel_glsl::integration_main;
 	return source;
 }
@@ -42,6 +46,7 @@ PixelLoadIntegrator::PixelLoadIntegrator(const std::string& gsi_glsl, unsigned i
                                          unsigned int num_samples)
 	: m_shader(std::make_unique<ComputeShader>(assemble_integration_shader(gsi_glsl, keep_pressure_image, num_samples), true)),
 	  m_num_pixel(num_pixel),
+	  m_msaa(num_samples > 1),
 	  m_num_groups((num_pixel + tile_size(num_samples) - 1) / tile_size(num_samples)),
 	  m_partials(2 * static_cast<size_t>(m_num_groups) * m_num_groups),
 	  m_partials_buffer(m_partials.size() * sizeof(glm::vec4), BufferUsage::DynamicRead) {
@@ -59,37 +64,53 @@ PixelLoadIntegrator::PixelLoadIntegrator(const std::string& gsi_glsl, unsigned i
 
 PixelLoadIntegrator::~PixelLoadIntegrator() = default;
 
-PixelLoadIntegrator::Sums PixelLoadIntegrator::integrate(const Texture2D& position_texture, const Texture2D& normal_texture,
+size_t PixelLoadIntegrator::num_g_buffer_textures() const {
+	return m_msaa && m_pressure_texture ? 3 : 2;
+}
+
+PixelLoadIntegrator::Sums PixelLoadIntegrator::integrate(std::span<const std::shared_ptr<Texture2D>> g_buffer,
                                                          const glm::vec3& v_rel__m_per_s, float surface_temp__K,
                                                          float pixel_area__m2, float min_cos_delta,
                                                          const std::vector<GlslUniform>& gsi_uniforms,
                                                          std::vector<float>& pressure_image) {
 	// Checked first, so a mismatch leaves no GL state behind. A multisampled G-buffer must be
 	// resolved before it is integrated.
-	if (position_texture.is_multisample() || normal_texture.is_multisample()) {
-		throw std::invalid_argument("PixelLoadIntegrator::integrate: the G-buffer must be single-sample (resolve it first)");
+	if (g_buffer.size() != num_g_buffer_textures()) {
+		throw std::invalid_argument("PixelLoadIntegrator::integrate: wrong number of G-buffer textures");
+	}
+	for (const auto& texture : g_buffer) {
+		if (!texture || texture->is_multisample()) {
+			throw std::invalid_argument("PixelLoadIntegrator::integrate: the G-buffer must be single-sample (resolve it first)");
+		}
 	}
 
 	m_shader->Bind();
-	m_shader->SetUniform1i("u_g_position", 0);
-	m_shader->SetUniform1i("u_g_normal", 1);
-	m_shader->SetUniform3f("u_v_rel", v_rel__m_per_s);
-	m_shader->SetUniform1f("u_surface_temp", surface_temp__K);
+	static constexpr std::array<const char*, 2> geometry_samplers{"u_g_position", "u_g_normal"};
+	static constexpr std::array<const char*, 3> load_samplers{"u_g_force", "u_g_torque", "u_g_pressure"};
+	for (size_t unit = 0; unit < g_buffer.size(); ++unit) {
+		m_shader->SetUniform1i(m_msaa ? load_samplers[unit] : geometry_samplers[unit], static_cast<int>(unit));
+	}
 	m_shader->SetUniform1f("u_pixel_area", pixel_area__m2);
-	m_shader->SetUniform1f("u_min_cos_delta", min_cos_delta);
-	m_shader->SetUniform1f("u_edge_on_threshold", edge_on_threshold(glm::length(v_rel__m_per_s)));
-	for (const GlslUniform& uniform : gsi_uniforms) {
-		std::visit([&](auto value) {
-			if constexpr (std::is_same_v<decltype(value), int>) {
-				m_shader->SetUniform1i(uniform.name, value);
-			} else {
-				m_shader->SetUniform1f(uniform.name, value);
-			}
-		}, uniform.value);
+	// With MSAA the model was evaluated in the G-buffer pass, so it needs no inputs here.
+	if (!m_msaa) {
+		m_shader->SetUniform3f("u_v_rel", v_rel__m_per_s);
+		m_shader->SetUniform1f("u_surface_temp", surface_temp__K);
+		m_shader->SetUniform1f("u_min_cos_delta", min_cos_delta);
+		m_shader->SetUniform1f("u_edge_on_threshold", edge_on_threshold(glm::length(v_rel__m_per_s)));
+		for (const GlslUniform& uniform : gsi_uniforms) {
+			std::visit([&](auto value) {
+				if constexpr (std::is_same_v<decltype(value), int>) {
+					m_shader->SetUniform1i(uniform.name, value);
+				} else {
+					m_shader->SetUniform1f(uniform.name, value);
+				}
+			}, uniform.value);
+		}
 	}
 
-	position_texture.bind(0);
-	normal_texture.bind(1);
+	for (size_t unit = 0; unit < g_buffer.size(); ++unit) {
+		g_buffer[unit]->bind(static_cast<unsigned int>(unit));
+	}
 	m_partials_buffer.bind_base(0);
 	if (m_pressure_texture) {
 		m_pressure_texture->bind_as_image(0, GL_WRITE_ONLY);
@@ -103,8 +124,9 @@ PixelLoadIntegrator::Sums PixelLoadIntegrator::integrate(const Texture2D& positi
 		pressure_image = m_pressure_texture->read_back_float();
 	}
 
-	normal_texture.unbind(1);
-	position_texture.unbind(0);
+	for (size_t unit = g_buffer.size(); unit-- > 0;) {
+		g_buffer[unit]->unbind(static_cast<unsigned int>(unit));
+	}
 	m_shader->Unbind();
 
 	// Summed in workgroup order, which the dispatch fixes, so the total is reproducible.

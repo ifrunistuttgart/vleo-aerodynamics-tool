@@ -169,7 +169,7 @@ It owns its own hidden OpenGL context and needs no shading pipeline.
    surface into two RGBA32F targets. Leeward faces are culled, as in the shading algorithms, so
    the leeward face of a two-sided plate cannot hide the windward one it lies on. This assumes
    closed or two-sided geometry: a one-sided sheet facing away from the flow casts no shadow.
-   No physics happens here; this pass is the same for every model.
+   Without anti-aliasing no physics happens here; with it, see **Anti-aliasing** below.
 2. **Integration pass** ([pixel_load_integrator.cpp](../src/loads/pixel_load_integrator.cpp)).
    One compute shader, assembled from the model's GLSL, visits every pixel whose surface faces
    the flow (`cos(delta) = dot(n, v_hat) > 0`) and adds
@@ -189,32 +189,34 @@ loads to 1e-5, and the error against analytic results falls like 1/N
 ([pixel_force_torque_accuracy_test.cpp](../test/loads/pixel_force_torque_accuracy_test.cpp)).
 
 **Anti-aliasing.** `PixelLoadOptions::num_msaa_samples` (default 1) renders the G-buffer with that
-many samples per pixel. `glBlitFramebuffer` then resolves it into a single-sample copy
-(`gl::FrameBuffer::resolve_color_into`), which averages the samples of each pixel, uncovered
-ones (cleared to 0) included. From that average the integration pass gets:
-- the coverage `c`, the covered fraction of the samples (`w`);
-- the position, the mean of the covered samples' positions (`xyz / c`). The fragment shader
-  runs once per pixel and triangle, not once per sample: it evaluates the position at the mean
-  location of the samples the triangle covers (`gl_SampleMaskIn`) and writes it to all of them.
-  The position is affine across a triangle, so this gives the same sum as per-sample shading,
-  except that samples lost in the depth test still count in the mean (a sub-pixel effect at
-  occlusion edges that only touches the torque);
-- the normal, the normalised mean of the covered samples' normals.
+many samples per pixel. The G-buffer pass then evaluates the GSI model itself: the fragment
+shader runs once per pixel and triangle, not once per sample, with the triangle's exact normal,
+and MSAA stores its result in every sample the triangle covers and wins the depth test in. It
+writes the force per projected area `f` (with `w = 1`) and `r x f` (with the wetted-area weight
+`1 / max(cos(delta), min_cos_delta)`), `r` taken at the mean of the covered samples
+(`gl_SampleMaskIn`); `r` is affine across a triangle and `r x f` linear in it, so that is the
+torque of shading every sample. `glBlitFramebuffer` then resolves the G-buffer into a
+single-sample copy (`gl::FrameBuffer::resolve_color_into`), which averages the samples of each
+pixel, uncovered ones (cleared to 0) included, and the integration pass only scales and sums:
 
-The GSI model is still evaluated once per pixel, and the result is scaled by `c`, so a pixel a
-silhouette or shadow edge cuts through counts with only its covered part. Where two
-orientations or two depths meet inside one pixel, the averaged normal and position are an
-approximation; only such edge pixels are affected. GL leaves it to the driver how a blit
-combines the samples; `MsaaReducesTheEdgeErrorOfTheShadowedPlates` fails on a driver that
-does not average them.
+- the coverage `c` is the resolved `w`, so a pixel a silhouette or shadow edge cuts through
+  counts with only its covered part;
+- a pixel on a crease or a depth jump gets the sample-weighted mean of its faces' loads, exactly
+  what evaluating every sample would give.
 
-Cost: the G-buffer takes `2 * 16 B * N^2 * (samples + 1)` (the sample count is reduced if that
-does not fit). On the development GPU, 8 samples at N = 2000 add about 5 ms per call, mostly
-the resolve and the multisampled G-buffer writes; fetching every sample in the compute shader
-instead was about 7x slower in total ([pixel_msaa_runtime_notes.md](../pixel_msaa_runtime_notes.md)).
-`PixelLoadOptions::profile_stages` and `perf_probe --pixel-stages` measure the stages. With 8
-samples on the plate of `projected_area_plate` the worst projected-area error falls from
-2.6e-3 to 3.1e-4 m^2.
+Averaging the normals first and evaluating the model once per pixel would not be exact there,
+because the models are nonlinear in the normal: on a box with Newton and a faceted sphere with
+Sentman that made MSAA less accurate than one sample. Now MSAA beats one sample on both
+(`MsaaBeatsOneSampleAtCreasesForNewtonAndSentman`). GL leaves it to the driver how a blit combines
+the samples; `MsaaReducesTheEdgeErrorOfTheShadowedPlates` fails on a driver that does not
+average them.
+
+Cost: the G-buffer takes `k * 16 B * N^2 * (samples + 1)`, `k` = 2 targets, 3 with
+`keep_pressure_image` (the sample count is reduced if that does not fit). On the development
+GPU, 8 samples cost 1.1-3x the time of one sample at the same N, growing with N, mostly the
+multisampled G-buffer writes and the resolve. That pays off: on the box and sphere above, 8
+samples at N = 1024 are 2-22x more accurate than one sample at N = 2000 and slightly faster
+(`DISABLED_MsaaBenchmark` in [pixel_msaa_benchmark.cpp](../test/loads/pixel_msaa_benchmark.cpp)).
 
 **Grazing incidence.** Working per projected area turns `A_px / cos(delta)` into a finite factor
 for the hyperthermal models: Newton, Cook and Storch divide the `cos(delta)` out analytically.

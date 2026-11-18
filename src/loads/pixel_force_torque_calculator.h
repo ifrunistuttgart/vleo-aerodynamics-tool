@@ -25,8 +25,9 @@ struct PixelLoadOptions {
      * covered. > 1 = MSAA with that many samples: a partly covered pixel counts with its
      * covered fraction, so silhouettes and shadow edges are resolved to a fraction of a
      * pixel. Clamped to what the driver supports (with a warning). The G-buffer takes
-     * about 2 * 16 B * num_pixel^2 * (num_msaa_samples + 1): the multisampled targets plus
-     * the single-sample copy they are resolved into.
+     * about k * 16 B * num_pixel^2 * (num_msaa_samples + 1): the multisampled targets plus
+     * the single-sample copy they are resolved into, with k = 2, or 3 with MSAA and
+     * keep_pressure_image.
      */
     unsigned int num_msaa_samples = 1;
 
@@ -54,18 +55,21 @@ struct PixelStageTimings {
  * Integrates force and torque per pixel on the GPU, so the result depends on the
  * render resolution only and not on how the geometry is meshed.
  *
- * Pass 1 renders the body-frame position and normal of the front-most surface in
- * every pixel of an orthographic view along the flow, with num_msaa_samples samples
- * per pixel. With several samples the G-buffer is then resolved in hardware
- * (glBlitFramebuffer, which averages the samples), giving per pixel the coverage
- * c = covered / total samples, the mean position and the normalised mean normal of the
- * covered samples. Pass 2 evaluates the GSI model once per windward pixel, dF = f(n, v) * A_px * c with f the
- * force per projected area and A_px = (2R / num_pixel)^2, dT = r x dF, and sums both on
- * the GPU. With one sample c is 0 or 1. Where two orientations or two depths meet in
- * one pixel (a crease, a depth jump) the averaged normal and position are an
- * approximation. Surfaces facing
- * away from the flow (dot(n, v) <= 0) are invisible to the camera; they are evaluated
- * per triangle on the CPU with the GSI model and no shadowing, as in
+ * Pass 1 renders the front-most surface in every pixel of an orthographic view along
+ * the flow. Pass 2 sums dF = f(n, v) * A_px and dT = r x dF over the windward pixels on
+ * the GPU, with f the force per projected area and A_px = (2R / num_pixel)^2.
+ *
+ * Without anti-aliasing (num_msaa_samples = 1), pass 1 stores the body-frame position and
+ * normal per pixel and pass 2 evaluates the GSI model once per pixel. With MSAA, pass 1
+ * evaluates the model once per pixel and triangle with the triangle's exact normal and
+ * stores the load in every sample the triangle covers; the hardware resolve
+ * (glBlitFramebuffer, which averages the samples) then gives each pixel the mean load of
+ * its samples. A pixel cut by a silhouette or shadow edge counts with its covered part, and
+ * a pixel on a crease gets the mean of its faces' loads, as if every sample had been
+ * evaluated.
+ *
+ * Surfaces facing away from the flow (dot(n, v) <= 0) are invisible to the camera; they
+ * are evaluated per triangle on the CPU with the GSI model and no shadowing, as in
  * HybridForceTorqueCalculator.
  *
  * Owns its own hidden OpenGL context, so it needs no shading pipeline. The GSI model
@@ -106,7 +110,8 @@ public:
      * Pressure (normal component of the force per wetted area) [N/m^2] of the last
      * evaluation, num_pixel x num_pixel, row-major with row 0 at the bottom of the
      * flow view. Zero outside windward surfaces. A partly covered pixel shows the
-     * pressure of its surface, not scaled by the coverage. Empty unless
+     * pressure of its surface, not scaled by the coverage; with MSAA, a pixel where several
+     * windward surfaces meet shows their sample-weighted mean. Empty unless
      * keep_pressure_image is set.
      */
     [[nodiscard]] const std::vector<float>& pressure_image() const { return m_pressure_image; }

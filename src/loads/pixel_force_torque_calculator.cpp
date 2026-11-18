@@ -9,6 +9,8 @@
 #include <span>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
+#include <variant>
 #include <glm/glm.hpp>
 
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
@@ -41,10 +43,12 @@ using namespace gl;
 // destroyed last, after every object that owns GL names in it.
 struct PixelForceTorqueCalculator::GpuState {
     std::unique_ptr<GlfwOpenGLContext> context;
-    std::array<std::shared_ptr<Texture2D>, 2> g_buffer_textures; // position, normal
+    // Without MSAA: position, normal. With MSAA: force, torque and, with the pressure image,
+    // pressure, see pixel_loads_glsl.h.
+    std::vector<std::shared_ptr<Texture2D>> g_buffer_textures;
     std::unique_ptr<FrameBuffer> g_buffer;
     // With MSAA: the G-buffer resolved (sample mean) into single-sample textures.
-    std::array<std::shared_ptr<Texture2D>, 2> resolved_textures;
+    std::vector<std::shared_ptr<Texture2D>> resolved_textures;
     std::unique_ptr<FrameBuffer> resolved;
     std::unique_ptr<Shader> g_buffer_shader;
     std::unique_ptr<VertexArray> vao;
@@ -71,13 +75,14 @@ struct PixelForceTorqueCalculator::GpuState {
 
 namespace {
 
-// Two RGBA32F targets (position, normal), sampled texel by texel and never filtered, with
+// `num_targets` RGBA32F targets, sampled texel by texel and never filtered, with
 // `num_samples` samples per pixel (1 = ordinary textures), plus the framebuffer over them.
 // Returns false, with nothing left allocated, if the memory is not available.
-bool create_g_buffer(std::array<std::shared_ptr<Texture2D>, 2>& g_buffer_textures, std::unique_ptr<FrameBuffer>& g_buffer,
-                     unsigned int num_pixel, unsigned int num_samples) {
+bool create_g_buffer(std::vector<std::shared_ptr<Texture2D>>& g_buffer_textures, std::unique_ptr<FrameBuffer>& g_buffer,
+                     unsigned int num_pixel, unsigned int num_samples, size_t num_targets) {
     const int size = static_cast<int>(num_pixel);
     bool allocated = true;
+    g_buffer_textures.assign(num_targets, nullptr);
     for (auto& texture : g_buffer_textures) {
         texture = std::make_shared<Texture2D>(size, size, GL_RGBA32F, GL_RGBA, GL_FLOAT, static_cast<int>(num_samples));
         allocated = allocated && texture->is_valid();
@@ -92,9 +97,7 @@ bool create_g_buffer(std::array<std::shared_ptr<Texture2D>, 2>& g_buffer_texture
         }
     }
     g_buffer.reset();
-    for (auto& texture : g_buffer_textures) {
-        texture.reset();
-    }
+    g_buffer_textures.clear();
     return false;
 }
 
@@ -142,9 +145,14 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
         SPDLOG_WARN("Requested {} MSAA samples, the driver allows {}; using {}.", m_options.num_msaa_samples, driver_limit, m_num_msaa_samples);
     }
 
-    // The memory for num_pixel^2 * samples * 2 * 16 B can still be too much even within the
-    // driver's limit, so halve the sample count until the G-buffer can be allocated.
-    while (!create_g_buffer(m_gpu->g_buffer_textures, m_gpu->g_buffer, num_pixel, m_num_msaa_samples)) {
+    // Targets: position and normal without MSAA; force, torque and, for the pressure image,
+    // pressure with MSAA (see pixel_loads_glsl.h).
+    auto num_targets = [&](unsigned int samples) -> size_t {
+        return samples > 1 && m_options.keep_pressure_image ? 3 : 2;
+    };
+    // The memory for num_pixel^2 * samples * targets * 16 B can still be too much even within
+    // the driver's limit, so halve the sample count until the G-buffer can be allocated.
+    while (!create_g_buffer(m_gpu->g_buffer_textures, m_gpu->g_buffer, num_pixel, m_num_msaa_samples, num_targets(m_num_msaa_samples))) {
         if (m_num_msaa_samples == 1) {
             SPDLOG_ERROR("PixelForceTorqueCalculator: could not allocate the {}x{} G-buffer", num_pixel, num_pixel);
             throw std::runtime_error("PixelForceTorqueCalculator: could not allocate the G-buffer");
@@ -157,13 +165,14 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
 
     // With MSAA the samples are resolved in hardware (glBlitFramebuffer) into a single-sample
     // copy, which the integration reads: much faster than fetching every sample there.
-    if (m_num_msaa_samples > 1 && !create_g_buffer(m_gpu->resolved_textures, m_gpu->resolved, num_pixel, 1)) {
+    if (m_num_msaa_samples > 1 &&
+        !create_g_buffer(m_gpu->resolved_textures, m_gpu->resolved, num_pixel, 1, num_targets(m_num_msaa_samples))) {
         SPDLOG_ERROR("PixelForceTorqueCalculator: could not allocate the {}x{} resolved G-buffer", num_pixel, num_pixel);
         throw std::runtime_error("PixelForceTorqueCalculator: could not allocate the resolved G-buffer");
     }
     if (m_num_msaa_samples > 1) {
-        // Shade once per pixel and triangle, at the mean of the covered samples (see
-        // g_buffer_fragment_shader_msaa); the sample positions are baked in as constants.
+        // Evaluate the model once per pixel and triangle, at the mean of the covered samples
+        // (see g_buffer_msaa_main); the sample positions are baked in as constants.
         m_gpu->g_buffer->Bind();
         std::string offsets = "const vec2 k_sample_offsets[" + std::to_string(m_num_msaa_samples) + "] = vec2[](";
         for (unsigned int s = 0; s < m_num_msaa_samples; ++s) {
@@ -177,10 +186,11 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
         m_gpu->g_buffer->UnBind();
         const std::string version = "#version 430 core\n";
         const std::string defines = version + "#define VAT_PIXEL_RATE_POSITION\n#define VAT_MSAA_SAMPLES " +
-            std::to_string(m_num_msaa_samples) + "\n";
+            std::to_string(m_num_msaa_samples) + "\n" + (m_options.keep_pressure_image ? "#define VAT_WRITE_PRESSURE\n" : "");
         std::string vertex = pixel_glsl::g_buffer_vertex_shader;
         vertex.replace(vertex.find(version), version.size(), defines);
-        m_gpu->g_buffer_shader = std::make_unique<Shader>(vertex, defines + offsets + pixel_glsl::g_buffer_fragment_shader_msaa, true);
+        const std::string fragment = defines + offsets + pixel_glsl::g_buffer_msaa_uniforms + gsi_glsl + pixel_glsl::g_buffer_msaa_main;
+        m_gpu->g_buffer_shader = std::make_unique<Shader>(vertex, fragment, true);
     } else {
         m_gpu->g_buffer_shader = std::make_unique<Shader>(pixel_glsl::g_buffer_vertex_shader, pixel_glsl::g_buffer_fragment_shader, true);
     }
@@ -279,6 +289,23 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
 
     m_gpu->g_buffer_shader->Bind();
     m_gpu->g_buffer_shader->setUniformMat4f("u_view_projection", view_projection);
+    if (m_num_msaa_samples > 1) {
+        // With MSAA the model is evaluated in this pass, see g_buffer_msaa_main.
+        Shader& shader = *m_gpu->g_buffer_shader;
+        shader.SetUniform3f("u_v_rel", v_rel__m_per_s);
+        shader.SetUniform1f("u_surface_temp", surface_temp__K);
+        shader.SetUniform1f("u_min_cos_delta", m_options.min_cos_delta);
+        shader.SetUniform1f("u_edge_on_threshold", edge_on_threshold(rel_speed));
+        for (const GlslUniform& uniform : m_gsi_model.glsl_uniforms(aero)) {
+            std::visit([&](auto value) {
+                if constexpr (std::is_same_v<decltype(value), int>) {
+                    shader.SetUniform1i(uniform.name, value);
+                } else {
+                    shader.SetUniform1f(uniform.name, value);
+                }
+            }, uniform.value);
+        }
+    }
     m_gpu->vao->Bind();
     std::span<const glm::mat4> model_matrices = m_geometry.get_model_matrices();
     std::span<const unsigned int> num_triangles_per_mesh = m_geometry.get_num_triangles_per_mesh();
@@ -299,7 +326,7 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     end_stage(m_stage_timings.draw__ms);
 
     // MSAA: average the samples of each pixel in hardware. Uncovered samples hold the clear
-    // value 0, so w becomes the coverage and xyz the covered positions' sum / samples.
+    // value 0, so each pixel gets the mean load of its samples and w of target 0 the coverage.
     if (m_gpu->resolved) {
         m_gpu->g_buffer->resolve_color_into(*m_gpu->resolved);
     }
@@ -310,7 +337,7 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     const float pixel_edge__m = 2.0f * bounding_sphere_radius / static_cast<float>(m_num_pixel);
     const float pixel_area__m2 = pixel_edge__m * pixel_edge__m;
     const PixelLoadIntegrator::Sums sums = m_gpu->integrator->integrate(
-        *integrated_textures[0], *integrated_textures[1],
+        integrated_textures,
         v_rel__m_per_s, surface_temp__K, pixel_area__m2, m_options.min_cos_delta,
         m_gsi_model.glsl_uniforms(aero), m_pressure_image);
     end_stage(m_stage_timings.integrate__ms);

@@ -85,6 +85,57 @@ TEST(PixelForceTorqueCalculatorTest, PressureImageIsReadBackOnRequest) {
     EXPECT_LE(max_pressure, aero.density__kg_per_m3 * 7800.0f * 7800.0f * 1.0001f);
 }
 
+// With MSAA the pressure comes from its own G-buffer target: inside a face it must be the
+// face's pressure, as without MSAA, and keeping the image must not change the loads.
+TEST(PixelForceTorqueCalculatorTest, MsaaPressureImageMatchesOneSampleInsideFaces) {
+    StaticMeshGeometry geometry(tetrahedron_path());
+    Newton newton;
+    AeroConditions aero = leo_conditions();
+    constexpr unsigned int N = 256;
+    PixelLoadOptions plain_options;
+    plain_options.keep_pressure_image = true;
+    PixelLoadOptions msaa_options = plain_options;
+    msaa_options.num_msaa_samples = 8;
+    PixelLoadOptions msaa_without_image;
+    msaa_without_image.num_msaa_samples = 8;
+    PixelForceTorqueCalculator plain(geometry, newton, N, plain_options);
+    PixelForceTorqueCalculator msaa(geometry, newton, N, msaa_options);
+    PixelForceTorqueCalculator msaa_loads_only(geometry, newton, N, msaa_without_image);
+    if (msaa.num_msaa_samples() < 4) {
+        GTEST_SKIP() << "driver offers only " << msaa.num_msaa_samples() << " samples";
+    }
+
+    const glm::vec3 v_rel(7000.0f, 2000.0f, 3000.0f);
+    glm::vec3 force, torque, force_loads_only, torque_loads_only;
+    plain.calc_aero_torque_force(v_rel, 300.0f, aero, torque, force);
+    msaa.calc_aero_torque_force(v_rel, 300.0f, aero, torque, force);
+    msaa_loads_only.calc_aero_torque_force(v_rel, 300.0f, aero, torque_loads_only, force_loads_only);
+    EXPECT_LT(glm::length(force - force_loads_only), 1e-6f * glm::length(force));
+    EXPECT_LT(glm::length(torque - torque_loads_only), 1e-6f * glm::length(force) * geometry.get_bounding_sphere_radius());
+
+    const std::vector<float>& p_plain = plain.pressure_image();
+    const std::vector<float>& p_msaa = msaa.pressure_image();
+    ASSERT_EQ(p_msaa.size(), N * N);
+    // A pixel whose 3x3 neighbourhood all shows the same one-sample pressure lies inside a face.
+    unsigned int compared = 0;
+    for (unsigned int y = 1; y + 1 < N; ++y) {
+        for (unsigned int x = 1; x + 1 < N; ++x) {
+            const float p = p_plain[y * N + x];
+            bool inside = p > 0.0f;
+            for (int dy = -1; dy <= 1 && inside; ++dy) {
+                for (int dx = -1; dx <= 1 && inside; ++dx) {
+                    inside = p_plain[(y + dy) * N + (x + dx)] == p;
+                }
+            }
+            if (inside) {
+                EXPECT_NEAR(p_msaa[y * N + x], p, 1e-5f * p) << "pixel " << x << ", " << y;
+                ++compared;
+            }
+        }
+    }
+    EXPECT_GT(compared, 1000u);
+}
+
 TEST(PixelForceTorqueCalculatorTest, HyperthermalMatchesHybridHyperthermal) {
     StaticMeshGeometry geometry(tetrahedron_path());
     Sentman sentman(1, 0.9f);
