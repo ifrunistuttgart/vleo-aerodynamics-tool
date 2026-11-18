@@ -1,0 +1,7 @@
+# an .obj file with vertices and lines but no triangles
+o wire
+v 0.0 0.0 0.0
+v 1.0 0.0 0.0
+v 0.0 1.0 0.0
+l 1 2
+l 2 3

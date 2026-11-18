@@ -26,10 +26,11 @@ struct MeshData {
  * Loads every mesh of a model file, one MeshData per mesh, in file order.
  *
  * Faces are triangulated and identical vertices joined on import; faces that are not
- * triangles after that (points, lines) are dropped.
+ * triangles after that (points, lines) are dropped with a warning.
  *
  * @param file Path to any format assimp reads.
- * @return The meshes, or an empty vector if the file cannot be read. The failure is logged.
+ * @return The meshes, in file order.
+ * @throws std::runtime_error If the file cannot be read or contains no triangles.
  */
 std::vector<MeshData> load_mesh_data(const std::string& file);
 
