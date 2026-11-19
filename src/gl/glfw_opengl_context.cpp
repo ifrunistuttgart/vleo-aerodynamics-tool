@@ -21,8 +21,8 @@ GlfwOpenGLContext::GlfwOpenGLContext(int width, int height, const char* title, b
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_VISIBLE, visible ? GLFW_TRUE : GLFW_FALSE);
 
-    m_window = glfwCreateWindow(width, height, title, nullptr, nullptr);
-    if (m_window == nullptr) {
+    m_window.reset(glfwCreateWindow(width, height, title, nullptr, nullptr));
+    if (!m_window) {
         const char* description;
         int errorCode = glfwGetError(&description);
         SPDLOG_ERROR("glfwCreateWindow failed! Error Code: {} | Description: {}", errorCode, description ? description : "Unknown");
@@ -33,14 +33,13 @@ GlfwOpenGLContext::GlfwOpenGLContext(int width, int height, const char* title, b
         throw std::runtime_error(std::format("glfwCreateWindow failed (size={}x{}, title='{}', visible={}): {}", width, height, title, visible, std::string(description ? description : "Unknown")));
     }
 
-    glfwMakeContextCurrent(m_window);
+    glfwMakeContextCurrent(m_window.get());
 
     if (!s_glewInitialized) {
         const GLenum glew_result = glewInit();
         if (glew_result != GLEW_OK) {
             SPDLOG_ERROR("glewInit failed (code={})", static_cast<unsigned int>(glew_result));
-            glfwDestroyWindow(m_window);
-            m_window = nullptr;
+            m_window.reset();
             if (s_liveContexts == 0) {
                 glfwTerminate();
             }
@@ -53,11 +52,10 @@ GlfwOpenGLContext::GlfwOpenGLContext(int width, int height, const char* title, b
 }
 
 GlfwOpenGLContext::~GlfwOpenGLContext() {
-    if (m_window == nullptr) {
+    if (!m_window) {
         return; // construction failed; this context never counted
     }
-    glfwDestroyWindow(m_window);
-    m_window = nullptr;
+    m_window.reset();
 
     if (--s_liveContexts == 0) {
         glfwTerminate();
@@ -66,7 +64,7 @@ GlfwOpenGLContext::~GlfwOpenGLContext() {
 }
 
 void GlfwOpenGLContext::make_current() const {
-    glfwMakeContextCurrent(m_window);
+    glfwMakeContextCurrent(m_window.get());
 }
 
 } // namespace vat::gl

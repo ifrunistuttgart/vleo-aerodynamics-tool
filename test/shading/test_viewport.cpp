@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <cstdint>
 #include <span>
+#include <stdexcept>
+#include <string>
 #include <vector>
 #include <glm/glm.hpp>
 #include <GL/glew.h>
@@ -41,7 +43,13 @@ SmallTriangles make_small_triangles(unsigned int count) {
 
 // The hidden window here is only 64x64, standing in for a window the OS clamped
 // to the screen size. The shaders must still render at their own num_pixel.
-class ShadingViewportTest : public ::testing::TestWithParam<ShadingAlgorithmType> {
+struct ViewportCase {
+    ShadingAlgorithmType type;
+    unsigned int num_msaa_samples;
+    const char* name;
+};
+
+class ShadingViewportTest : public ::testing::TestWithParam<ViewportCase> {
 protected:
     GLFWwindow* m_window = nullptr;
 
@@ -67,7 +75,7 @@ protected:
 
 TEST_P(ShadingViewportTest, RendersAtNumPixelNotWindowSize) {
     const SmallTriangles triangles = make_small_triangles(20);
-    auto shader = create_shading_algorithm(GetParam(), 800);
+    auto shader = create_shading_algorithm(GetParam().type, 800, GetParam().num_msaa_samples);
     ASSERT_EQ(shader->set_vertices(triangles.vertices, triangles.ids), 0);
 
     const std::vector<unsigned int> num_triangles_per_mesh{ triangles.count };
@@ -82,5 +90,15 @@ TEST_P(ShadingViewportTest, RendersAtNumPixelNotWindowSize) {
 }
 
 INSTANTIATE_TEST_SUITE_P(Algorithms, ShadingViewportTest,
-    ::testing::Values(ShadingAlgorithmType::Binary, ShadingAlgorithmType::CoP),
-    [](const auto& info) { return info.param == ShadingAlgorithmType::Binary ? "Binary" : "CoP"; });
+    ::testing::Values(ViewportCase{ ShadingAlgorithmType::Binary, 1, "Binary" },
+                      ViewportCase{ ShadingAlgorithmType::CoP, 1, "CoP" },
+                      ViewportCase{ ShadingAlgorithmType::Binary, 8, "BinaryMsaa8" }),
+    [](const auto& info) { return std::string(info.param.name); });
+
+// num_msaa_samples is validated before any GL object is created, so no context is needed.
+TEST(ShadingAlgorithmFactoryTest, RejectsInvalidSampleCounts) {
+    EXPECT_THROW(create_shading_algorithm(ShadingAlgorithmType::CoP, 800, 8), std::invalid_argument);
+    EXPECT_THROW(create_shading_algorithm(ShadingAlgorithmType::Binary, 800, 0), std::invalid_argument);
+    EXPECT_NO_THROW(create_shading_algorithm(ShadingAlgorithmType::CoP, 800, 1));
+    EXPECT_NO_THROW(create_shading_algorithm(ShadingAlgorithmType::Binary, 800, 8));
+}

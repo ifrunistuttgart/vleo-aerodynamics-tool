@@ -2,6 +2,8 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include <memory>
+
 namespace vat::gl {
 
 /**
@@ -13,7 +15,10 @@ namespace vat::gl {
  */
 class GlfwOpenGLContext {
 private:
-    GLFWwindow* m_window = nullptr;
+    struct WindowDeleter {
+        void operator()(GLFWwindow* window) const { glfwDestroyWindow(window); }
+    };
+    std::unique_ptr<GLFWwindow, WindowDeleter> m_window;
     static bool s_glewInitialized;
     static int s_liveContexts;
 
@@ -22,7 +27,8 @@ public:
     ~GlfwOpenGLContext();
 
     void make_current() const;
-    GLFWwindow* window() const { return m_window; }
+    /// Non-owning handle; valid for as long as this context lives.
+    GLFWwindow* window() const { return m_window.get(); }
 };
 
 } // namespace vat::gl

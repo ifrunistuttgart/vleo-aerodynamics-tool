@@ -192,6 +192,45 @@ TEST(PixelAccuracyTest, ConvexBodiesAgreeWithHybridForEveryModel) {
     }
 }
 
+// (b) continued: a two-sided plate is two coincident faces with opposite normals. The
+// result must not depend on which face comes first or which side the flow hits.
+TEST(PixelAccuracyTest, TwoSidedPlateAgreesWithHybridForEitherFaceOrder) {
+    Newton newton;
+    Sentman sentman(1, 0.9f);
+    const std::vector<std::pair<const char*, IGSIModel*>> models{{"Newton", &newton}, {"Sentman", &sentman}};
+
+    // A tilted parallelogram, so its outline is not aligned with the pixel grid.
+    const glm::vec3 p0(0.1f, -0.4f, -0.3f), e1(0.1f, 0.8f, 0.1f), e2(-0.2f, 0.1f, 0.7f);
+    const glm::vec3 p1 = p0 + e1, p2 = p0 + e1 + e2, p3 = p0 + e2;
+    InMemoryGeometry front_first, back_first;
+    front_first.add_quad(p0, p1, p2, p3);
+    front_first.add_quad(p0, p3, p2, p1);
+    back_first.add_quad(p0, p3, p2, p1);
+    back_first.add_quad(p0, p1, p2, p3);
+    const std::vector<std::pair<const char*, IGeometryShadingData*>> bodies{
+        {"front first", &front_first}, {"back first", &back_first}};
+
+    const glm::vec3 v(7000.0f, 1500.0f, -2500.0f);
+    constexpr unsigned int N = 1024;
+    for (const auto& [body_name, geometry] : bodies) {
+        const double radius = geometry->get_bounding_sphere_radius();
+        ShadingPipeline pipeline(*geometry, ShadingAlgorithmType::Binary, N);
+        for (const auto& [model_name, model] : models) {
+            HybridForceTorqueCalculator hybrid(*geometry, pipeline, *model);
+            PixelForceTorqueCalculator pixel(*geometry, *model, N);
+            for (float side : {1.0f, -1.0f}) {
+                const Loads reference = evaluate(hybrid, side * v);
+                const Errors e = relative_errors(evaluate(pixel, side * v), reference, radius);
+                std::printf("[          ] %-11s %-7s side %+.0f force %.2e torque %.2e\n",
+                    body_name, model_name, side, e.force, e.torque);
+                ASSERT_GT(glm::length(reference.force__N), 0.0) << body_name << " " << model_name;
+                EXPECT_LT(e.force, 4.0 / N) << body_name << " " << model_name << " side " << side;
+                EXPECT_LT(e.torque, 4.0 / N) << body_name << " " << model_name << " side " << side;
+            }
+        }
+    }
+}
+
 // (c) The front plate shades part of the back plate. The pixel result must match the
 // analytic visible area, force and moment, which Hybrid cannot: it either counts the
 // partly shaded back plate fully or not at all.
@@ -313,4 +352,203 @@ TEST(PixelAccuracyTest, ErrorShrinksWithResolution) {
     }
     // 32x the resolution; the bound falls 32x, require at least 8x.
     EXPECT_LT(errors.back(), errors.front() / 8.0);
+}
+
+// (f) Anti-aliasing: a partly covered pixel counts with its covered fraction.
+namespace {
+
+// A tilted parallelogram and its analytic uniform-pressure Newton result for the flow v.
+struct ParallelogramCase {
+    glm::vec3 origin{0.1f, -0.4f, -0.3f}, e1{0.1f, 0.8f, 0.1f}, e2{-0.2f, 0.1f, 0.7f};
+    double area = 0.0;
+    double cos_delta = 0.0;
+    Loads analytic{};
+    double perimeter = 0.0;
+
+    ParallelogramCase(InMemoryGeometry& geometry, const glm::vec3& v) {
+        geometry.add_quad(origin, origin + e1, origin + e1 + e2, origin + e2, 1);
+        const glm::dvec3 cross = glm::cross(glm::dvec3(e1), glm::dvec3(e2));
+        area = glm::length(cross);
+        const glm::dvec3 n = cross / area;
+        cos_delta = glm::dot(n, glm::dvec3(v)) / glm::length(glm::dvec3(v));
+        const glm::dvec3 force = -leo_conditions().density__kg_per_m3 * glm::dot(glm::dvec3(v), glm::dvec3(v)) * cos_delta * cos_delta * area * n;
+        const glm::dvec3 centroid = glm::dvec3(origin) + 0.5 * glm::dvec3(e1 + e2);
+        analytic = Loads{force, glm::cross(centroid, force)};
+        perimeter = 2.0 * (glm::length(e1) + glm::length(e2));
+    }
+};
+
+} // namespace
+
+// One sample is the plain per-pixel evaluation: the options must not change a single bit.
+TEST(PixelAccuracyTest, OneSampleIsBitIdenticalToTheDefault) {
+    Newton newton;
+    InMemoryGeometry plates;
+    add_two_plates(plates);
+    PixelForceTorqueCalculator by_default(plates, newton, 512);
+    PixelForceTorqueCalculator one_sample(plates, newton, 512, 1);
+    const Loads a = evaluate(by_default, plate_flow(0.25));
+    const Loads b = evaluate(one_sample, plate_flow(0.25));
+    EXPECT_EQ(a.force__N, b.force__N);
+    EXPECT_EQ(a.torque__Nm, b.torque__Nm);
+    EXPECT_EQ(one_sample.num_msaa_samples(), 1u);
+}
+
+// The shadow and silhouette edges of the two plates are resolved to a fraction of a pixel,
+// so at the same num_pixel the error against the analytic result is clearly smaller.
+// This also guards the hardware resolve: GL leaves it to the driver how glBlitFramebuffer
+// combines the samples, and a driver that picked one sample instead of averaging would give
+// coverage 0 or 1 again and fail here.
+TEST(PixelAccuracyTest, MsaaReducesTheEdgeErrorOfTheShadowedPlates) {
+    Newton newton;
+    InMemoryGeometry plates;
+    add_two_plates(plates);
+    const double radius = plates.get_bounding_sphere_radius();
+    constexpr unsigned int N = 256;
+
+    PixelForceTorqueCalculator plain(plates, newton, N);
+    PixelForceTorqueCalculator msaa(plates, newton, N, 8);
+    if (msaa.num_msaa_samples() < 4) {
+        GTEST_SKIP() << "driver offers only " << msaa.num_msaa_samples() << " samples";
+    }
+
+    double worst_plain = 0.0, worst_msaa = 0.0;
+    for (double tan_alpha : {0.0, 0.1, 0.25, 0.4}) {
+        const PlateReference reference = two_plates_reference(tan_alpha);
+        const double cos_alpha = 1.0 / std::sqrt(1.0 + tan_alpha * tan_alpha);
+        const Errors e_plain = relative_errors(evaluate(plain, plate_flow(tan_alpha)), reference.loads, radius);
+        const Errors e_msaa = relative_errors(evaluate(msaa, plate_flow(tan_alpha)), reference.loads, radius);
+        const double area_plain = std::abs(plain.last_wetted_area() - reference.wetted_area) / reference.wetted_area;
+        const double area_msaa = std::abs(msaa.last_wetted_area() - reference.wetted_area) / reference.wetted_area;
+        std::printf("[          ] tan(alpha)=%.2f force %.2e -> %.2e, torque %.2e -> %.2e, wetted area %.2e -> %.2e (1 -> %u samples)\n",
+            tan_alpha, e_plain.force, e_msaa.force, e_plain.torque, e_msaa.torque, area_plain, area_msaa, msaa.num_msaa_samples());
+        worst_plain = std::max({worst_plain, e_plain.force, e_plain.torque, area_plain});
+        worst_msaa = std::max({worst_msaa, e_msaa.force, e_msaa.torque, area_msaa});
+        const double projected = reference.wetted_area * cos_alpha;
+        EXPECT_NEAR(msaa.last_projected_area(), projected,
+            edge_bound(16.0, radius, N, projected) * projected / static_cast<double>(msaa.num_msaa_samples()));
+    }
+    EXPECT_LT(worst_msaa, worst_plain / 2.0);
+}
+
+// A flat plate with an oblique outline: with samples, the covered area, force and torque
+// follow the analytic result to a fraction of the one-sample edge bound.
+TEST(PixelAccuracyTest, MsaaFlatPlateFollowsTheAnalyticResult) {
+    Newton newton;
+    const glm::vec3 v(7000.0f, 1500.0f, -2500.0f);
+    InMemoryGeometry plate;
+    const ParallelogramCase reference(plate, v);
+    const double radius = plate.get_bounding_sphere_radius();
+    constexpr unsigned int N = 128;
+
+    PixelForceTorqueCalculator plain(plate, newton, N);
+    PixelForceTorqueCalculator msaa(plate, newton, N, 8);
+    if (msaa.num_msaa_samples() < 4) {
+        GTEST_SKIP() << "driver offers only " << msaa.num_msaa_samples() << " samples";
+    }
+    const Errors e_plain = relative_errors(evaluate(plain, v), reference.analytic, radius);
+    const Errors e_msaa = relative_errors(evaluate(msaa, v), reference.analytic, radius);
+    const double projected = reference.area * reference.cos_delta;
+    const double bound = edge_bound(reference.perimeter, radius, N, projected);
+    const double msaa_bound = 2.0 * bound / static_cast<double>(msaa.num_msaa_samples());
+    std::printf("[          ] N=%u: force %.2e -> %.2e, torque %.2e -> %.2e (one-sample bound %.2e, msaa bound %.2e)\n",
+        N, e_plain.force, e_msaa.force, e_plain.torque, e_msaa.torque, bound, msaa_bound);
+    EXPECT_LT(e_msaa.force, msaa_bound);
+    EXPECT_LT(e_msaa.torque, msaa_bound);
+    EXPECT_NEAR(msaa.last_projected_area(), projected, projected * msaa_bound);
+}
+
+// Still independent of the meshing.
+TEST(PixelAccuracyTest, MsaaResultIsIndependentOfMeshing) {
+    Newton newton;
+    InMemoryGeometry coarse, fine;
+    add_two_plates(coarse, 1);
+    add_two_plates(fine, 71);
+    const glm::vec3 v = plate_flow(0.25);
+    const double radius = coarse.get_bounding_sphere_radius();
+    constexpr unsigned int N = 1024;
+
+    PixelForceTorqueCalculator pixel_coarse(coarse, newton, N, 8);
+    PixelForceTorqueCalculator pixel_fine(fine, newton, N, 8);
+    const Errors e = relative_errors(evaluate(pixel_fine, v), evaluate(pixel_coarse, v), radius);
+    std::printf("[          ] msaa pixel, coarse vs fine back plate: force %.2e torque %.2e\n", e.force, e.torque);
+    EXPECT_LT(e.force, 1e-5);
+    EXPECT_LT(e.torque, 1e-5);
+}
+
+// And still agrees with Hybrid on bodies it handles exactly.
+TEST(PixelAccuracyTest, MsaaConvexBodiesAgreeWithHybrid) {
+    Newton newton;
+    InMemoryGeometry box;
+    box.add_box({-0.3f, -0.2f, -0.1f}, {0.5f, 0.4f, 0.3f});
+    InMemoryGeometry sphere;
+    sphere.add_sphere(0.5f, 4);
+    const std::vector<std::pair<const char*, IGeometryShadingData*>> bodies{{"box", &box}, {"sphere", &sphere}};
+    const std::vector<glm::vec3> directions{
+        glm::normalize(glm::vec3(1.0f, 0.3f, -0.2f)),
+        glm::normalize(glm::vec3(-0.4f, 0.8f, 0.5f)),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+    };
+    constexpr unsigned int N = 512;
+
+    for (const auto& [name, geometry] : bodies) {
+        const double radius = geometry->get_bounding_sphere_radius();
+        ShadingPipeline pipeline(*geometry, ShadingAlgorithmType::Binary, 2048);
+        HybridForceTorqueCalculator hybrid(*geometry, pipeline, newton);
+        PixelForceTorqueCalculator pixel(*geometry, newton, N, 8);
+        for (const glm::vec3& direction : directions) {
+            const glm::vec3 v = direction * SPEED__M_PER_S;
+            const Errors e = relative_errors(evaluate(pixel, v), evaluate(hybrid, v), radius);
+            std::printf("[          ] msaa %-6s dir=(%5.2f %5.2f %5.2f) force %.2e torque %.2e\n",
+                name, direction.x, direction.y, direction.z, e.force, e.torque);
+            EXPECT_LT(e.force, 4.0 / N) << name;
+            EXPECT_LT(e.torque, 4.0 / N) << name;
+        }
+    }
+}
+
+// Box edges and the faceted sphere's triangle edges are creases inside pixels. The samples
+// of such a pixel are averaged after the model is evaluated per face, so MSAA must beat one
+// sample there too, for a model nonlinear in the normal (Sentman) as well. Averaging the
+// normals first instead made MSAA worse than one sample on the box (Newton) and the
+// sphere (Sentman).
+TEST(PixelAccuracyTest, MsaaBeatsOneSampleAtCreasesForNewtonAndSentman) {
+    Newton newton;
+    Sentman sentman(1, 0.9f);
+    InMemoryGeometry box;
+    box.add_box({-0.3f, -0.2f, -0.1f}, {0.5f, 0.4f, 0.3f});
+    InMemoryGeometry sphere;
+    sphere.add_sphere(0.5f, 4);
+    const std::vector<std::pair<const char*, IGeometryShadingData*>> bodies{{"box", &box}, {"sphere", &sphere}};
+    const std::vector<std::pair<const char*, IGSIModel*>> models{{"Newton", &newton}, {"Sentman", &sentman}};
+    const std::vector<glm::vec3> directions{
+        glm::normalize(glm::vec3(1.0f, 0.3f, -0.2f)),
+        glm::normalize(glm::vec3(-0.4f, 0.8f, 0.5f)),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::normalize(glm::vec3(-0.2f, -0.5f, -1.0f)),
+    };
+    constexpr unsigned int N = 512;
+
+    for (const auto& [body_name, geometry] : bodies) {
+        const double radius = geometry->get_bounding_sphere_radius();
+        ShadingPipeline pipeline(*geometry, ShadingAlgorithmType::Binary, 2048);
+        for (const auto& [model_name, model] : models) {
+            HybridForceTorqueCalculator hybrid(*geometry, pipeline, *model);
+            PixelForceTorqueCalculator plain(*geometry, *model, N);
+            PixelForceTorqueCalculator msaa(*geometry, *model, N, 8);
+            if (msaa.num_msaa_samples() < 4) {
+                GTEST_SKIP() << "driver offers only " << msaa.num_msaa_samples() << " samples";
+            }
+            double worst_plain = 0.0, worst_msaa = 0.0;
+            for (const glm::vec3& direction : directions) {
+                const glm::vec3 v = direction * SPEED__M_PER_S;
+                const Loads reference = evaluate(hybrid, v);
+                worst_plain = std::max(worst_plain, relative_errors(evaluate(plain, v), reference, radius).force);
+                worst_msaa = std::max(worst_msaa, relative_errors(evaluate(msaa, v), reference, radius).force);
+            }
+            std::printf("[          ] %-6s %-7s worst force error %.2e -> %.2e (1 -> %u samples)\n",
+                body_name, model_name, worst_plain, worst_msaa, msaa.num_msaa_samples());
+            EXPECT_LT(worst_msaa, worst_plain / 2.0) << body_name << " " << model_name;
+        }
+    }
 }

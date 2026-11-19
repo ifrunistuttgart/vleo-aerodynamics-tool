@@ -1,4 +1,8 @@
+#include <cmath>
+#include <limits>
 #include "hybrid_aero_load_calculator.h"
+#include "leeward_classification.h"
+#include <cmath>
 #include <vector>
 #include <span>
 #include <glm/glm.hpp>
@@ -14,8 +18,10 @@ namespace vat::loads {
 HybridForceTorqueCalculator::HybridForceTorqueCalculator(
 	IGeometryShadingData& geometry,
 	IShadingPipeline& shading_pipeline,
-	IGSIModel& gsi_model)
-	: m_shading_pipeline(shading_pipeline),
+	IGSIModel& gsi_model,
+	FlowRegime flow_regime)
+	: m_flow_regime(flow_regime),
+	m_shading_pipeline(shading_pipeline),
 	m_geometry(geometry),
 	m_gsi_model(gsi_model)
 {
@@ -28,6 +34,13 @@ HybridForceTorqueCalculator::~HybridForceTorqueCalculator() {
 
 int HybridForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions& aero, glm::vec3& torque__Nm, glm::vec3& force__N) {
 	const float rel_speed = glm::length(v_rel__m_per_s);
+	if (!std::isfinite(rel_speed)) {
+		SPDLOG_ERROR("calc_aero_torque_force called with a non-finite relative velocity ({}, {}, {}); the load is undefined, returning NaN and an error code",
+			v_rel__m_per_s.x, v_rel__m_per_s.y, v_rel__m_per_s.z);
+		torque__Nm = glm::vec3(std::numeric_limits<float>::quiet_NaN());
+		force__N = glm::vec3(std::numeric_limits<float>::quiet_NaN());
+		return -1;
+	}
 	if (rel_speed <= 0.0f) {
 		SPDLOG_WARN("calc_aero_torque_force called with zero relative velocity; returning zero force/torque");
 		torque__Nm = glm::vec3(0.0f);
@@ -40,8 +53,8 @@ int HybridForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__
 
 	std::vector<float> triangle_visibility = m_shading_pipeline.shade(glm::normalize(v_rel__m_per_s));
 	std::span<const float> areas = m_geometry.get_areas();
- std::span<const float> normals = m_geometry.get_transformed_normals();
- std::span<const float> centroids = m_geometry.get_transformed_centroids();
+	std::span<const float> normals = m_geometry.get_transformed_normals();
+	std::span<const float> centroids = m_geometry.get_transformed_centroids();
 
 	//loop over triangles
 	for (unsigned int i = 0; i < m_geometry.get_num_triangles(); i++){
@@ -52,9 +65,19 @@ int HybridForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__
 		glm::vec3 aero_force__N;
 		glm::vec3 aero_torque__Nm;
 
+		const float cos_incidence = glm::dot(normal, v_rel__m_per_s);
+		// Degenerate triangles have a NaN normal and no area; skip them, as the pixel
+		// calculator does, so they cannot poison the sum.
+		if (std::isnan(cos_incidence)) {
+			continue;
+		}
+
 		float visibility;
-		if (glm::dot(normal, v_rel__m_per_s) <= 0) {
+		if (is_leeward(cos_incidence, rel_speed)) {
 			//backward facing
+			if (m_flow_regime == FlowRegime::Hyperthermal) {
+				continue;
+			}
 			visibility = 1.0f;
 		}
 		else

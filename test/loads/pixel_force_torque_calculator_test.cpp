@@ -2,17 +2,18 @@
 #include <spdlog/spdlog.h>
 #include <gtest/gtest.h>
 #include <filesystem>
+#include <limits>
 #include <memory>
 #include <glm/glm.hpp>
 
 #include "newton.h"
+#include "sentman.h"
 #include "hybrid_aero_load_calculator.h"
 #include "pixel_force_torque_calculator.h"
 #include "core.h"
 #include "shading_pipeline.h"
 #include "shading_algorithm_factory.h"
 #include "static_mesh_geometry.h"
-
 using namespace vat;
 using namespace vat::gsi_models;
 using namespace vat::geometry;
@@ -72,7 +73,7 @@ TEST(PixelForceTorqueCalculatorTest, PressureImageIsReadBackOnRequest) {
     StaticMeshGeometry geometry(tetrahedron_path());
     Newton newton;
     AeroConditions aero = leo_conditions();
-    PixelForceTorqueCalculator pixel(geometry, newton, 256, PixelLoadOptions{1e-3f, true});
+    PixelForceTorqueCalculator pixel(geometry, newton, 256, 1, true);
 
     glm::vec3 force, torque;
     pixel.calc_aero_torque_force(glm::vec3(7800.0f, 0.0f, 0.0f), 300.0f, aero, torque, force);
@@ -82,6 +83,99 @@ TEST(PixelForceTorqueCalculatorTest, PressureImageIsReadBackOnRequest) {
     // Newton at normal incidence: p = 2q = rho v^2. No surface is quite normal here, so only bound it.
     EXPECT_GT(max_pressure, 0.0f);
     EXPECT_LE(max_pressure, aero.density__kg_per_m3 * 7800.0f * 7800.0f * 1.0001f);
+}
+
+// With MSAA the pressure comes from its own G-buffer target: inside a face it must be the
+// face's pressure, as without MSAA, and keeping the image must not change the loads.
+TEST(PixelForceTorqueCalculatorTest, MsaaPressureImageMatchesOneSampleInsideFaces) {
+    StaticMeshGeometry geometry(tetrahedron_path());
+    Newton newton;
+    AeroConditions aero = leo_conditions();
+    constexpr unsigned int N = 256;
+    PixelForceTorqueCalculator plain(geometry, newton, N, 1, true);
+    PixelForceTorqueCalculator msaa(geometry, newton, N, 8, true);
+    PixelForceTorqueCalculator msaa_loads_only(geometry, newton, N, 8, false);
+    if (msaa.num_msaa_samples() < 4) {
+        GTEST_SKIP() << "driver offers only " << msaa.num_msaa_samples() << " samples";
+    }
+
+    const glm::vec3 v_rel(7000.0f, 2000.0f, 3000.0f);
+    glm::vec3 force, torque, force_loads_only, torque_loads_only;
+    plain.calc_aero_torque_force(v_rel, 300.0f, aero, torque, force);
+    msaa.calc_aero_torque_force(v_rel, 300.0f, aero, torque, force);
+    msaa_loads_only.calc_aero_torque_force(v_rel, 300.0f, aero, torque_loads_only, force_loads_only);
+    EXPECT_LT(glm::length(force - force_loads_only), 1e-6f * glm::length(force));
+    EXPECT_LT(glm::length(torque - torque_loads_only), 1e-6f * glm::length(force) * geometry.get_bounding_sphere_radius());
+
+    const std::vector<float>& p_plain = plain.pressure_image();
+    const std::vector<float>& p_msaa = msaa.pressure_image();
+    ASSERT_EQ(p_msaa.size(), N * N);
+    // A pixel whose 3x3 neighbourhood all shows the same one-sample pressure lies inside a face.
+    unsigned int compared = 0;
+    for (unsigned int y = 1; y + 1 < N; ++y) {
+        for (unsigned int x = 1; x + 1 < N; ++x) {
+            const float p = p_plain[y * N + x];
+            bool inside = p > 0.0f;
+            for (int dy = -1; dy <= 1 && inside; ++dy) {
+                for (int dx = -1; dx <= 1 && inside; ++dx) {
+                    inside = p_plain[(y + dy) * N + (x + dx)] == p;
+                }
+            }
+            if (inside) {
+                EXPECT_NEAR(p_msaa[y * N + x], p, 1e-5f * p) << "pixel " << x << ", " << y;
+                ++compared;
+            }
+        }
+    }
+    EXPECT_GT(compared, 1000u);
+}
+
+TEST(PixelForceTorqueCalculatorTest, HyperthermalMatchesHybridHyperthermal) {
+    StaticMeshGeometry geometry(tetrahedron_path());
+    Sentman sentman(1, 0.9f);
+    AeroConditions aero = leo_conditions();
+    const glm::vec3 v_rel(7000.0f, 2000.0f, 3000.0f);
+
+    ShadingPipeline pipeline(geometry, ShadingAlgorithmType::Binary, 1024);
+    HybridForceTorqueCalculator hybrid(geometry, pipeline, sentman, FlowRegime::Hyperthermal);
+    PixelForceTorqueCalculator pixel(geometry, sentman, 1024, 1, false, 1e-3f, FlowRegime::Hyperthermal);
+    EXPECT_EQ(pixel.get_flow_regime(), FlowRegime::Hyperthermal);
+
+    glm::vec3 force_hybrid, torque_hybrid, force_pixel, torque_pixel;
+    hybrid.calc_aero_torque_force(v_rel, 300.0f, aero, torque_hybrid, force_hybrid);
+    pixel.calc_aero_torque_force(v_rel, 300.0f, aero, torque_pixel, force_pixel);
+    ASSERT_GT(glm::length(force_hybrid), 0.0f);
+    EXPECT_LT(glm::length(force_pixel - force_hybrid) / glm::length(force_hybrid), 2e-2f);
+
+    // The mode is switchable at run time and the hypothermal result differs for Sentman.
+    glm::vec3 force_hyper = force_pixel;
+    pixel.set_flow_regime(FlowRegime::Hypothermal);
+    pixel.calc_aero_torque_force(v_rel, 300.0f, aero, torque_pixel, force_pixel);
+    EXPECT_NE(force_pixel, force_hyper);
+}
+
+// Zero speed gives zero load; a non-finite speed makes the load undefined and is an error.
+TEST(PixelForceTorqueCalculatorTest, NonFiniteRelativeVelocityIsAnError) {
+    StaticMeshGeometry geometry(tetrahedron_path());
+    Newton newton;
+    AeroConditions aero = leo_conditions();
+    PixelForceTorqueCalculator pixel(geometry, newton, 256);
+
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float inf = std::numeric_limits<float>::infinity();
+    const glm::vec3 bad_velocities[] = {
+        {nan, 0.0f, 0.0f}, {7800.0f, nan, 0.0f}, {inf, 0.0f, 0.0f}, {0.0f, -inf, 0.0f}, {nan, inf, 0.0f}};
+    for (const glm::vec3& v_rel : bad_velocities) {
+        glm::vec3 force(1.0f), torque(1.0f);
+        EXPECT_NE(pixel.calc_aero_torque_force(v_rel, 300.0f, aero, torque, force), 0);
+        EXPECT_TRUE(glm::all(glm::isnan(force)));
+        EXPECT_TRUE(glm::all(glm::isnan(torque)));
+    }
+
+    glm::vec3 force(1.0f), torque(1.0f);
+    EXPECT_EQ(pixel.calc_aero_torque_force(glm::vec3(0.0f), 300.0f, aero, torque, force), 0);
+    EXPECT_EQ(force, glm::vec3(0.0f));
+    EXPECT_EQ(torque, glm::vec3(0.0f));
 }
 
 // A model may leave its GPU implementation empty; the calculator must refuse it.

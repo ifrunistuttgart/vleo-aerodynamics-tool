@@ -36,11 +36,18 @@ float pixels_per_triangle_width(ShadingAlgorithmType type);
 /** Smallest num_pixel suggest_num_pixel() returns, so tiny meshes are still rasterised finely. */
 inline constexpr unsigned int MIN_AUTO_NUM_PIXEL = 256;
 /**
- * Largest num_pixel suggest_num_pixel() returns: the R32UI ID image alone is then 256 MB.
- * A mesh that asks for more has triangles too thin for any sensible raster and should be
- * remeshed instead.
+ * Largest num_pixel suggest_num_pixel() returns without MSAA: the per-pixel buffer (CoP's R32UI
+ * ID image, Binary's 32-bit depth buffer) is then 256 MB. A mesh that asks for more has
+ * triangles too thin for any sensible raster and should be remeshed instead.
  */
 inline constexpr unsigned int MAX_AUTO_NUM_PIXEL = 8192;
+
+/**
+ * The cap above for a given sample count. The multisampled depth buffer holds
+ * num_pixel^2 * samples * 4 bytes, so the cap shrinks by sqrt(samples) to keep it at 256 MB.
+ * Never below MIN_AUTO_NUM_PIXEL.
+ */
+unsigned int max_auto_num_pixel(unsigned int num_msaa_samples);
 
 /**
  * num_pixel = ceil(2 R k / w), with k from pixels_per_triangle_width(). Not clamped.
@@ -55,11 +62,15 @@ unsigned int num_pixel_for_triangle_width(float bounding_sphere_radius__m, float
  *
  * Sized for the 5th-percentile narrowest triangle width rather than the very narrowest, so
  * a handful of stray slivers cannot drive it up, and clamped to [MIN_AUTO_NUM_PIXEL,
- * MAX_AUTO_NUM_PIXEL]. Logs a warning when the mesh is made of slivers (median aspect
- * ratio above 3) or the value had to be clamped -- in both cases remeshing is the fix.
+ * max_auto_num_pixel(num_msaa_samples)]. Logs a warning when the mesh is made of slivers
+ * (median aspect ratio above 3) or the value had to be clamped -- in both cases remeshing
+ * is the fix.
  *
+ * @param num_msaa_samples Samples per pixel the pipeline will use (1 = no MSAA); only lowers
+ *        the upper cap, to bound the depth buffer's memory.
  * @throws std::invalid_argument if the geometry has no triangles.
  */
-unsigned int suggest_num_pixel(IGeometryShadingData& geometry, ShadingAlgorithmType type);
+unsigned int suggest_num_pixel(IGeometryShadingData& geometry, ShadingAlgorithmType type,
+    unsigned int num_msaa_samples = 1);
 
 } // namespace vat::shading

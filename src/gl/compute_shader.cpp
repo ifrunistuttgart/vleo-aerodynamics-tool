@@ -8,7 +8,7 @@
 namespace vat::gl {
 
 // Constructor: create compute shader directly from provided source string
-ComputeShader::ComputeShader(const std::string& computeSource, bool fromSource)
+ComputeShader::ComputeShader(const std::string& computeSource)
     : m_FilePath(""), m_ComputeShaderID(0)
 {
     if (computeSource.empty()) {
@@ -16,6 +16,12 @@ ComputeShader::ComputeShader(const std::string& computeSource, bool fromSource)
         return;
     }
     m_ComputeShaderID = CreateShader(computeSource);
+}
+
+ComputeShader::ComputeShader(const ShaderSource& computeSource)
+    : m_FilePath(""), m_ComputeShaderID(0)
+{
+    m_ComputeShaderID = CreateShader(computeSource.glsl());
 }
 
 ComputeShader::~ComputeShader()
@@ -31,6 +37,11 @@ void ComputeShader::Bind() const
 void ComputeShader::Unbind() const
 {
     GLCall(glUseProgram(0));
+}
+
+void ComputeShader::dispatch(unsigned int groups_x, unsigned int groups_y, unsigned int groups_z) const
+{
+    GLCall(glDispatchCompute(groups_x, groups_y, groups_z));
 }
 
 void ComputeShader::SetUniform1i(const std::string& name, int value)
@@ -116,9 +127,7 @@ unsigned int ComputeShader::CompileShader(unsigned int type, const std::string& 
         SPDLOG_ERROR("OpenGL: {}\nGLSL: {}", glVersion ? reinterpret_cast<const char*>(glVersion) : "unknown",
             glslVersion ? reinterpret_cast<const char*>(glslVersion) : "unknown");
 
-        const size_t maxDump = 4096;
-        SPDLOG_ERROR("Compute shader source (truncated to {} chars):\n{}", maxDump,
-            source.substr(0, std::min(source.size(), maxDump)));
+        SPDLOG_ERROR("Compute shader source:\n{}", ShaderSource::numbered(source));
 
         glDeleteShader(id);
         return 0;
