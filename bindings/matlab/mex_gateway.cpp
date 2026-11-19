@@ -52,7 +52,6 @@ using vat::gsi_models::Storch;
 using vat::loads::HybridForceTorqueCalculator;
 using vat::geometry::MeshQuality;
 using vat::loads::PixelForceTorqueCalculator;
-using vat::loads::PixelLoadOptions;
 using vat::geometry::RotatableMeshGeometry;
 using vat::remeshing::RemeshOptions;
 using vat::shading::ShadingAlgorithmType;
@@ -689,10 +688,8 @@ public:
                     if (num_msaa_samples <= 0) {
                         throw std::invalid_argument("num_msaa_samples must be positive");
                     }
-                    PixelLoadOptions options;
-                    options.min_cos_delta = static_cast<float>(static_cast<double>(inputs[4][0]));
-                    options.keep_pressure_image = static_cast<int>(inputs[5][0]) != 0;
-                    options.num_msaa_samples = static_cast<unsigned int>(num_msaa_samples);
+                    const auto min_cos_delta = static_cast<float>(static_cast<double>(inputs[4][0]));
+                    const bool keep_pressure_image = static_cast<int>(inputs[5][0]) != 0;
                     const FlowRegime flow_regime = static_cast<int>(inputs[6][0]) != 0 ? FlowRegime::Hyperthermal : FlowRegime::Hypothermal;
 
                     pixel_aero_load_calculator_map.insert(
@@ -701,7 +698,9 @@ public:
                             *geometry_map.at(geometry_id),
                             *gsi_map.at(gsi_id),
                             static_cast<unsigned int>(num_pixel),
-                            options,
+                            static_cast<unsigned int>(num_msaa_samples),
+                            keep_pressure_image,
+                            min_cos_delta,
                             flow_regime
                         )}
                     );

@@ -3,11 +3,9 @@
 #include <array>
 #include <span>
 #include <stdexcept>
-#include <type_traits>
 
 #include "gl_helpers.h"
 #include "pixel_load_integrator.h"
-#include "leeward_classification.h"
 #include "memory_barrier.h"
 #include "shaders/pixel_loads_glsl.h"
 
@@ -19,35 +17,25 @@ using namespace gl;
 
 namespace {
 
-// Pixels per workgroup and axis, see pixel_loads_glsl.h: 32 without anti-aliasing (a 2x2
-// block per invocation), 16 with it (one pixel per invocation).
-unsigned int tile_size(unsigned int num_samples) {
-	return num_samples > 1 ? 16u : 32u;
-}
+// Pixels per workgroup and axis (a 2x2 block per invocation), see pixel_loads_glsl.h.
+constexpr unsigned int k_tile_size = 32;
 
-std::string assemble_integration_shader(const std::string& gsi_glsl, bool keep_pressure_image, unsigned int num_samples) {
+std::string assemble_integration_shader(bool keep_pressure_image) {
 	std::string source = "#version 430\n";
 	if (keep_pressure_image) {
 		source += "#define VAT_WRITE_PRESSURE\n";
 	}
-	source += "#define VAT_MSAA_SAMPLES " + std::to_string(num_samples) + "\n";
 	source += pixel_glsl::integration_header;
-	// With MSAA the G-buffer pass already evaluated the model.
-	if (num_samples == 1) {
-		source += gsi_glsl;
-	}
 	source += pixel_glsl::integration_main;
 	return source;
 }
 
 } // namespace
 
-PixelLoadIntegrator::PixelLoadIntegrator(const std::string& gsi_glsl, unsigned int num_pixel, bool keep_pressure_image,
-                                         unsigned int num_samples)
-	: m_shader(std::make_unique<ComputeShader>(assemble_integration_shader(gsi_glsl, keep_pressure_image, num_samples), true)),
+PixelLoadIntegrator::PixelLoadIntegrator(unsigned int num_pixel, bool keep_pressure_image)
+	: m_shader(std::make_unique<ComputeShader>(assemble_integration_shader(keep_pressure_image), true)),
 	  m_num_pixel(num_pixel),
-	  m_msaa(num_samples > 1),
-	  m_num_groups((num_pixel + tile_size(num_samples) - 1) / tile_size(num_samples)),
+	  m_num_groups((num_pixel + k_tile_size - 1) / k_tile_size),
 	  m_partials(2 * static_cast<size_t>(m_num_groups) * m_num_groups),
 	  m_partials_buffer(m_partials.size() * sizeof(glm::vec4), BufferUsage::DynamicRead) {
 	if (keep_pressure_image) {
@@ -58,21 +46,18 @@ PixelLoadIntegrator::PixelLoadIntegrator(const std::string& gsi_glsl, unsigned i
 		}
 	}
 
-	SPDLOG_DEBUG("PixelLoadIntegrator ready for {}x{} pixels, {} sample(s) ({} workgroups, {} bytes read back per call)",
-		num_pixel, num_pixel, num_samples, m_num_groups * m_num_groups, m_partials.size() * sizeof(glm::vec4));
+	SPDLOG_DEBUG("PixelLoadIntegrator ready for {}x{} pixels ({} workgroups, {} bytes read back per call)",
+		num_pixel, num_pixel, m_num_groups * m_num_groups, m_partials.size() * sizeof(glm::vec4));
 }
 
 PixelLoadIntegrator::~PixelLoadIntegrator() = default;
 
 size_t PixelLoadIntegrator::num_g_buffer_textures() const {
-	return m_msaa && m_pressure_texture ? 3 : 2;
+	return m_pressure_texture ? 3 : 2;
 }
 
 PixelLoadIntegrator::Sums PixelLoadIntegrator::integrate(std::span<const std::shared_ptr<Texture2D>> g_buffer,
-                                                         const glm::vec3& v_rel__m_per_s, float surface_temp__K,
-                                                         float pixel_area__m2, float min_cos_delta,
-                                                         const std::vector<GlslUniform>& gsi_uniforms,
-                                                         std::vector<float>& pressure_image) {
+                                                         float pixel_area__m2, std::vector<float>& pressure_image) {
 	// Checked first, so a mismatch leaves no GL state behind. A multisampled G-buffer must be
 	// resolved before it is integrated.
 	if (g_buffer.size() != num_g_buffer_textures()) {
@@ -85,28 +70,11 @@ PixelLoadIntegrator::Sums PixelLoadIntegrator::integrate(std::span<const std::sh
 	}
 
 	m_shader->Bind();
-	static constexpr std::array<const char*, 2> geometry_samplers{"u_g_position", "u_g_normal"};
-	static constexpr std::array<const char*, 3> load_samplers{"u_g_force", "u_g_torque", "u_g_pressure"};
+	static constexpr std::array<const char*, 3> samplers{"u_g_force", "u_g_torque", "u_g_pressure"};
 	for (size_t unit = 0; unit < g_buffer.size(); ++unit) {
-		m_shader->SetUniform1i(m_msaa ? load_samplers[unit] : geometry_samplers[unit], static_cast<int>(unit));
+		m_shader->SetUniform1i(samplers[unit], static_cast<int>(unit));
 	}
 	m_shader->SetUniform1f("u_pixel_area", pixel_area__m2);
-	// With MSAA the model was evaluated in the G-buffer pass, so it needs no inputs here.
-	if (!m_msaa) {
-		m_shader->SetUniform3f("u_v_rel", v_rel__m_per_s);
-		m_shader->SetUniform1f("u_surface_temp", surface_temp__K);
-		m_shader->SetUniform1f("u_min_cos_delta", min_cos_delta);
-		m_shader->SetUniform1f("u_edge_on_threshold", edge_on_threshold(glm::length(v_rel__m_per_s)));
-		for (const GlslUniform& uniform : gsi_uniforms) {
-			std::visit([&](auto value) {
-				if constexpr (std::is_same_v<decltype(value), int>) {
-					m_shader->SetUniform1i(uniform.name, value);
-				} else {
-					m_shader->SetUniform1f(uniform.name, value);
-				}
-			}, uniform.value);
-		}
-	}
 
 	for (size_t unit = 0; unit < g_buffer.size(); ++unit) {
 		g_buffer[unit]->bind(static_cast<unsigned int>(unit));

@@ -99,9 +99,7 @@ int main() {
 	vat::loads::HybridForceTorqueCalculator hybrid_msaa(geometry, msaa_pipeline, gsi_model);
 	vat::loads::HybridForceTorqueCalculator hybrid_cop(geometry, cop_pipeline, gsi_model);
 	vat::loads::PixelForceTorqueCalculator pixel(geometry, gsi_model, num_pixel);
-	vat::loads::PixelLoadOptions pixel_msaa_options;
-	pixel_msaa_options.num_msaa_samples = 8;
-	vat::loads::PixelForceTorqueCalculator pixel_msaa(geometry, gsi_model, num_pixel, pixel_msaa_options);
+	vat::loads::PixelForceTorqueCalculator pixel_msaa(geometry, gsi_model, num_pixel, 8);
 
 	// Neither the atmosphere nor the surface temperature enters this model.
 	vat::AeroConditions aero_conditions{

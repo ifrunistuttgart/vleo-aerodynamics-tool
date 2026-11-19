@@ -48,12 +48,6 @@ Loads evaluate(IAeroLoadCalculator& calculator, const glm::vec3& v) {
     return {glm::dvec3(force), glm::dvec3(torque)};
 }
 
-PixelLoadOptions options_with(unsigned int samples) {
-    PixelLoadOptions options;
-    options.num_msaa_samples = samples;
-    return options;
-}
-
 } // namespace
 
 TEST(PixelMsaaBenchmark, DISABLED_MsaaBenchmark) {
@@ -84,7 +78,7 @@ TEST(PixelMsaaBenchmark, DISABLED_MsaaBenchmark) {
             }
             for (unsigned int num_pixel : RESOLUTIONS) {
                 for (unsigned int samples : SAMPLE_COUNTS) {
-                    PixelForceTorqueCalculator pixel(*geometry, *model, num_pixel, options_with(samples));
+                    PixelForceTorqueCalculator pixel(*geometry, *model, num_pixel, samples);
                     double max_force = 0.0, max_torque = 0.0;
                     for (size_t d = 0; d < directions.size(); ++d) {
                         const Loads loads = evaluate(pixel, directions[d] * SPEED__M_PER_S);
@@ -109,7 +103,7 @@ TEST(PixelMsaaBenchmark, DISABLED_MsaaBenchmark) {
             for (unsigned int num_pixel : RESOLUTIONS) {
                 std::vector<std::unique_ptr<PixelForceTorqueCalculator>> calculators;
                 for (unsigned int samples : SAMPLE_COUNTS) {
-                    calculators.push_back(std::make_unique<PixelForceTorqueCalculator>(*geometry, *model, num_pixel, options_with(samples)));
+                    calculators.push_back(std::make_unique<PixelForceTorqueCalculator>(*geometry, *model, num_pixel, samples));
                     for (int warm_up = 0; warm_up < 5; ++warm_up) {
                         evaluate(*calculators.back(), v);
                     }

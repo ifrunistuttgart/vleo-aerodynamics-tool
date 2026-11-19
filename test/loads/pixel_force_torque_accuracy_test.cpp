@@ -357,12 +357,6 @@ TEST(PixelAccuracyTest, ErrorShrinksWithResolution) {
 // (f) Anti-aliasing: a partly covered pixel counts with its covered fraction.
 namespace {
 
-PixelLoadOptions msaa_options(unsigned int num_msaa_samples) {
-    PixelLoadOptions options;
-    options.num_msaa_samples = num_msaa_samples;
-    return options;
-}
-
 // A tilted parallelogram and its analytic uniform-pressure Newton result for the flow v.
 struct ParallelogramCase {
     glm::vec3 origin{0.1f, -0.4f, -0.3f}, e1{0.1f, 0.8f, 0.1f}, e2{-0.2f, 0.1f, 0.7f};
@@ -392,7 +386,7 @@ TEST(PixelAccuracyTest, OneSampleIsBitIdenticalToTheDefault) {
     InMemoryGeometry plates;
     add_two_plates(plates);
     PixelForceTorqueCalculator by_default(plates, newton, 512);
-    PixelForceTorqueCalculator one_sample(plates, newton, 512, msaa_options(1));
+    PixelForceTorqueCalculator one_sample(plates, newton, 512, 1);
     const Loads a = evaluate(by_default, plate_flow(0.25));
     const Loads b = evaluate(one_sample, plate_flow(0.25));
     EXPECT_EQ(a.force__N, b.force__N);
@@ -413,7 +407,7 @@ TEST(PixelAccuracyTest, MsaaReducesTheEdgeErrorOfTheShadowedPlates) {
     constexpr unsigned int N = 256;
 
     PixelForceTorqueCalculator plain(plates, newton, N);
-    PixelForceTorqueCalculator msaa(plates, newton, N, msaa_options(8));
+    PixelForceTorqueCalculator msaa(plates, newton, N, 8);
     if (msaa.num_msaa_samples() < 4) {
         GTEST_SKIP() << "driver offers only " << msaa.num_msaa_samples() << " samples";
     }
@@ -448,7 +442,7 @@ TEST(PixelAccuracyTest, MsaaFlatPlateFollowsTheAnalyticResult) {
     constexpr unsigned int N = 128;
 
     PixelForceTorqueCalculator plain(plate, newton, N);
-    PixelForceTorqueCalculator msaa(plate, newton, N, msaa_options(8));
+    PixelForceTorqueCalculator msaa(plate, newton, N, 8);
     if (msaa.num_msaa_samples() < 4) {
         GTEST_SKIP() << "driver offers only " << msaa.num_msaa_samples() << " samples";
     }
@@ -474,8 +468,8 @@ TEST(PixelAccuracyTest, MsaaResultIsIndependentOfMeshing) {
     const double radius = coarse.get_bounding_sphere_radius();
     constexpr unsigned int N = 1024;
 
-    PixelForceTorqueCalculator pixel_coarse(coarse, newton, N, msaa_options(8));
-    PixelForceTorqueCalculator pixel_fine(fine, newton, N, msaa_options(8));
+    PixelForceTorqueCalculator pixel_coarse(coarse, newton, N, 8);
+    PixelForceTorqueCalculator pixel_fine(fine, newton, N, 8);
     const Errors e = relative_errors(evaluate(pixel_fine, v), evaluate(pixel_coarse, v), radius);
     std::printf("[          ] msaa pixel, coarse vs fine back plate: force %.2e torque %.2e\n", e.force, e.torque);
     EXPECT_LT(e.force, 1e-5);
@@ -501,7 +495,7 @@ TEST(PixelAccuracyTest, MsaaConvexBodiesAgreeWithHybrid) {
         const double radius = geometry->get_bounding_sphere_radius();
         ShadingPipeline pipeline(*geometry, ShadingAlgorithmType::Binary, 2048);
         HybridForceTorqueCalculator hybrid(*geometry, pipeline, newton);
-        PixelForceTorqueCalculator pixel(*geometry, newton, N, msaa_options(8));
+        PixelForceTorqueCalculator pixel(*geometry, newton, N, 8);
         for (const glm::vec3& direction : directions) {
             const glm::vec3 v = direction * SPEED__M_PER_S;
             const Errors e = relative_errors(evaluate(pixel, v), evaluate(hybrid, v), radius);
@@ -541,7 +535,7 @@ TEST(PixelAccuracyTest, MsaaBeatsOneSampleAtCreasesForNewtonAndSentman) {
         for (const auto& [model_name, model] : models) {
             HybridForceTorqueCalculator hybrid(*geometry, pipeline, *model);
             PixelForceTorqueCalculator plain(*geometry, *model, N);
-            PixelForceTorqueCalculator msaa(*geometry, *model, N, msaa_options(8));
+            PixelForceTorqueCalculator msaa(*geometry, *model, N, 8);
             if (msaa.num_msaa_samples() < 4) {
                 GTEST_SKIP() << "driver offers only " << msaa.num_msaa_samples() << " samples";
             }

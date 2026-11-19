@@ -285,9 +285,7 @@ void run_pixel_comparison(RotatableMeshGeometry& sat, const std::vector<unsigned
             report(P, "pixel", calc);
         }
         {
-            PixelLoadOptions options;
-            options.num_msaa_samples = 8;
-            PixelForceTorqueCalculator calc(sat, gsi, P, options);
+            PixelForceTorqueCalculator calc(sat, gsi, P, 8);
             report(P, "pixel-8x", calc);
         }
     }

@@ -73,7 +73,7 @@ TEST(PixelForceTorqueCalculatorTest, PressureImageIsReadBackOnRequest) {
     StaticMeshGeometry geometry(tetrahedron_path());
     Newton newton;
     AeroConditions aero = leo_conditions();
-    PixelForceTorqueCalculator pixel(geometry, newton, 256, PixelLoadOptions{1e-3f, true});
+    PixelForceTorqueCalculator pixel(geometry, newton, 256, 1, true);
 
     glm::vec3 force, torque;
     pixel.calc_aero_torque_force(glm::vec3(7800.0f, 0.0f, 0.0f), 300.0f, aero, torque, force);
@@ -92,15 +92,9 @@ TEST(PixelForceTorqueCalculatorTest, MsaaPressureImageMatchesOneSampleInsideFace
     Newton newton;
     AeroConditions aero = leo_conditions();
     constexpr unsigned int N = 256;
-    PixelLoadOptions plain_options;
-    plain_options.keep_pressure_image = true;
-    PixelLoadOptions msaa_options = plain_options;
-    msaa_options.num_msaa_samples = 8;
-    PixelLoadOptions msaa_without_image;
-    msaa_without_image.num_msaa_samples = 8;
-    PixelForceTorqueCalculator plain(geometry, newton, N, plain_options);
-    PixelForceTorqueCalculator msaa(geometry, newton, N, msaa_options);
-    PixelForceTorqueCalculator msaa_loads_only(geometry, newton, N, msaa_without_image);
+    PixelForceTorqueCalculator plain(geometry, newton, N, 1, true);
+    PixelForceTorqueCalculator msaa(geometry, newton, N, 8, true);
+    PixelForceTorqueCalculator msaa_loads_only(geometry, newton, N, 8, false);
     if (msaa.num_msaa_samples() < 4) {
         GTEST_SKIP() << "driver offers only " << msaa.num_msaa_samples() << " samples";
     }
@@ -144,7 +138,7 @@ TEST(PixelForceTorqueCalculatorTest, HyperthermalMatchesHybridHyperthermal) {
 
     ShadingPipeline pipeline(geometry, ShadingAlgorithmType::Binary, 1024);
     HybridForceTorqueCalculator hybrid(geometry, pipeline, sentman, FlowRegime::Hyperthermal);
-    PixelForceTorqueCalculator pixel(geometry, sentman, 1024, PixelLoadOptions{}, FlowRegime::Hyperthermal);
+    PixelForceTorqueCalculator pixel(geometry, sentman, 1024, 1, false, 1e-3f, FlowRegime::Hyperthermal);
     EXPECT_EQ(pixel.get_flow_regime(), FlowRegime::Hyperthermal);
 
     glm::vec3 force_hybrid, torque_hybrid, force_pixel, torque_pixel;
