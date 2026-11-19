@@ -2,13 +2,9 @@
 #include <string>
 #include <unordered_map>
 #include "glm/glm.hpp"
+#include "shader_source.h"
 
 namespace vat::gl {
-
-struct ComputeShaderProgramSource
-{
-    std::string ComputeSource;
-};
 
 class ComputeShader
 {
@@ -20,7 +16,9 @@ private:
     std::unordered_map<std::string, int> m_UniformLocationCache;
 
 public:
-    ComputeShader(const std::string& computeSource, bool fromSource);
+    ComputeShader(const std::string& computeSource);
+    // Construct from a shader template; throws std::logic_error if a placeholder has no value
+    explicit ComputeShader(const ShaderSource& computeSource);
     ~ComputeShader();
 
     void Bind() const;
@@ -39,7 +37,7 @@ public:
 
 private:
     int GetUniformLocation(const std::string& name);
-    unsigned int CreateShader(const std::string& compuetShader);
+    unsigned int CreateShader(const std::string& computeShader);
     unsigned int CompileShader(unsigned int type, const std::string& source);
 };
 

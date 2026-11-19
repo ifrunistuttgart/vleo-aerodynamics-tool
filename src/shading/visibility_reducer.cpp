@@ -54,7 +54,7 @@ void main()
 } // namespace
 
 VisibilityReducer::VisibilityReducer(unsigned int num_triangles)
-	: m_shader(std::make_unique<gl::ComputeShader>(VISIBILITY_REDUCTION_SHADER, true)),
+	: m_shader(std::make_unique<gl::ComputeShader>(VISIBILITY_REDUCTION_SHADER)),
 	  m_visibility_buffer((static_cast<size_t>(num_triangles) + 1) * sizeof(std::uint32_t), BufferUsage::DynamicRead),
 	  m_num_triangles(num_triangles),
 	  m_flags(static_cast<size_t>(num_triangles) + 1, 0) {

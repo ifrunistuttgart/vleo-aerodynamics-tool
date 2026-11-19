@@ -74,7 +74,7 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
 
 	m_visibility = std::make_unique<VisibilityReducer>(m_numTriangles);
 
-	m_shader = std::make_unique<Shader>(binary_glsl::vertex_shader, binary_glsl::fragment_shader, true);
+	m_shader = std::make_unique<Shader>(binary_glsl::vertex_shader, binary_glsl::fragment_shader);
 	m_shader->Unbind();
 
 	m_vao = std::make_unique<VertexArray>();

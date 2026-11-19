@@ -4,7 +4,7 @@ find_package(glfw3 REQUIRED CONFIG)
 find_package(GLEW REQUIRED)
 find_package(glm REQUIRED CONFIG)
 
-add_executable(gl_test test_texture_2d.cpp)
+add_executable(gl_test test_texture_2d.cpp test_shader_source.cpp)
 
 target_link_libraries(gl_test PRIVATE
 	GTest::gtest_main

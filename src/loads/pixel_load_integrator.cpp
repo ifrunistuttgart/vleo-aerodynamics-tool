@@ -20,20 +20,16 @@ namespace {
 // Pixels per workgroup and axis (a 2x2 block per invocation), see pixel_loads_glsl.h.
 constexpr unsigned int k_tile_size = 32;
 
-std::string assemble_integration_shader(bool keep_pressure_image) {
-	std::string source = "#version 430\n";
-	if (keep_pressure_image) {
-		source += "#define VAT_WRITE_PRESSURE\n";
-	}
-	source += pixel_glsl::integration_header;
-	source += pixel_glsl::integration_main;
+ShaderSource integration_shader_source(bool keep_pressure_image) {
+	ShaderSource source(pixel_glsl::integration_shader);
+	source.set("write_pressure", keep_pressure_image ? 1 : 0);
 	return source;
 }
 
 } // namespace
 
 PixelLoadIntegrator::PixelLoadIntegrator(unsigned int num_pixel, bool keep_pressure_image)
-	: m_shader(std::make_unique<ComputeShader>(assemble_integration_shader(keep_pressure_image), true)),
+	: m_shader(std::make_unique<ComputeShader>(integration_shader_source(keep_pressure_image))),
 	  m_num_pixel(num_pixel),
 	  m_num_groups((num_pixel + k_tile_size - 1) / k_tile_size),
 	  m_partials(2 * static_cast<size_t>(m_num_groups) * m_num_groups),

@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <cmath>
-#include <cstdio>
 #include <limits>
 #include "pixel_force_torque_calculator.h"
 #include "leeward_classification.h"
@@ -170,26 +169,25 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
     }
 
     // The model is evaluated once per pixel and triangle, with MSAA at the mean of the covered
-    // samples (see g_buffer_main); the sample positions are baked in as constants.
-    const std::string defines = "#version 430 core\n#define VAT_MSAA_SAMPLES " + std::to_string(m_num_msaa_samples) + "\n" +
-        (m_keep_pressure_image ? "#define VAT_WRITE_PRESSURE\n" : "");
-    std::string offsets;
+    // samples (see g_buffer_fragment_shader).
+    ShaderSource fragment(pixel_glsl::g_buffer_fragment_shader);
+    fragment.set("num_msaa_samples", m_num_msaa_samples)
+        .set("write_pressure", m_keep_pressure_image ? 1 : 0)
+        .set("gsi_model", gsi_glsl);
+    m_gpu->g_buffer_shader = std::make_unique<Shader>(ShaderSource(pixel_glsl::g_buffer_vertex_shader), fragment);
     if (m_num_msaa_samples > 1) {
+        // The sample positions of the G-buffer, constant for its lifetime.
+        std::vector<glm::vec2> offsets(m_num_msaa_samples);
         m_gpu->g_buffer->Bind();
-        offsets = "const vec2 k_sample_offsets[" + std::to_string(m_num_msaa_samples) + "] = vec2[](";
         for (unsigned int s = 0; s < m_num_msaa_samples; ++s) {
             GLfloat position[2] = {0.5f, 0.5f};
             GLCall(glGetMultisamplefv(GL_SAMPLE_POSITION, s, position));
-            char buffer[96];
-            std::snprintf(buffer, sizeof(buffer), "%svec2(%.9g, %.9g)", s == 0 ? "" : ", ", position[0] - 0.5f, position[1] - 0.5f);
-            offsets += buffer;
+            offsets[s] = glm::vec2(position[0], position[1]) - 0.5f;
         }
-        offsets += ");\n";
         m_gpu->g_buffer->UnBind();
+        m_gpu->g_buffer_shader->Bind();
+        m_gpu->g_buffer_shader->SetUniform2fv("u_sample_offsets", offsets);
     }
-    const std::string vertex = defines + pixel_glsl::g_buffer_vertex_shader;
-    const std::string fragment = defines + offsets + pixel_glsl::g_buffer_uniforms + gsi_glsl + pixel_glsl::g_buffer_main;
-    m_gpu->g_buffer_shader = std::make_unique<Shader>(vertex, fragment, true);
     m_gpu->g_buffer_shader->Unbind();
 
     m_gpu->integrator = std::make_unique<PixelLoadIntegrator>(num_pixel, m_keep_pressure_image);
@@ -266,7 +264,7 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     m_gpu->g_buffer->Clear();
 
     m_gpu->g_buffer_shader->Bind();
-    // The model is evaluated in this pass, see g_buffer_main.
+    // The model is evaluated in this pass, see g_buffer_fragment_shader.
     Shader& shader = *m_gpu->g_buffer_shader;
     shader.setUniformMat4f("u_view_projection", view_projection);
     shader.SetUniform3f("u_v_rel", v_rel__m_per_s);

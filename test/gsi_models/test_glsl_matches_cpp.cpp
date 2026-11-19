@@ -96,7 +96,7 @@ std::vector<Sample> make_samples(std::mt19937& rng) {
 }
 
 std::vector<glm::vec4> run_glsl(const IGSIModel& model, const AeroConditions& aero, const std::vector<Sample>& samples) {
-    gl::ComputeShader shader(std::string(HARNESS_HEADER) + model.glsl_force_per_projected_area() + HARNESS_MAIN, true);
+    gl::ComputeShader shader(std::string(HARNESS_HEADER) + model.glsl_force_per_projected_area() + HARNESS_MAIN);
 
     const gl::ShaderStorageBuffer input(std::as_bytes(std::span<const Sample>(samples)), gl::BufferUsage::StaticDraw);
     const gl::ShaderStorageBuffer output(samples.size() * sizeof(glm::vec4), gl::BufferUsage::DynamicRead);
@@ -203,7 +203,7 @@ void main()
     if (i < uint(values.length())) values[i] = vat_erfc(values[i]);
 }
 )GLSL";
-    gl::ComputeShader shader(std::string("#version 430\nlayout(local_size_x = 64) in;\n") + common_glsl::helpers + source, true);
+    gl::ComputeShader shader(std::string("#version 430\nlayout(local_size_x = 64) in;\n") + common_glsl::helpers + source);
 
     std::vector<float> x;
     for (float v = -9.0f; v <= 9.0f; v += 1.0f / 512.0f) x.push_back(v);

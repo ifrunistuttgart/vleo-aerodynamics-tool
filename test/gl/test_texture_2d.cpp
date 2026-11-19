@@ -210,7 +210,7 @@ TEST_F(Texture2DTest, ComputeShaderDispatchWritesToBuffer) {
 layout(local_size_x = 4) in;
 layout(std430, binding = 0) buffer Out { uint values[]; };
 void main() { values[gl_GlobalInvocationID.x] = gl_GlobalInvocationID.x + 1u; }
-)GLSL", true);
+)GLSL");
     const ShaderStorageBuffer buffer(8 * sizeof(std::uint32_t));
     buffer.bind_base(0);
     shader.Bind();

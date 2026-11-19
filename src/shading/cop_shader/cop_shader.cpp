@@ -52,9 +52,9 @@ int CoPShader::set_vertices(std::span<const float> vertices, std::span<const std
     m_visibility = std::make_unique<VisibilityReducer>(m_numTriangles);
 
     // Create shader programs from embedded sources
-    m_shader.reset(new Shader(cop_glsl::triangle_vertex_shader, cop_glsl::triangle_fragment_shader, true));
+    m_shader.reset(new Shader(cop_glsl::triangle_vertex_shader, cop_glsl::triangle_fragment_shader));
     m_shader->Unbind();
-    m_point_shader.reset(new Shader(cop_glsl::point_vertex_shader, cop_glsl::point_fragment_shader, true));
+    m_point_shader.reset(new Shader(cop_glsl::point_vertex_shader, cop_glsl::point_fragment_shader));
     m_point_shader->Unbind();
 
     // Triangles: positions only

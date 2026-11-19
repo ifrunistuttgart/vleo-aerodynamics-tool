@@ -20,6 +20,8 @@ add_library(gl
 	scoped_context.h
 	shader.cpp
 	shader.h
+	shader_source.cpp
+	shader_source.h
 	shader_storage_buffer.cpp
 	shader_storage_buffer.h
 	texture_2d.cpp
