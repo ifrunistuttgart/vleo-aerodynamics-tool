@@ -19,7 +19,7 @@
 #include "cook.h"
 #include "maxwell.h"
 #include "newton.h"
-#include "projected_area.h"
+#include "projected_area_gsi_model.h"
 #include "schaaf_chambre.h"
 #include "sentman.h"
 #include "storch.h"
@@ -28,6 +28,7 @@
 
 using namespace vat;
 using namespace vat::gsi_models;
+using vat::projected_area::ProjectedArea;
 // The GLCall macro names these unqualified.
 using vat::gl::GLClearError;
 using vat::gl::GLLogCall;

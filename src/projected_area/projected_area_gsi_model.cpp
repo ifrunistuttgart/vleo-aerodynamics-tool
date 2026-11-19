@@ -1,9 +1,9 @@
-#include "projected_area.h"
+#include "projected_area_gsi_model.h"
 #include "shaders/projected_area_glsl.h"
 #define FMT_UNICODE 0
 #include <spdlog/spdlog.h>
 
-namespace vat::gsi_models {
+namespace vat::projected_area {
 
 int ProjectedArea::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, const glm::vec3 &centroid__m,
                                               const glm::vec3 &v_rel__m_per_s, float surf_temp__K, AeroConditions &aero,
@@ -43,4 +43,4 @@ void ProjectedArea::set_gsi_parameter(std::string name, float value) {
     return 0.0f;
 }
 
-} // namespace vat::gsi_models
+} // namespace vat::projected_area

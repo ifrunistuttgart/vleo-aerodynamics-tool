@@ -1,7 +1,7 @@
 #pragma once
 #include "Igsi_model.h"
 
-namespace vat::gsi_models {
+namespace vat::projected_area {
 
 /**
  * Dummy GSI model that measures the projected area instead of a physical load.
@@ -11,6 +11,8 @@ namespace vat::gsi_models {
  * of the total force is therefore the area of the geometry projected normal to the flow (with shadowing
  * applied if the calculator accounts for it). Leeward elements contribute nothing. The other force
  * components are zero; the torque is only cross(centroid, force) and has no physical meaning.
+ *
+ * PixelProjectedArea runs it in PixelForceTorqueCalculator and returns that x component.
  */
 class ProjectedArea : public IGSIModel {
 public:
@@ -25,4 +27,4 @@ public:
     [[nodiscard]] float get_gsi_parameter(std::string name) const override;
 };
 
-} // namespace vat::gsi_models
+} // namespace vat::projected_area

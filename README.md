@@ -22,6 +22,8 @@ The VLEO Aerodynamics Tool provides algorithms for fast calculations of panel sh
 - **Two load calculators**: Hybrid evaluates the GSI model per visible triangle; Pixel
   integrates it per pixel on the GPU, so partly shaded triangles count with exactly their
   exposed part and the result does not depend on the meshing.
+- **Projected area** along any direction, with shadowing, from the same per-pixel GPU pass
+  (`PixelProjectedArea`).
 - **Articulated geometry** — individual meshes (solar arrays, panels for aerodynamic actuation) can be rotated
   about an arbitrary hinge axis between evaluations.
 - **Remeshing** of imported models into near-equilateral triangles of one size, keeping every

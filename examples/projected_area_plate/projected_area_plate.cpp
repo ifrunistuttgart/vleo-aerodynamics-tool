@@ -1,10 +1,10 @@
-// Projected area of a flat plate versus the angle between plate and flow, from the
-// load calculators (hybrid with Binary without and with 8x MSAA, and CoP shading, and per pixel
-// without and with 8x MSAA)
-// and from the analytic solution.
+// Projected area of a flat plate versus the angle between plate and flow, from the hybrid
+// load calculator (Binary without and with 8x MSAA, and CoP shading), from PixelProjectedArea
+// (without and with 8x MSAA) and from the analytic solution.
 //
-// The ProjectedArea GSI model returns the force (projected area, 0, 0) for every
-// element, so the x component of the total "force" is the area the flow sees. The
+// The hybrid rows run the ProjectedArea GSI model, which returns the force (projected area, 0, 0)
+// for every element, so the x component of the total "force" is the area the flow sees.
+// PixelProjectedArea does the same per pixel internally and returns the area directly. The
 // plate (two_sided_plate.obj) is a unit square, so that area is |cos(theta)| m^2.
 // The plate stays fixed; only the flow direction is rotated about the x axis.
 //
@@ -27,7 +27,8 @@
 #include "geometry.h"
 #include "shading_pipeline.h"
 #include "hybrid_aero_load_calculator.h"
-#include "pixel_force_torque_calculator.h"
+#include "pixel_projected_area.h"
+#include "projected_area_gsi_model.h"
 
 // Resolves a filename relative to this source file's own location on disk.
 std::filesystem::path get_path(const std::string& filename) {
@@ -87,10 +88,11 @@ int main() {
 	vat::geometry::RotatableMeshGeometry geometry(obj_path);
 	SPDLOG_INFO("Loaded {} triangles", geometry.get_num_triangles());
 
-	// 2. The dummy model that turns the load into a projected area
-	vat::gsi_models::ProjectedArea gsi_model;
+	// 2. The dummy model that turns the hybrid calculators' load into a projected area
+	vat::projected_area::ProjectedArea gsi_model;
 
-	// 3. The four calculators (hybrid with Binary, Binary + 8x MSAA and CoP, and per pixel)
+	// 3. Three hybrid calculators (Binary, Binary + 8x MSAA, CoP) and two PixelProjectedArea
+	//    (without and with 8x MSAA), which bring their own ProjectedArea model
 	const unsigned int num_pixel = 1000;
 	vat::shading::ShadingPipeline binary_pipeline(geometry, vat::shading::ShadingAlgorithmType::Binary, num_pixel);
 	vat::shading::ShadingPipeline msaa_pipeline(geometry, vat::shading::ShadingAlgorithmType::Binary, num_pixel, 8);
@@ -98,10 +100,11 @@ int main() {
 	vat::loads::HybridForceTorqueCalculator hybrid_binary(geometry, binary_pipeline, gsi_model);
 	vat::loads::HybridForceTorqueCalculator hybrid_msaa(geometry, msaa_pipeline, gsi_model);
 	vat::loads::HybridForceTorqueCalculator hybrid_cop(geometry, cop_pipeline, gsi_model);
-	vat::loads::PixelForceTorqueCalculator pixel(geometry, gsi_model, num_pixel);
-	vat::loads::PixelForceTorqueCalculator pixel_msaa(geometry, gsi_model, num_pixel, 8);
+	vat::projected_area::PixelProjectedArea pixel(geometry, num_pixel);
+	vat::projected_area::PixelProjectedArea pixel_msaa(geometry, num_pixel, 8);
 
-	// Neither the atmosphere nor the surface temperature enters this model.
+	// Inputs of the hybrid calculators only; neither the atmosphere nor the surface temperature
+	// enters the model.
 	vat::AeroConditions aero_conditions{
 		.density__kg_per_m3 = 1.2482e-11f,
 		.T_atmospheric__K = 934.0f,
@@ -111,7 +114,7 @@ int main() {
 	const float speed__m_per_s = 7800.0f;
 	const double plate_area__m2 = 1.0;
 
-	// Projected area = x component of the total force
+	// Projected area of a hybrid calculator = x component of the total force
 	auto projected_area = [&](vat::IAeroLoadCalculator& calculator, const glm::vec3& v_rel__m_per_s) {
 		glm::vec3 force__N(0.0f);
 		glm::vec3 torque__Nm(0.0f);
@@ -135,8 +138,8 @@ int main() {
 		const double binary = projected_area(hybrid_binary, v_rel__m_per_s);
 		const double msaa = projected_area(hybrid_msaa, v_rel__m_per_s);
 		const double cop = projected_area(hybrid_cop, v_rel__m_per_s);
-		const double pixel_area = projected_area(pixel, v_rel__m_per_s);
-		const double pixel_msaa_area = projected_area(pixel_msaa, v_rel__m_per_s);
+		const double pixel_area = pixel.compute_projected_area(v_rel__m_per_s);
+		const double pixel_msaa_area = pixel_msaa.compute_projected_area(v_rel__m_per_s);
 
 		const double err_binary = std::abs(binary - analytic);
 		const double err_msaa = std::abs(msaa - analytic);

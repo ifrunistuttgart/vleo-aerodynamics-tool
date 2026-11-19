@@ -3,7 +3,7 @@
 #include "cook.h"
 #include "maxwell.h"
 #include "newton.h"
-#include "projected_area.h"
+#include "projected_area_gsi_model.h"
 #include "schaaf_chambre.h"
 #include "storch.h"
 #include "sentman.h"
@@ -11,6 +11,7 @@
 
 using namespace vat;
 using namespace vat::gsi_models;
+using vat::projected_area::ProjectedArea;
 
 // HybridForceTorqueCalculator hands EVERY triangle to the GSI model and assigns
 // visibility = 1.0 to back-facing ones (hybrid_aero_load_calculator.cpp), relying on

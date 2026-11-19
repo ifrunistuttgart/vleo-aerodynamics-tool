@@ -69,6 +69,13 @@ classDiagram
     class SchaafChambre
     class Storch
     class Newton
+    class ProjectedArea
+
+    class IProjectedArea {
+        <<interface>>
+        +compute_projected_area(direction)
+    }
+    class PixelProjectedArea
 
     IGeometryShadingData <|.. StaticMeshGeometry
     IGeometryManipulator <|.. StaticMeshGeometry
@@ -87,6 +94,9 @@ classDiagram
     IGSIModel <|.. SchaafChambre
     IGSIModel <|.. Storch
     IGSIModel <|.. Newton
+    IGSIModel <|.. ProjectedArea
+
+    IProjectedArea <|.. PixelProjectedArea
 
     ShadingPipeline *-- GlfwOpenGLContext : owns
     ShadingPipeline *-- IShadingAlgorithm : owns
@@ -100,6 +110,10 @@ classDiagram
     PixelForceTorqueCalculator *-- PixelLoadIntegrator : owns
     PixelForceTorqueCalculator o-- IGeometryShadingData : ref
     PixelForceTorqueCalculator o-- IGSIModel : ref
+
+    PixelProjectedArea *-- PixelForceTorqueCalculator : owns
+    PixelProjectedArea *-- ProjectedArea : owns
+    PixelProjectedArea o-- IGeometryShadingData : ref
 ```
 
 Solid diamonds are ownership (`unique_ptr`); open diamonds are non-owning references. Every
@@ -137,6 +151,16 @@ are tested against each other on random inputs
 **`IAeroLoadCalculator`** ([core/Iaero_load_calculator.h](../src/core/Iaero_load_calculator.h))
 is the composition point that turns per-element physics into a total load. There are two:
 `HybridForceTorqueCalculator` works per triangle, `PixelForceTorqueCalculator` per pixel.
+
+**`IProjectedArea`** ([core/Iprojected_area.h](../src/core/Iprojected_area.h))
+gives the area the geometry shows along a direction, with shadowing. `PixelProjectedArea`
+([projected_area/pixel_projected_area.h](../src/projected_area/pixel_projected_area.h))
+implements it with no physics of its own: it owns a `PixelForceTorqueCalculator` running the
+`ProjectedArea` GSI model, whose force per projected area is `(1, 0, 0)`, so the x component of
+the total force is the projected area, coverage-weighted with MSAA. The direction follows the
+`v_rel` convention: surfaces with `dot(n, direction) > 0` count. The calculator runs in
+`FlowRegime::Hyperthermal`, because leeward surfaces add nothing. `ProjectedArea` lives in this
+module, not in `gsi_models/`, because it measures geometry rather than modelling a gas.
 
 ## How one evaluation flows (Hybrid)
 
@@ -277,8 +301,9 @@ translation column.
 One CMake target per `src/` subdirectory, each with a `Vat::` alias and its own
 `target_include_directories`. Headers are therefore included flat — `#include "sentman.h"` —
 never by relative path. `core` is header-only (INTERFACE). The subdirectories under
-`shading/` (`binary_shader/`, `cop_shader/`) and the `shaders/` folders of `loads/` and
-`gsi_models/` define no targets of their own; they `target_sources(...)` into the parent.
+`shading/` (`binary_shader/`, `cop_shader/`) and the `shaders/` folders of `loads/`,
+`gsi_models/` and `projected_area/` define no targets of their own; they belong to the parent
+target.
 
 `loads` links `gl` PRIVATE: no public `loads` header exposes an OpenGL type (the pixel
 calculator keeps its GL state behind a pimpl), so the GSI models, which link `loads` for
@@ -291,11 +316,12 @@ module gets a nested namespace named after its folder and CMake target:
 
 | namespace | holds |
 |---|---|
-| `vat` | `AeroConditions` and the five interfaces every module speaks: `IGSIModel`, `IShadingPipeline`, `IAeroLoadCalculator`, `IGeometryShadingData`, `IGeometryManipulator` |
+| `vat` | `AeroConditions` and the six interfaces every module speaks: `IGSIModel`, `IShadingPipeline`, `IAeroLoadCalculator`, `IProjectedArea`, `IGeometryShadingData`, `IGeometryManipulator` |
 | `vat::gsi_models` | `Sentman`, `Cook`, `Maxwell`, `Newton`, `SchaafChambre`, `Storch` |
 | `vat::geometry` | `StaticMeshGeometry`, `RotatableMeshGeometry`, `MeshData`, `compute_mesh_quality`, `write_obj` |
 | `vat::shading` | `ShadingPipeline`, `ShadingAlgorithmType`, `IShadingAlgorithm`, `BinaryShader`, `CoPShader`, `VisibilityReducer`, `suggest_num_pixel` |
 | `vat::loads` | `HybridForceTorqueCalculator`, `PixelForceTorqueCalculator`, `PixelLoadIntegrator` |
+| `vat::projected_area` | `PixelProjectedArea` and the `ProjectedArea` GSI model it runs |
 | `vat::remeshing` | `remesh`, `predict_remesh`, `RemeshOptions`, `RemeshReport`; CGAL stays inside the module |
 | `vat::visualization` | `ShowShading`, `ShowMeshes`, `ShowHinges` |
 | `vat::gl` | the OpenGL wrappers — `Shader`, `ComputeShader`, `VertexArray`, `VertexBuffer`, `FrameBuffer`, … — plus `make_flow_camera`, the orthographic camera along the flow every GPU path uses, and `ScopedCurrentContext`, which makes a context current and restores the previous one |
@@ -319,7 +345,7 @@ call sites stay readable. That directive never appears in a header.
 The embedded GLSL sources get one namespace per backend — `vat::shading::binary_glsl`,
 `vat::shading::cop_glsl`, `vat::loads::pixel_glsl`, and one per GSI model
 (`vat::gsi_models::sentman_glsl`, …, with the shared helpers such as `vat_erfc` in
-`vat::gsi_models::common_glsl`). The two shading backends both declare `ID_vertex_shader` and `ID_fragment_shader`,
+`vat::gsi_models::common_glsl`, and `vat::projected_area::projected_area_glsl`). The two shading backends both declare `ID_vertex_shader` and `ID_fragment_shader`,
 and before this they were two `inline` definitions of the same global name. Identical text
 made that legal, but the moment one backend's GLSL was edited alone it would have become a
 silent ODR violation, with the linker keeping one definition and one backend rendering with

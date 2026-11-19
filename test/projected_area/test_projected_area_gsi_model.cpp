@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include <glm/glm.hpp>
 #include <cmath>
-#include "projected_area.h"
+#include "projected_area_gsi_model.h"
 #include "core.h"
 
 using namespace vat;
-using namespace vat::gsi_models;
+using namespace vat::projected_area;
 
 namespace {
 
