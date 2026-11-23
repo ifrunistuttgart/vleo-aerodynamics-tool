@@ -36,9 +36,9 @@ int main() {
 	//    is rendered into num_pixel x num_pixel pixels along the flow.
 	//    keep_pressure_image also keeps the pressure of every pixel.
 	const unsigned int num_pixel = 2000;
-	vat::loads::PixelLoadOptions options;
-	options.keep_pressure_image = true;
-	auto calculator = std::make_unique<vat::loads::PixelForceTorqueCalculator>(*geometry, *gsi_model, num_pixel, options);
+	const unsigned int num_msaa_samples = 1;
+	const bool keep_pressure_image = true;
+	auto calculator = std::make_unique<vat::loads::PixelForceTorqueCalculator>(*geometry, *gsi_model, num_pixel, num_msaa_samples, keep_pressure_image);
 
 	// 4. Atmosphere at roughly 300 km altitude, atomic oxygen
 	vat::AeroConditions aero_conditions{

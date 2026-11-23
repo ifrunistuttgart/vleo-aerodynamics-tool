@@ -5,6 +5,19 @@
 namespace vat {
 
 /**
+ * Flow regime assumed when summing the loads.
+ *
+ * Hypothermal: the thermal speed of the gas is not negligible against the relative speed,
+ * so surfaces facing away from the flow (dot(n, v_rel) <= 0) still receive load.
+ * Hyperthermal: the relative speed dominates, so surfaces facing away from the flow
+ * are ignored and only windward surfaces contribute.
+ */
+enum class FlowRegime {
+    Hypothermal,
+    Hyperthermal
+};
+
+/**
  * Interface for calculating aerodynamic loads on a geometry.
  *
  * This interface provides a common method for calculating aerodynamic torque and force
@@ -13,6 +26,11 @@ namespace vat {
  */
 class IAeroLoadCalculator {
 public:
+    /** Selects whether leeward-facing triangles contribute (Hypothermal, default) or not (Hyperthermal). */
+    virtual void set_flow_regime(FlowRegime regime) = 0;
+
+    [[nodiscard]] virtual FlowRegime get_flow_regime() const = 0;
+
     /**
      * Calculates the aerodynamic torque and force acting on the geometry.
      *

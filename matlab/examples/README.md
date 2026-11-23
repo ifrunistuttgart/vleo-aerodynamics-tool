@@ -96,7 +96,7 @@ The numbered examples provide a step-by-step introduction to the core functional
 
 Scripts located in the [`benchmarks/`](benchmarks/) folder validate VAT against analytical solutions and investigate numerical properties:
 
-- **[`benchmarks/analytic_plates.m`](benchmarks/analytic_plates.m)**: Compares the Hybrid calculator (Binary and CoP shading) and the Pixel calculator against the closed-form analytical solution (`exact_solution_shadowing.m`) for two partially overlapping flat plates across various raster resolutions and flow angles.
+- **[`benchmarks/analytic_plates.m`](benchmarks/analytic_plates.m)**: Compares the Hybrid calculator (Binary and CoP shading) and the Pixel calculator (without and with 8x MSAA) against the closed-form analytical solution (`exact_solution_shadowing.m`) for two partially overlapping flat plates across various raster resolutions and flow angles.
 - **[`benchmarks/smoothness.m`](benchmarks/smoothness.m)**: Analyzes load smoothness and discretization jumps of the Hybrid (Binary, CoP) and Pixel calculators across continuous attitude variations as a function of raster pixel resolution.
 - **[`benchmarks/onesided_plate_cl_cd.m`](benchmarks/onesided_plate_cl_cd.m)**: Computes lift ($C_L$) and drag ($C_D$) coefficients for a unit flat plate across all GSI models over flow angles from $0^\circ$ to $90^\circ$.
 - **[`benchmarks/two_sided_plate_gsi.m`](benchmarks/two_sided_plate_gsi.m)**: Validates aerodynamic loads on a two-sided flat plate.

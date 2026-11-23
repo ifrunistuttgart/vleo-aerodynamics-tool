@@ -2,61 +2,80 @@
 
 namespace vat::shading::cop_glsl {
 
-// Embedded ID shader (vertex + fragment)
-inline constexpr const char* ID_vertex_shader = R"GLSL(
-#version 330 core
+// Pass 1: depth only. The fragment shader writes nothing; there is no colour attachment.
+inline constexpr const char* triangle_vertex_shader = R"GLSL(
+#version 430 core
 layout (location = 0) in vec3 aPos;
-layout (location = 1) in uint aColor;
-
-flat out uint vColor;
 
 uniform mat4 u_MVP;
 
 void main()
 {
-    vColor = aColor;
     gl_Position = u_MVP * vec4(aPos, 1.0);
 }
 )GLSL";
 
-inline constexpr const char* ID_point_shader = R"GLSL(
-#version 330 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in uint aColor;
-layout (location = 2) in vec3 aNormal;
-
-flat out uint vColor;
-
-uniform mat4 u_MVP;
-uniform mat4 u_MV;
+inline constexpr const char* triangle_fragment_shader = R"GLSL(
+#version 430 core
 
 void main()
 {
-    vec3 normalView = normalize(mat3(u_MV) * aNormal);
-    // Skip centroids for triangles whose normals face away from the camera.
-    // We only use the model-view transform to judge front/back orientation.
-    if (normalView.z <= 0.0) {
-        gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
-        return;
-    }
-
-    vColor = aColor;
-    // Offset the point along its normal to avoid z-fighting with the triangle surface
-    // The offset is a small fraction of the point's depth to ensure it's always in front
-    vec3 offsetPos = aPos + aNormal * 0.005;
-    vec4 pos = u_MVP * vec4(offsetPos, 1.0);
-    gl_Position = pos;
 }
 )GLSL";
 
-inline constexpr const char* ID_fragment_shader = R"GLSL(
-#version 330 core
-flat in uint vColor;
-out uvec4 FragColor;
+// Pass 2: one point per triangle centroid.
+inline constexpr const char* point_vertex_shader = R"GLSL(
+#version 430 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in uint aID;
+layout (location = 2) in vec3 aNormal;
+
+flat out uint vID;
+
+uniform mat4 u_MVP;
+uniform float u_edge_on_threshold;
+uniform mat3 u_normal_matrix;
+// Unit flow direction v_rel / |v_rel| in the body frame.
+uniform vec3 u_v_rel_hat;
+
+// Distance (model units) the centroid is moved along its normal, towards the viewer of a
+// front face. Keeps the point in front of its own triangle for the GL_LEQUAL test, since the
+// point's depth and the triangle's interpolated depth are not bit-identical.
+uniform float u_normal_offset;
 
 void main()
 {
-    FragColor = uvec4(vColor, 0u, 0u, 255u);
+    vec3 normal_body = normalize(u_normal_matrix * aNormal);
+    if (dot(normal_body, u_v_rel_hat) <= u_edge_on_threshold) {
+        gl_Position = vec4(0.0, 0.0, 2.0, 1.0); // outside the clip volume
+        vID = 0u;
+        return;
+    }
+    vID = aID;
+    gl_Position = u_MVP * vec4(aPos + aNormal * u_normal_offset, 1.0);
+}
+)GLSL";
+
+// Early fragment tests make the depth test run before the shader, so the SSBO write only
+// happens for points that pass GL_LEQUAL. Every writer stores the same value, so no atomic
+// is needed and the result is deterministic.
+inline constexpr const char* point_fragment_shader = R"GLSL(
+#version 430 core
+layout(early_fragment_tests) in;
+
+flat in uint vID;
+
+layout(std430, binding = 0) buffer VisibilityBuffer
+{
+    uint visible[];
+};
+
+void main()
+{
+    if (vID < uint(visible.length()))
+    {
+        visible[vID] = 1u;
+    }
 }
 )GLSL";
 

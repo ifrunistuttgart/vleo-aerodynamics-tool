@@ -22,6 +22,8 @@ The VLEO Aerodynamics Tool provides algorithms for fast calculations of panel sh
 - **Two load calculators**: Hybrid evaluates the GSI model per visible triangle; Pixel
   integrates it per pixel on the GPU, so partly shaded triangles count with exactly their
   exposed part and the result does not depend on the meshing.
+- **Projected area** along any direction, with shadowing, from the same per-pixel GPU pass
+  (`PixelProjectedArea`).
 - **Articulated geometry** — individual meshes (solar arrays, panels for aerodynamic actuation) can be rotated
   about an arbitrary hinge axis between evaluations.
 - **Remeshing** of imported models into near-equilateral triangles of one size, keeping every
@@ -78,7 +80,8 @@ render time. Leave it out and the pipeline picks it from the mesh.
 `PixelForceTorqueCalculator` goes one step further: it evaluates the GSI model in every pixel
 the flow reaches, on the GPU, and sums force and torque there. Shadow edges then cut through
 triangles instead of switching whole triangles on or off. Surfaces facing away from the flow are
-still evaluated per triangle.
+still evaluated per triangle. With the constructor argument `num_msaa_samples` (MATLAB:
+`NumMsaaSamples`) above 1, a pixel an edge cuts through counts with its covered fraction.
 
 **Flow direction convention.** `v_rel_B__m_per_s` is the velocity of the *geometry relative to
 the atmosphere*, expressed in the body frame — the orange vector above.

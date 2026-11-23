@@ -13,6 +13,11 @@ classdef HybridForceTorqueCalculator < handle
     properties %(Access = private, Hidden = true)
         handle_ = int32(-1);
     end
+    properties (Dependent)
+        % Hyperthermal  true: surfaces facing away from the flow are ignored.
+        %                false (default): they are evaluated, without shadowing.
+        Hyperthermal (1,1) logical
+    end
     properties (Access = private)
         % The C++ calculator refers to these; holding them keeps them alive.
         geometry_
@@ -21,24 +26,28 @@ classdef HybridForceTorqueCalculator < handle
     end
 
     methods
-        function this = HybridForceTorqueCalculator(geometry, shading_pipeline, gsi_model)
+        function this = HybridForceTorqueCalculator(geometry, shading_pipeline, gsi_model, options)
             % HYBRIDFORCETORQUECALCULATOR Constructor for HybridForceTorqueCalculator.
             %
             %   obj = HybridForceTorqueCalculator(geometry, shading_pipeline, gsi_model)
+            %   obj = HybridForceTorqueCalculator(..., Hyperthermal=true)
             %   initializes the calculator with the necessary components.
             %
             %   Input Arguments:
             %       geometry        - A RotatableMeshGeometry object representing the geometry.
             %       shading_pipeline - A ShadingPipeline object for visibility analysis.
             %       gsi_model        - A GSI model object (e.g., Sentman) for load calculation.
+            %       Hyperthermal     - If true, surfaces facing away from the flow
+            %                          (dot(n, v_rel) <= 0) are ignored (default false).
             %
             arguments
                 geometry (1,1) vat.geometry.RotatableMeshGeometry
                 shading_pipeline (1,1) vat.shading.ShadingPipeline
                 gsi_model (1,1) handle
+                options.Hyperthermal (1,1) logical = false
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
-            this.handle_ = int32(MexGateway("loads.HybridForceTorqueCalculator.new", int32(geometry.handle_), int32(shading_pipeline.handle_), int32(gsi_model.handle_)));
+            this.handle_ = int32(MexGateway("loads.HybridForceTorqueCalculator.new", int32(geometry.handle_), int32(shading_pipeline.handle_), int32(gsi_model.handle_), int32(options.Hyperthermal)));
             this.geometry_ = geometry;
             this.shading_pipeline_ = shading_pipeline;
             this.gsi_model_ = gsi_model;
@@ -67,6 +76,14 @@ classdef HybridForceTorqueCalculator < handle
                 aero_conditions (1,1) vat.AeroConditions
             end
             [force__N, torque__Nm] = MexGateway("loads.HybridForceTorqueCalculator.calc_aero_load", int32(this.handle_), v_rel__m_per_s, surface_temp__K, int32(aero_conditions.handle_));
+        end
+
+        function value = get.Hyperthermal(this)
+            value = logical(MexGateway("loads.HybridForceTorqueCalculator.get_hyperthermal", int32(this.handle_)));
+        end
+
+        function set.Hyperthermal(this, value)
+            MexGateway("loads.HybridForceTorqueCalculator.set_hyperthermal", int32(this.handle_), int32(value));
         end
 
         function delete(this)

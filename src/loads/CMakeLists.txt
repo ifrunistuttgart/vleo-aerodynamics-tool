@@ -9,7 +9,8 @@ add_library(loads
     pixel_load_integrator.cpp
     pixel_load_integrator.h
     Igsi_model.h
-    Ishading_pipeline.h)
+    Ishading_pipeline.h
+    leeward_classification.h)
 
 target_compile_features(loads PRIVATE cxx_std_20)
 target_include_directories(loads 

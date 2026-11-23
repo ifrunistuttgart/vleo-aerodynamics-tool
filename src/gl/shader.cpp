@@ -3,15 +3,22 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 #include <string>
+#include <vector>
 
 #include "gl_helpers.h"
 
 namespace vat::gl {
 
-Shader::Shader(const std::string& vertexSource, const std::string& fragmentSource, bool fromSource)
+Shader::Shader(const std::string& vertexSource, const std::string& fragmentSource)
     : m_FilePath(""), m_ShaderID(0)
 {
     m_ShaderID = CreateShader(vertexSource, fragmentSource);
+}
+
+Shader::Shader(const ShaderSource& vertexSource, const ShaderSource& fragmentSource)
+    : m_FilePath(""), m_ShaderID(0)
+{
+    m_ShaderID = CreateShader(vertexSource.glsl(), fragmentSource.glsl());
 }
 
 Shader::~Shader()
@@ -42,6 +49,11 @@ void Shader::SetUniform1f(const std::string& name, float value)
 void Shader::SetUniform3f(const std::string& name, const glm::vec3& value)
 {
     GLCall(glUniform3f(GetUniformLocation(name), value.x, value.y, value.z));
+}
+
+void Shader::SetUniform2fv(const std::string& name, const std::vector<glm::vec2>& values)
+{
+    GLCall(glUniform2fv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), &values[0][0]));
 }
 
 void Shader::SetUniform4f(const std::string& name, float v0, float v1, float v2, float v3)
@@ -126,8 +138,7 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
 
 		SPDLOG_ERROR("Shader compilation error: {}", message);
 
-        const size_t maxDump = 4096;
-        SPDLOG_ERROR("Shader source (truncated to {} chars):\n{}", maxDump, source.substr(0, std::min(source.size(), maxDump)));
+        SPDLOG_ERROR("Shader source:\n{}", ShaderSource::numbered(source));
         glDeleteShader(id);
         return 0;
     }

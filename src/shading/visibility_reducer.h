@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "compute_shader.h"
+#include "shader_storage_buffer.h"
 
 namespace vat::shading {
 
@@ -34,9 +35,22 @@ public:
 	 */
 	std::vector<float> reduce(unsigned int id_texture, unsigned int num_pixel);
 
+	/**
+	 * Clears the visibility flags and binds them as SSBO `binding`, for shaders that
+	 * mark triangles themselves (`visible[id] = 1u`) instead of rendering an ID image.
+	 * Follow with read_back() once those shaders have run.
+	 */
+	void begin(unsigned int binding = 0);
+
+	/**
+	 * Waits for the shader writes and reads the flags back.
+	 * @return 1.0 for every marked triangle, 0.0 otherwise.
+	 */
+	std::vector<float> read_back();
+
 private:
 	std::unique_ptr<gl::ComputeShader> m_shader;
-	unsigned int m_visibility_buffer = 0;
+	gl::ShaderStorageBuffer m_visibility_buffer; // one flag per triangle, plus slot 0 for the background
 	unsigned int m_num_triangles = 0;
 	std::vector<std::uint32_t> m_flags; // reused staging buffer for the readback
 };
