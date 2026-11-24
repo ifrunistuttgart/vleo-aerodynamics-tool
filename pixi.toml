@@ -43,20 +43,23 @@ run-example = { cmd = "out/build/dev/examples/{{ name }}/{{ name }}", depends-on
 # Opt-in MATLAB bindings (MATLAB required).
 build-matlab = "cmake --preset dev-matlab && cmake --build --preset dev-matlab"
 
-# Formatting and linting. Kept out of the default environment, so the hooks and
-# `format` never pull in VTK, assimp or the compiler. Run as `pixi run -e lint <task>`.
-[feature.lint.dependencies]
+# Formatters. Kept out of the default environment, so the hooks and `format` never
+# pull in VTK, assimp or the compiler. Run as `pixi run -e format <task>`.
+[feature.format.dependencies]
 clang-format = "23.*"
 gersemi = "*"
 prek = "*"
 
-[feature.lint.pypi-dependencies]
+[feature.format.pypi-dependencies]
 miss-hit-core = "*"
 
-[feature.lint.tasks]
+[feature.format.tasks]
 format = "prek run --all-files"
 setup-hooks = "prek install"
-# Uses MATLAB's own analyzer, so it needs a local MATLAB install. Fails on errors only.
+
+# MATLAB linter. Uses MATLAB's own analyzer, so it needs a local MATLAB install on PATH
+# and the env itself installs nothing. Fails on errors only.
+[feature.matlab.tasks]
 lint-matlab = "matlab -batch \"r = codeIssues('matlab/+vat'); n = nnz(r.Issues.Severity == 'error'); fprintf('%d error(s), %d issue(s)\\n', n, height(r.Issues)); exit(double(n > 0))\""
 
 # clang-tidy ships in clang-tools. It reads out/build/dev/compile_commands.json, so run
@@ -70,5 +73,6 @@ clang-tools = "*"
 lint-cpp = "python .pixi/envs/tidy/Library/bin/run-clang-tidy -p out/build/dev -quiet -extra-arg-before=--driver-mode=cl"
 
 [environments]
-lint = { features = ["lint"], no-default-feature = true }
+format = { features = ["format"], no-default-feature = true }
+matlab = { features = ["matlab"], no-default-feature = true }
 tidy = { features = ["tidy"] }
