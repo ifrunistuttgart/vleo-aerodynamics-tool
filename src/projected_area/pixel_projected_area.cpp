@@ -7,7 +7,8 @@
 
 namespace vat::projected_area {
 
-PixelProjectedArea::PixelProjectedArea(IGeometryShadingData& geometry, unsigned int num_pixel, unsigned int num_msaa_samples)
+PixelProjectedArea::PixelProjectedArea(IGeometryShadingData& geometry, unsigned int num_pixel,
+                                       unsigned int num_msaa_samples)
     // Leeward surfaces add nothing to the projected area, so the Hyperthermal regime skips the
     // CPU loop over them.
     : m_calculator(std::make_unique<loads::PixelForceTorqueCalculator>(

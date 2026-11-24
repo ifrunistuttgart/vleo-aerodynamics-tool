@@ -42,8 +42,7 @@ const glm::vec3 kHintColor(0.80f, 0.80f, 0.84f);
 constexpr double kHintRight = 0.985; // normalised viewport
 constexpr double kHintTop = 0.955;   // normalised viewport
 
-vtkSmartPointer<vtkTextActor> TextActor(const std::string& text, int font_size,
-    const glm::vec3& color) {
+vtkSmartPointer<vtkTextActor> TextActor(const std::string& text, int font_size, const glm::vec3& color) {
     auto actor = vtkSmartPointer<vtkTextActor>::New();
     actor->SetInput(text.c_str());
     actor->SetTextScaleModeToNone(); // honour SetFontSize instead of fitting to a box
@@ -113,9 +112,7 @@ void Viewer::AddEdgeHint() {
         c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
     }
 
-    m_edge_hint = TextActor(
-        std::format("Press  {}  to toggle triangle edges", key_label), kHintFontSize,
-        kHintColor);
+    m_edge_hint = TextActor(std::format("Press  {}  to toggle triangle edges", key_label), kHintFontSize, kHintColor);
     m_edge_hint->GetTextProperty()->SetJustificationToRight();
     m_edge_hint->GetPositionCoordinate()->SetValue(kHintRight, kHintTop);
     m_renderer->AddActor2D(m_edge_hint);
@@ -133,17 +130,11 @@ void Viewer::AddScalarColoredMesh(vtkPolyData* polydata, const glm::vec3& edge_f
     m_renderer->AddActor(actor);
 }
 
-void Viewer::AddActor(vtkSmartPointer<vtkActor> actor) {
-    m_renderer->AddActor(std::move(actor));
-}
+void Viewer::AddActor(vtkSmartPointer<vtkActor> actor) { m_renderer->AddActor(std::move(actor)); }
 
-void Viewer::SetMeanTriangleExtent(float extent__m) {
-    m_edges.set_mean_triangle_extent__m(extent__m);
-}
+void Viewer::SetMeanTriangleExtent(float extent__m) { m_edges.set_mean_triangle_extent__m(extent__m); }
 
-void Viewer::AddBodyAxes(float bounding_sphere_radius) {
-    actors::AddBodyAxes(m_renderer, bounding_sphere_radius);
-}
+void Viewer::AddBodyAxes(float bounding_sphere_radius) { actors::AddBodyAxes(m_renderer, bounding_sphere_radius); }
 
 /*
  * The rows are individual text actors rather than a vtkLegendBoxActor, which derives its
@@ -156,8 +147,7 @@ void Viewer::AddBodyAxes(float bounding_sphere_radius) {
  * knowing how wide each label renders, which depends on the font the platform happens to
  * supply. The bottom-left is taken by the orientation marker, hence the top.
  */
-void Viewer::AddLegend(const std::vector<std::string>& labels,
-    const std::vector<glm::vec3>& colors) {
+void Viewer::AddLegend(const std::vector<std::string>& labels, const std::vector<glm::vec3>& colors) {
     const bool truncated = labels.size() > kMaxLegendEntries;
     const std::size_t shown = truncated ? kMaxLegendEntries - 1 : labels.size();
 
@@ -173,10 +163,8 @@ void Viewer::AddLegend(const std::vector<std::string>& labels,
     }
 
     for (std::size_t row = 0; row < rows.size(); ++row) {
-        vtkSmartPointer<vtkTextActor> actor =
-            TextActor(rows[row], kLegendFontSize, row_colors[row]);
-        actor->GetPositionCoordinate()->SetValue(
-            kLegendLeft, kLegendTop - kLegendRowHeight * static_cast<double>(row));
+        vtkSmartPointer<vtkTextActor> actor = TextActor(rows[row], kLegendFontSize, row_colors[row]);
+        actor->GetPositionCoordinate()->SetValue(kLegendLeft, kLegendTop - kLegendRowHeight * static_cast<double>(row));
         m_renderer->AddActor2D(actor);
     }
 }

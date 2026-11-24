@@ -13,14 +13,11 @@ namespace vat::gl {
  */
 class ScopedCurrentContext {
 public:
-    explicit ScopedCurrentContext(const GlfwOpenGLContext& context)
-        : m_previous(glfwGetCurrentContext()) {
+    explicit ScopedCurrentContext(const GlfwOpenGLContext& context) : m_previous(glfwGetCurrentContext()) {
         context.make_current();
     }
 
-    ~ScopedCurrentContext() {
-        glfwMakeContextCurrent(m_previous);
-    }
+    ~ScopedCurrentContext() { glfwMakeContextCurrent(m_previous); }
 
     ScopedCurrentContext(const ScopedCurrentContext&) = delete;
     ScopedCurrentContext& operator=(const ScopedCurrentContext&) = delete;

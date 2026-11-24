@@ -6,16 +6,17 @@ namespace vat::gl {
 
 class VertexArray {
 private:
-	unsigned int m_vertex_array_id;
-	unsigned int m_attrib_index;
+    unsigned int m_vertex_array_id;
+    unsigned int m_attrib_index;
+
 public:
-	VertexArray();
-	~VertexArray();
+    VertexArray();
+    ~VertexArray();
 
-	void AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout);
+    void AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout);
 
-	void Bind() const;
-	void Unbind() const;
+    void Bind() const;
+    void Unbind() const;
 };
 
 } // namespace vat::gl

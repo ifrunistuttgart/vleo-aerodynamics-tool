@@ -18,41 +18,41 @@ namespace vat::shading {
  */
 class VisibilityReducer {
 public:
-	/**
-	 * @param num_triangles Total number of triangles; triangle IDs are 1-based, so the
-	 *                      flag buffer holds one extra slot for the background (ID 0).
-	 */
-	explicit VisibilityReducer(unsigned int num_triangles);
-	~VisibilityReducer();
+    /**
+     * @param num_triangles Total number of triangles; triangle IDs are 1-based, so the
+     *                      flag buffer holds one extra slot for the background (ID 0).
+     */
+    explicit VisibilityReducer(unsigned int num_triangles);
+    ~VisibilityReducer();
 
-	VisibilityReducer(const VisibilityReducer&) = delete;
-	VisibilityReducer& operator=(const VisibilityReducer&) = delete;
+    VisibilityReducer(const VisibilityReducer&) = delete;
+    VisibilityReducer& operator=(const VisibilityReducer&) = delete;
 
-	/**
-	 * @param id_texture R32UI texture holding the rendered triangle IDs.
-	 * @param num_pixel Edge length of the square ID texture.
-	 * @return 1.0 for every visible triangle, 0.0 otherwise.
-	 */
-	std::vector<float> reduce(unsigned int id_texture, unsigned int num_pixel);
+    /**
+     * @param id_texture R32UI texture holding the rendered triangle IDs.
+     * @param num_pixel Edge length of the square ID texture.
+     * @return 1.0 for every visible triangle, 0.0 otherwise.
+     */
+    std::vector<float> reduce(unsigned int id_texture, unsigned int num_pixel);
 
-	/**
-	 * Clears the visibility flags and binds them as SSBO `binding`, for shaders that
-	 * mark triangles themselves (`visible[id] = 1u`) instead of rendering an ID image.
-	 * Follow with read_back() once those shaders have run.
-	 */
-	void begin(unsigned int binding = 0);
+    /**
+     * Clears the visibility flags and binds them as SSBO `binding`, for shaders that
+     * mark triangles themselves (`visible[id] = 1u`) instead of rendering an ID image.
+     * Follow with read_back() once those shaders have run.
+     */
+    void begin(unsigned int binding = 0);
 
-	/**
-	 * Waits for the shader writes and reads the flags back.
-	 * @return 1.0 for every marked triangle, 0.0 otherwise.
-	 */
-	std::vector<float> read_back();
+    /**
+     * Waits for the shader writes and reads the flags back.
+     * @return 1.0 for every marked triangle, 0.0 otherwise.
+     */
+    std::vector<float> read_back();
 
 private:
-	std::unique_ptr<gl::ComputeShader> m_shader;
-	gl::ShaderStorageBuffer m_visibility_buffer; // one flag per triangle, plus slot 0 for the background
-	unsigned int m_num_triangles = 0;
-	std::vector<std::uint32_t> m_flags; // reused staging buffer for the readback
+    std::unique_ptr<gl::ComputeShader> m_shader;
+    gl::ShaderStorageBuffer m_visibility_buffer; // one flag per triangle, plus slot 0 for the background
+    unsigned int m_num_triangles = 0;
+    std::vector<std::uint32_t> m_flags; // reused staging buffer for the readback
 };
 
 } // namespace vat::shading

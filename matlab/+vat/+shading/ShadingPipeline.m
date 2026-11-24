@@ -11,7 +11,7 @@ classdef ShadingPipeline < handle
     %   shade           - Calculates visibility for all triangles.
     %   get_num_pixel   - The render resolution in use.
     %
-    properties %(Access = private, Hidden = true)
+    properties % (Access = private, Hidden = true)
         % store handle as int32 to match MexGateway expectations
         handle_ = int32(-1);
     end
@@ -20,6 +20,7 @@ classdef ShadingPipeline < handle
         geometry_
     end
     methods
+
         function this = ShadingPipeline(geometry, shading_algorithm, num_pixel, num_msaa_samples)
             % SHADINGPIPELINE Constructor for ShadingPipeline.
             %
@@ -51,10 +52,10 @@ classdef ShadingPipeline < handle
             %                           Binary only; CoP errors for > 1.
             %
             arguments
-                geometry (1,1) vat.geometry.RotatableMeshGeometry
-                shading_algorithm (1,1) {mustBeInteger, mustBeMember(shading_algorithm, [0, 1])} = 0
+                geometry (1, 1) vat.geometry.RotatableMeshGeometry
+                shading_algorithm (1, 1) {mustBeInteger, mustBeMember(shading_algorithm, [0, 1])} = 0
                 num_pixel double {mustBeScalarOrEmpty, mustBeInteger, mustBePositive} = []
-                num_msaa_samples (1,1) double {mustBeInteger, mustBePositive} = 1
+                num_msaa_samples (1, 1) double {mustBeInteger, mustBePositive} = 1
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             if isempty(num_pixel)
@@ -62,28 +63,28 @@ classdef ShadingPipeline < handle
             end
             try
                 this.handle_ = MexGateway("shading.ShadingPipeline.new", int32(geometry.handle_), ...
-                    int32(shading_algorithm), int32(num_pixel), int32(num_msaa_samples));
+                                          int32(shading_algorithm), int32(num_pixel), int32(num_msaa_samples));
                 this.geometry_ = geometry;
             catch ME
                 error("Failed to create Shading pipeline: %s", ME.message);
             end
         end
-        
+
         function delete(this)
             % DELETE Destructor for ShadingPipeline.
             %
             %   Releases the underlying C++ pipeline object.
             %
             arguments
-                this (1,1) vat.shading.ShadingPipeline
+                this (1, 1) vat.shading.ShadingPipeline
             end
             if this.handle_ ~= int32(-1)
                 MexGateway("shading.ShadingPipeline.delete", int32(this.handle_));
                 this.handle_ = int32(-1);
             end
         end
-        
-        function visibility = shade(this,velocity)
+
+        function visibility = shade(this, velocity)
             % SHADE Calculates the visibility factor for each geometry triangle.
             %
             %   visibility = shade(this, velocity) returns a vector containing
@@ -91,16 +92,16 @@ classdef ShadingPipeline < handle
             %   relative to the incoming flow direction.
             %
             %   Input Arguments:
-            %       velocity   - The relative velocity vector [x, y, z] in the 
+            %       velocity   - The relative velocity vector [x, y, z] in the
             %                    geometry body frame.
             %
             %   Output Arguments:
-            %       visibility - A vector of visibility factors (1.0 = exposed, 
+            %       visibility - A vector of visibility factors (1.0 = exposed,
             %                    0.0 = shaded).
             %
             arguments
-                this (1,1) vat.shading.ShadingPipeline
-                velocity (1,3) double
+                this (1, 1) vat.shading.ShadingPipeline
+                velocity (1, 3) double
             end
             visibility = MexGateway("shading.ShadingPipeline.shade", int32(this.handle_), velocity);
         end
@@ -112,9 +113,10 @@ classdef ShadingPipeline < handle
             %   constructor, or the one chosen from the mesh if it was omitted.
             %
             arguments
-                this (1,1) vat.shading.ShadingPipeline
+                this (1, 1) vat.shading.ShadingPipeline
             end
             num_pixel = MexGateway("shading.ShadingPipeline.get_num_pixel", int32(this.handle_));
         end
+
     end
 end

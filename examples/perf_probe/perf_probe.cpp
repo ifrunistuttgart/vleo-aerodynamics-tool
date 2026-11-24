@@ -51,9 +51,7 @@ constexpr float ALPHA_E = 0.9f;
 constexpr std::array<float, 3> HINGE_ORIGIN{-0.15f, 0.0f, 0.05f};
 constexpr std::array<float, 3> HINGE_AXIS{0.0f, 0.0f, -1.0f};
 
-AeroConditions make_conditions() {
-    return AeroConditions{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f};
-}
+AeroConditions make_conditions() { return AeroConditions{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f}; }
 
 const std::vector<glm::vec3>& flow_directions() {
     static const std::vector<glm::vec3> dirs{
@@ -74,8 +72,7 @@ std::uint64_t hash_visibility(const std::vector<float>& v) {
     return h;
 }
 
-template <typename F>
-double time_ms(int reps, F&& f) {
+template <typename F> double time_ms(int reps, F&& f) {
     f(); // warm-up, not measured
     std::vector<double> t;
     t.reserve(reps);
@@ -146,12 +143,10 @@ void run_fingerprint(RotatableMeshGeometry& sat) {
                     glm::vec3 force__N, torque__Nm;
                     calc.calc_aero_torque_force(v, SURFACE_TEMP__K, aero, torque__Nm, force__N);
 
-                    std::printf("  %d   %c %4u %4zu %9lld %20llu %13.6e %13.6e %13.6e %13.6e %13.6e %13.6e\n",
-                                rotated, alg == 0 ? 'B' : 'C', P, d,
-                                static_cast<long long>(visible),
-                                static_cast<unsigned long long>(hash_visibility(vis)),
-                                force__N.x, force__N.y, force__N.z,
-                                torque__Nm.x, torque__Nm.y, torque__Nm.z);
+                    std::printf("  %d   %c %4u %4zu %9lld %20llu %13.6e %13.6e %13.6e %13.6e %13.6e %13.6e\n", rotated,
+                                alg == 0 ? 'B' : 'C', P, d, static_cast<long long>(visible),
+                                static_cast<unsigned long long>(hash_visibility(vis)), force__N.x, force__N.y,
+                                force__N.z, torque__Nm.x, torque__Nm.y, torque__Nm.z);
                 }
             }
         }
@@ -167,9 +162,18 @@ void run_timings(RotatableMeshGeometry& sat, const std::vector<unsigned int>& re
     const glm::vec3 vhat = glm::normalize(v);
 
     std::printf("[A] CPU geometry re-transform, per getter call\n");
-    const double tN = time_ms(20, [&] { auto s = sat.get_transformed_normals(); (void)s.size(); });
-    const double tC = time_ms(20, [&] { auto s = sat.get_transformed_centroids(); (void)s.size(); });
-    const double tB = time_ms(20, [&] { volatile float r = sat.get_bounding_sphere_radius(); (void)r; });
+    const double tN = time_ms(20, [&] {
+        auto s = sat.get_transformed_normals();
+        (void)s.size();
+    });
+    const double tC = time_ms(20, [&] {
+        auto s = sat.get_transformed_centroids();
+        (void)s.size();
+    });
+    const double tB = time_ms(20, [&] {
+        volatile float r = sat.get_bounding_sphere_radius();
+        (void)r;
+    });
     std::printf("    get_transformed_normals()    %8.3f ms\n", tN);
     std::printf("    get_transformed_centroids()  %8.3f ms\n", tC);
     std::printf("    get_bounding_sphere_radius() %8.3f ms\n", tB);
@@ -179,13 +183,13 @@ void run_timings(RotatableMeshGeometry& sat, const std::vector<unsigned int>& re
     auto normals = sat.get_transformed_normals();
     auto centroids = sat.get_transformed_centroids();
     std::printf("[B] Sentman x %u triangles       %8.3f ms\n\n", N, time_ms(10, [&] {
-        glm::vec3 f, tq;
-        for (unsigned int i = 0; i < N; ++i) {
-            const glm::vec3 n{normals[3 * i], normals[3 * i + 1], normals[3 * i + 2]};
-            const glm::vec3 c{centroids[3 * i], centroids[3 * i + 1], centroids[3 * i + 2]};
-            gsi.calc_aero_force_and_torque(areas[i], n, c, v, SURFACE_TEMP__K, aero, f, tq);
-        }
-    }));
+                    glm::vec3 f, tq;
+                    for (unsigned int i = 0; i < N; ++i) {
+                        const glm::vec3 n{normals[3 * i], normals[3 * i + 1], normals[3 * i + 2]};
+                        const glm::vec3 c{centroids[3 * i], centroids[3 * i + 1], centroids[3 * i + 2]};
+                        gsi.calc_aero_force_and_torque(areas[i], n, c, v, SURFACE_TEMP__K, aero, f, tq);
+                    }
+                }));
 
     std::printf("[C] shade() and end-to-end\n");
     std::printf("    %6s %11s %11s %11s %11s %11s\n", "P", "CoP", "Binary", "Binary 8x", "full", "full-shade");
@@ -194,18 +198,27 @@ void run_timings(RotatableMeshGeometry& sat, const std::vector<unsigned int>& re
         double t_cop, t_binary, t_msaa, t_full;
         {
             ShadingPipeline pipeline(sat, ShadingAlgorithmType::CoP, P);
-            t_cop = time_ms(reps, [&] { auto r = pipeline.shade(vhat); (void)r.size(); });
+            t_cop = time_ms(reps, [&] {
+                auto r = pipeline.shade(vhat);
+                (void)r.size();
+            });
             HybridForceTorqueCalculator calc(sat, pipeline, gsi);
             glm::vec3 f, tq;
             t_full = time_ms(reps, [&] { calc.calc_aero_torque_force(v, SURFACE_TEMP__K, aero, tq, f); });
         }
         {
             ShadingPipeline pipeline(sat, ShadingAlgorithmType::Binary, P);
-            t_binary = time_ms(reps, [&] { auto r = pipeline.shade(vhat); (void)r.size(); });
+            t_binary = time_ms(reps, [&] {
+                auto r = pipeline.shade(vhat);
+                (void)r.size();
+            });
         }
         {
             ShadingPipeline pipeline(sat, ShadingAlgorithmType::Binary, P, 8);
-            t_msaa = time_ms(reps, [&] { auto r = pipeline.shade(vhat); (void)r.size(); });
+            t_msaa = time_ms(reps, [&] {
+                auto r = pipeline.shade(vhat);
+                (void)r.size();
+            });
         }
         std::printf("    %6u %11.3f %11.3f %11.3f %11.3f %11.3f\n", P, t_cop, t_binary, t_msaa, t_full, t_full - t_cop);
     }
@@ -222,7 +235,9 @@ void run_pixel_comparison(RotatableMeshGeometry& sat, const std::vector<unsigned
     const double radius = sat.get_bounding_sphere_radius();
     const auto& dirs = flow_directions();
 
-    struct Loads { glm::dvec3 force, torque; };
+    struct Loads {
+        glm::dvec3 force, torque;
+    };
     auto evaluate_all = [&](IAeroLoadCalculator& calc) {
         std::vector<Loads> loads;
         for (const glm::vec3& d : dirs) {
@@ -242,9 +257,7 @@ void run_pixel_comparison(RotatableMeshGeometry& sat, const std::vector<unsigned
 
     // std::max drops a NaN, which would report Hybrid on a mesh with degenerate
     // triangles as a perfect match.
-    auto worst = [](double a, double b) {
-        return std::isnan(a) || std::isnan(b) ? std::nan("") : std::max(a, b);
-    };
+    auto worst = [](double a, double b) { return std::isnan(a) || std::isnan(b) ? std::nan("") : std::max(a, b); };
     auto report = [&](unsigned int P, const char* method, IAeroLoadCalculator& calc) {
         const std::vector<Loads> loads = evaluate_all(calc);
         double dF = 0.0, dT = 0.0;
@@ -317,13 +330,17 @@ int main(int argc, char** argv) {
         run_fingerprint(sat);
     } else if (mode == "--pixel") {
         std::vector<unsigned int> resolutions;
-        for (int i = 3; i < argc; ++i) resolutions.push_back(static_cast<unsigned int>(std::atoi(argv[i])));
-        if (resolutions.empty()) resolutions = {500u, 1000u, 2000u, 4000u};
+        for (int i = 3; i < argc; ++i)
+            resolutions.push_back(static_cast<unsigned int>(std::atoi(argv[i])));
+        if (resolutions.empty())
+            resolutions = {500u, 1000u, 2000u, 4000u};
         run_pixel_comparison(sat, resolutions);
     } else if (mode == "--timings") {
         std::vector<unsigned int> resolutions;
-        for (int i = 3; i < argc; ++i) resolutions.push_back(static_cast<unsigned int>(std::atoi(argv[i])));
-        if (resolutions.empty()) resolutions = {1000u, 4000u};
+        for (int i = 3; i < argc; ++i)
+            resolutions.push_back(static_cast<unsigned int>(std::atoi(argv[i])));
+        if (resolutions.empty())
+            resolutions = {1000u, 4000u};
         run_timings(sat, resolutions);
     } else {
         std::printf("unknown mode: %s\n", mode.c_str());

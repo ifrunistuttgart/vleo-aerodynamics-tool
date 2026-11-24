@@ -25,7 +25,7 @@ hinges(3).mesh_id = 3;  hinges(3).origin = [-0.15,  0.05, -0.10];  hinges(3).axi
 hinges(4).mesh_id = 4;  hinges(4).origin = [-0.15, -0.10, -0.05];  hinges(4).axis = [0, -1,  0];  % up
 
 calculator = vat.loads.PixelForceTorqueCalculator( ...
-    geometry, gsi_model, 1000, KeepPressureImage=true);
+                                                  geometry, gsi_model, 1000, KeepPressureImage = true);
 
 %% 1. All four wings together: drag over the wing angle
 v_rel  = [7800, 0, 0];
@@ -92,7 +92,7 @@ for c = 1:size(cases, 1)
     deflect(geometry, hinges, cases{c, 2});
     calculator.calc_aero_load(v_rel, surface_temp__K, conditions);
     nexttile;
-    vat.visualization.show_pressure_image(calculator, geometry, CLim=[0 p_max], Colorbar=false);
+    vat.visualization.show_pressure_image(calculator, geometry, CLim = [0 p_max], Colorbar = false);
     title(cases{c, 1});
 end
 cb = colorbar;
@@ -105,6 +105,6 @@ function deflect(geometry, hinges, angles__deg)
     % Sets every wing to its angle; angles are absolute, not added up.
     for i = 1:numel(hinges)
         geometry.turn_mesh_around_axis(hinges(i).mesh_id, deg2rad(angles__deg(i)), ...
-            hinges(i).origin, hinges(i).axis);
+                                       hinges(i).origin, hinges(i).axis);
     end
 end

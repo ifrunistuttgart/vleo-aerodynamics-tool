@@ -12,10 +12,7 @@ namespace vat {
  * Hyperthermal: the relative speed dominates, so surfaces facing away from the flow
  * are ignored and only windward surfaces contribute.
  */
-enum class FlowRegime {
-    Hypothermal,
-    Hyperthermal
-};
+enum class FlowRegime { Hypothermal, Hyperthermal };
 
 /**
  * Interface for calculating aerodynamic loads on a geometry.
@@ -45,7 +42,8 @@ public:
      * @param force__N Output parameter that will be populated with the calculated aerodynamic force [N].
      * @return 0 on success, or a non-zero error code on failure.
      */
-    virtual int calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions& aero, glm::vec3& torque__Nm, glm::vec3& force__N) = 0;
+    virtual int calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions& aero,
+                                       glm::vec3& torque__Nm, glm::vec3& force__N) = 0;
 
     virtual ~IAeroLoadCalculator() = default;
 };

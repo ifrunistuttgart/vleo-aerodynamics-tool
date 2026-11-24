@@ -66,8 +66,7 @@ unsigned int SumTriangles(IGeometryShadingData& geometry) {
 
 // The example model separates its parts with `o`, which is the supported way.
 TEST(MeshGroupingTest, ObjWithObjectsGivesOneMeshPerObject) {
-    const std::string obj_path =
-        GetTestDataPath(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
+    const std::string obj_path = GetTestDataPath(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
     StaticMeshGeometry geometry(obj_path);
 
     const std::span<const std::string> names = geometry.get_mesh_names();
@@ -88,8 +87,7 @@ TEST(MeshGroupingTest, ObjWithObjectsGivesOneMeshPerObject) {
 
 // A well-formed file must not nag the user.
 TEST(MeshGroupingTest, ObjWithObjectsDoesNotWarn) {
-    const std::string obj_path =
-        GetTestDataPath(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
+    const std::string obj_path = GetTestDataPath(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
 
     LogCapture log;
     StaticMeshGeometry geometry(obj_path);
@@ -99,8 +97,7 @@ TEST(MeshGroupingTest, ObjWithObjectsDoesNotWarn) {
 
 // soar_satellite.obj also uses `o` only, with five panels.
 TEST(MeshGroupingTest, SecondObjWithObjectsGivesOneMeshPerObject) {
-    const std::string obj_path =
-        GetTestDataPath(__FILE__, "../../matlab/examples/geometries/soar_satellite.obj");
+    const std::string obj_path = GetTestDataPath(__FILE__, "../../matlab/examples/geometries/soar_satellite.obj");
     StaticMeshGeometry geometry(obj_path);
 
     EXPECT_EQ(geometry.get_mesh_names().size(), 5);
@@ -129,8 +126,7 @@ TEST(MeshGroupingTest, ObjWithGroupsWarns) {
     LogCapture log;
     StaticMeshGeometry geometry(obj_path);
 
-    EXPECT_TRUE(log.contains("Do not use groups"))
-        << "a grouped .obj must tell the user to export with 'o' instead";
+    EXPECT_TRUE(log.contains("Do not use groups")) << "a grouped .obj must tell the user to export with 'o' instead";
 
     // Documents the consequence the warning is about: thirty meshes of two triangles,
     // one per box face, rather than the five parts the file names.
@@ -144,8 +140,7 @@ TEST(MeshGroupingTest, ObjWithGroupsWarns) {
 // get_mesh_names() has to stay aligned with the other per-mesh arrays, because the
 // visualization pairs them by index to label each mesh.
 TEST(MeshGroupingTest, PerMeshArraysAreAllTheSameLength) {
-    const std::string obj_path =
-        GetTestDataPath(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
+    const std::string obj_path = GetTestDataPath(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
     StaticMeshGeometry geometry(obj_path);
 
     const std::size_t num_meshes = geometry.get_mesh_names().size();

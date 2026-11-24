@@ -34,8 +34,7 @@ namespace {
 // Some unit vector perpendicular to n. Which one does not matter: it only fixes where
 // the curved arrow starts, not which way round it sweeps.
 glm::vec3 AnyPerpendicular(const glm::vec3& n) {
-    const glm::vec3 reference =
-        std::abs(n.x) < 0.9f ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
+    const glm::vec3 reference = std::abs(n.x) < 0.9f ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
     return glm::normalize(glm::cross(n, reference));
 }
 
@@ -52,7 +51,7 @@ vtkSmartPointer<vtkActor> ActorFor(vtkAlgorithmOutput* port, const glm::vec3& co
 } // namespace
 
 vtkSmartPointer<vtkActor> Arrow(const glm::vec3& dir, float length, const glm::vec3& color,
-    double relative_shaft_radius, double relative_tip_radius, double relative_tip_length) {
+                                double relative_shaft_radius, double relative_tip_radius, double relative_tip_length) {
     const glm::vec3 x_axis(1.0f, 0.0f, 0.0f);
     const glm::vec3 unit_dir = glm::length(dir) > 0.0f ? glm::normalize(dir) : x_axis;
 
@@ -83,11 +82,10 @@ vtkSmartPointer<vtkActor> Arrow(const glm::vec3& dir, float length, const glm::v
     return ActorFor(transform_filter->GetOutputPort(), color);
 }
 
-vtkSmartPointer<vtkActor> ArrowAt(const glm::vec3& tail__m, const glm::vec3& dir, float length,
-    const glm::vec3& color, double relative_shaft_radius, double relative_tip_radius,
-    double relative_tip_length) {
-    auto actor = Arrow(dir, length, color, relative_shaft_radius, relative_tip_radius,
-        relative_tip_length);
+vtkSmartPointer<vtkActor> ArrowAt(const glm::vec3& tail__m, const glm::vec3& dir, float length, const glm::vec3& color,
+                                  double relative_shaft_radius, double relative_tip_radius,
+                                  double relative_tip_length) {
+    auto actor = Arrow(dir, length, color, relative_shaft_radius, relative_tip_radius, relative_tip_length);
     actor->SetPosition(tail__m.x, tail__m.y, tail__m.z);
     return actor;
 }
@@ -107,8 +105,8 @@ vtkSmartPointer<vtkActor> Sphere(const glm::vec3& center__m, float radius, const
  * u perpendicular to axis_hat), so increasing t traces the right-hand-rule direction and
  * the arrow head ends up on the positive end.
  */
-void AddArcArrow(vtkRenderer* renderer, const glm::vec3& center__m, const glm::vec3& axis_hat,
-    float radius, float tube_radius, const glm::vec3& color) {
+void AddArcArrow(vtkRenderer* renderer, const glm::vec3& center__m, const glm::vec3& axis_hat, float radius,
+                 float tube_radius, const glm::vec3& color) {
     constexpr int kArcSamples = 64;
     constexpr float kSweep__rad = 1.5f * std::numbers::pi_v<float>; // 270 degrees
 
@@ -140,10 +138,8 @@ void AddArcArrow(vtkRenderer* renderer, const glm::vec3& center__m, const glm::v
     renderer->AddActor(ActorFor(tube->GetOutputPort(), color));
 
     // Arrow head at the swept end, pointing along the tangent there.
-    const glm::vec3 end_point =
-        center__m + radius * (std::cos(kSweep__rad) * u + std::sin(kSweep__rad) * v);
-    const glm::vec3 tangent =
-        glm::normalize(-std::sin(kSweep__rad) * u + std::cos(kSweep__rad) * v);
+    const glm::vec3 end_point = center__m + radius * (std::cos(kSweep__rad) * u + std::sin(kSweep__rad) * v);
+    const glm::vec3 tangent = glm::normalize(-std::sin(kSweep__rad) * u + std::cos(kSweep__rad) * v);
     const float cone_height = tube_radius * 7.0f;
     const glm::vec3 cone_center = end_point + tangent * (cone_height * 0.5f);
 
@@ -157,8 +153,7 @@ void AddArcArrow(vtkRenderer* renderer, const glm::vec3& center__m, const glm::v
 }
 
 void AddBodyAxes(vtkRenderer* renderer, float bounding_sphere_radius) {
-    const float axis_length =
-        bounding_sphere_radius > 0.0f ? bounding_sphere_radius * 1.5f : 1.5f;
+    const float axis_length = bounding_sphere_radius > 0.0f ? bounding_sphere_radius * 1.5f : 1.5f;
     const glm::vec3 directions[] = {
         glm::vec3(1.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 1.0f, 0.0f),
@@ -170,8 +165,7 @@ void AddBodyAxes(vtkRenderer* renderer, float bounding_sphere_radius) {
 }
 
 std::vector<vtkSmartPointer<vtkPolyData>> PerMeshPolyData(IGeometryShadingData& geometry) {
-    const std::span<const unsigned int> num_triangles_per_mesh =
-        geometry.get_num_triangles_per_mesh();
+    const std::span<const unsigned int> num_triangles_per_mesh = geometry.get_num_triangles_per_mesh();
     const std::span<const float> vertices = geometry.get_transformed_vertices();
 
     std::vector<vtkSmartPointer<vtkPolyData>> per_mesh;
@@ -187,10 +181,9 @@ std::vector<vtkSmartPointer<vtkPolyData>> PerMeshPolyData(IGeometryShadingData& 
 
         for (unsigned int tri = 0; tri < mesh_triangles; ++tri) {
             for (int corner = 0; corner < 3; ++corner) {
-                const std::size_t src =
-                    9 * (triangle_offset + tri) + 3 * static_cast<std::size_t>(corner);
-                points->SetPoint(static_cast<vtkIdType>(3 * tri + corner),
-                    vertices[src + 0], vertices[src + 1], vertices[src + 2]);
+                const std::size_t src = 9 * (triangle_offset + tri) + 3 * static_cast<std::size_t>(corner);
+                points->SetPoint(static_cast<vtkIdType>(3 * tri + corner), vertices[src + 0], vertices[src + 1],
+                                 vertices[src + 2]);
             }
             auto triangle = vtkSmartPointer<vtkTriangle>::New();
             triangle->GetPointIds()->SetId(0, 3 * tri + 0);
@@ -210,12 +203,12 @@ std::vector<vtkSmartPointer<vtkPolyData>> PerMeshPolyData(IGeometryShadingData& 
 }
 
 vtkSmartPointer<vtkPolyData> VisibilityColoredPolyData(IGeometryShadingData& geometry,
-    const std::vector<float>& triangle_visibility,
-    const glm::vec3& visible_color, const glm::vec3& hidden_color) {
+                                                       const std::vector<float>& triangle_visibility,
+                                                       const glm::vec3& visible_color, const glm::vec3& hidden_color) {
     const unsigned int num_triangles = geometry.get_num_triangles();
     if (triangle_visibility.size() != num_triangles) {
-        SPDLOG_ERROR("Visibility size mismatch (visibility={}, triangles={})",
-            triangle_visibility.size(), num_triangles);
+        SPDLOG_ERROR("Visibility size mismatch (visibility={}, triangles={})", triangle_visibility.size(),
+                     num_triangles);
         throw std::invalid_argument("triangle_visibility size does not match number of triangles");
     }
 
@@ -243,8 +236,7 @@ vtkSmartPointer<vtkPolyData> VisibilityColoredPolyData(IGeometryShadingData& geo
         triangle->GetPointIds()->SetId(2, 3 * tri + 2);
         triangles->InsertNextCell(triangle);
 
-        const float visibility =
-            std::clamp(triangle_visibility[static_cast<std::size_t>(tri)], 0.0f, 1.0f);
+        const float visibility = std::clamp(triangle_visibility[static_cast<std::size_t>(tri)], 0.0f, 1.0f);
         const glm::vec3 color = hidden_color + visibility * (visible_color - hidden_color);
 
         const unsigned char rgb[3] = {

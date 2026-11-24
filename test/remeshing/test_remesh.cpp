@@ -23,14 +23,12 @@ using vat::geometry::StaticMeshGeometry;
 
 namespace {
 
-std::string Shuttlecock() {
-    return GetTestDataPath(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj");
-}
+std::string Shuttlecock() { return GetTestDataPath(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj"); }
 
 // A square panel of side 1 m in z = 0, cut into just two triangles.
 StaticMeshGeometry SquarePanel() {
-    return StaticMeshGeometry(std::vector<MeshData>{
-        MeshData{"panel", {0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0}, {0, 1, 2, 0, 2, 3}}});
+    return StaticMeshGeometry(
+        std::vector<MeshData>{MeshData{"panel", {0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0}, {0, 1, 2, 0, 2, 3}}});
 }
 
 struct Load {
@@ -53,10 +51,9 @@ Load UnshadedSentmanLoad(StaticMeshGeometry& geometry, const glm::vec3& v_rel__m
     glm::dvec3 force(0.0), torque(0.0);
     for (unsigned int t = 0; t < geometry.get_num_triangles(); ++t) {
         glm::vec3 f, m;
-        sentman.calc_aero_force_and_torque(areas[t],
-            glm::vec3(normals[3 * t], normals[3 * t + 1], normals[3 * t + 2]),
-            glm::vec3(centroids[3 * t], centroids[3 * t + 1], centroids[3 * t + 2]),
-            v_rel__m_per_s, 300.0f, aero, f, m);
+        sentman.calc_aero_force_and_torque(areas[t], glm::vec3(normals[3 * t], normals[3 * t + 1], normals[3 * t + 2]),
+                                           glm::vec3(centroids[3 * t], centroids[3 * t + 1], centroids[3 * t + 2]),
+                                           v_rel__m_per_s, 300.0f, aero, f, m);
         force += glm::dvec3(f);
         torque += glm::dvec3(m);
     }
@@ -65,8 +62,8 @@ Load UnshadedSentmanLoad(StaticMeshGeometry& geometry, const glm::vec3& v_rel__m
 
 void ExpectNearVec(const glm::vec3& actual, const glm::vec3& expected, float tolerance, const char* what) {
     EXPECT_LE(glm::length(actual - expected), tolerance)
-        << what << ": (" << actual.x << ", " << actual.y << ", " << actual.z << ") vs ("
-        << expected.x << ", " << expected.y << ", " << expected.z << ")";
+        << what << ": (" << actual.x << ", " << actual.y << ", " << actual.z << ") vs (" << expected.x << ", "
+        << expected.y << ", " << expected.z << ")";
 }
 
 } // namespace
@@ -99,7 +96,7 @@ TEST(RemeshTest, TriangleCountTargetLandsNearIt) {
 
     EXPECT_NEAR(static_cast<double>(result.report.after.num_triangles), 20000.0, 0.25 * 20000.0);
     EXPECT_NEAR(result.report.target_edge_length__m,
-        std::sqrt(result.report.before.total_area__m2 / (0.4330127f * 20000.0f)), 1e-6f);
+                std::sqrt(result.report.before.total_area__m2 / (0.4330127f * 20000.0f)), 1e-6f);
 }
 
 TEST(RemeshTest, ShuttlecockKeepsItsPartsAndLosesItsSlivers) {
@@ -174,7 +171,7 @@ TEST(RemeshTest, InputIsLeftUntouched) {
 TEST(RemeshTest, TurnedInputIsRemeshedUnturned) {
     RotatableMeshGeometry turned(Shuttlecock());
     turned.turn_mesh_around_axis(1, 0.8f, std::array<float, 3>{-0.15f, 0.1f, 0.05f},
-        std::array<float, 3>{0.0f, 1.0f, 0.0f});
+                                 std::array<float, 3>{0.0f, 1.0f, 0.0f});
     StaticMeshGeometry unturned(Shuttlecock());
     RemeshOptions options;
     options.target_triangle_count = 5000;
@@ -217,8 +214,8 @@ TEST(RemeshTest, EmptyGeometryIsRejected) {
 
 TEST(RemeshTest, UnrepairableMeshIsRejected) {
     // A square whose second triangle is wound against the first.
-    StaticMeshGeometry flipped(std::vector<MeshData>{
-        MeshData{"flipped", {0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0}, {0, 1, 2, 0, 3, 2}}});
+    StaticMeshGeometry flipped(
+        std::vector<MeshData>{MeshData{"flipped", {0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0}, {0, 1, 2, 0, 3, 2}}});
     RemeshOptions options;
     options.target_triangle_count = 100;
     EXPECT_THROW(remesh(flipped, options), std::invalid_argument);
@@ -253,7 +250,7 @@ TEST(RemeshPredictionTest, PredictionUsesTheSameEdgeLengthAsRemesh) {
     options.target_triangle_count = 3000;
 
     EXPECT_EQ(predict_remesh(geometry, options).target_edge_length__m,
-        remesh(geometry, options).report.target_edge_length__m);
+              remesh(geometry, options).report.target_edge_length__m);
 }
 
 TEST(RemeshPredictionTest, OversizedRequestIsReportedByPredictionAndRefusedByRemesh) {

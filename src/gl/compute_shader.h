@@ -6,13 +6,12 @@
 
 namespace vat::gl {
 
-class ComputeShader
-{
+class ComputeShader {
 private:
     unsigned int m_ComputeShaderID;
     std::string m_FilePath;
 
-    //caching for uniforms
+    // caching for uniforms
     std::unordered_map<std::string, int> m_UniformLocationCache;
 
 public:

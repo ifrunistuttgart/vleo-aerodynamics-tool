@@ -14,7 +14,7 @@
 #define FMT_UNICODE 0 // aviod error: 'Unicode support requires compiling with /utf-8'
 #include <spdlog/spdlog.h>
 
-//custom abstractions
+// custom abstractions
 #include "flow_camera.h"
 #include "frame_buffer.h"
 #include "gl_helpers.h"
@@ -100,21 +100,12 @@ bool create_g_buffer(std::vector<std::shared_ptr<Texture2D>>& g_buffer_textures,
 
 } // namespace
 
-PixelForceTorqueCalculator::PixelForceTorqueCalculator(
-    IGeometryShadingData& geometry,
-    IGSIModel& gsi_model,
-    unsigned int num_pixel,
-    unsigned int num_msaa_samples,
-    bool keep_pressure_image,
-    float min_cos_delta,
-    FlowRegime flow_regime)
-    : m_geometry(geometry),
-      m_gsi_model(gsi_model),
-      m_num_pixel(num_pixel),
-      m_keep_pressure_image(keep_pressure_image),
-      m_min_cos_delta(min_cos_delta),
-      m_flow_regime(flow_regime),
-      m_gpu(std::make_unique<GpuState>()) {
+PixelForceTorqueCalculator::PixelForceTorqueCalculator(IGeometryShadingData& geometry, IGSIModel& gsi_model,
+                                                       unsigned int num_pixel, unsigned int num_msaa_samples,
+                                                       bool keep_pressure_image, float min_cos_delta,
+                                                       FlowRegime flow_regime)
+    : m_geometry(geometry), m_gsi_model(gsi_model), m_num_pixel(num_pixel), m_keep_pressure_image(keep_pressure_image),
+      m_min_cos_delta(min_cos_delta), m_flow_regime(flow_regime), m_gpu(std::make_unique<GpuState>()) {
     const std::string gsi_glsl = m_gsi_model.glsl_force_per_projected_area();
     if (gsi_glsl.empty()) {
         SPDLOG_ERROR("PixelForceTorqueCalculator: the GSI model has no GPU implementation");
@@ -126,7 +117,8 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
     }
     if (num_msaa_samples == 0) {
         SPDLOG_ERROR("PixelForceTorqueCalculator: num_msaa_samples must be at least 1 (1 = no anti-aliasing)");
-        throw std::invalid_argument("PixelForceTorqueCalculator: num_msaa_samples must be at least 1 (1 = no anti-aliasing)");
+        throw std::invalid_argument(
+            "PixelForceTorqueCalculator: num_msaa_samples must be at least 1 (1 = no anti-aliasing)");
     }
 
     // The window is never shown and never drawn to; all rendering goes to the G-buffer.
@@ -142,7 +134,8 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
     const auto driver_limit = static_cast<unsigned int>(std::max(1, std::min(max_color_samples, max_samples)));
     m_num_msaa_samples = std::min(num_msaa_samples, driver_limit);
     if (m_num_msaa_samples < num_msaa_samples) {
-        SPDLOG_WARN("Requested {} MSAA samples, the driver allows {}; using {}.", num_msaa_samples, driver_limit, m_num_msaa_samples);
+        SPDLOG_WARN("Requested {} MSAA samples, the driver allows {}; using {}.", num_msaa_samples, driver_limit,
+                    m_num_msaa_samples);
     }
 
     // Targets: force, torque and, for the pressure image, pressure (see pixel_loads_glsl.h).
@@ -155,8 +148,8 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
             throw std::runtime_error("PixelForceTorqueCalculator: could not allocate the G-buffer");
         }
         const unsigned int fewer = m_num_msaa_samples / 2;
-        SPDLOG_WARN("Could not allocate the {}x{} G-buffer with {} samples; retrying with {}.",
-            num_pixel, num_pixel, m_num_msaa_samples, fewer);
+        SPDLOG_WARN("Could not allocate the {}x{} G-buffer with {} samples; retrying with {}.", num_pixel, num_pixel,
+                    m_num_msaa_samples, fewer);
         m_num_msaa_samples = fewer;
     }
 
@@ -164,7 +157,8 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
     // copy, which the integration reads: much faster than fetching every sample there.
     if (m_num_msaa_samples > 1 &&
         !create_g_buffer(m_gpu->resolved_textures, m_gpu->resolved, num_pixel, 1, num_targets)) {
-        SPDLOG_ERROR("PixelForceTorqueCalculator: could not allocate the {}x{} resolved G-buffer", num_pixel, num_pixel);
+        SPDLOG_ERROR("PixelForceTorqueCalculator: could not allocate the {}x{} resolved G-buffer", num_pixel,
+                     num_pixel);
         throw std::runtime_error("PixelForceTorqueCalculator: could not allocate the resolved G-buffer");
     }
 
@@ -217,13 +211,15 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(
     m_gpu->vao->AddBuffer(vb_normals, layout_normals);
     m_gpu->vao->Unbind();
 
-    SPDLOG_DEBUG("PixelForceTorqueCalculator ready ({} triangles, {}x{} pixels)",
-        m_geometry.get_num_triangles(), num_pixel, num_pixel);
+    SPDLOG_DEBUG("PixelForceTorqueCalculator ready ({} triangles, {}x{} pixels)", m_geometry.get_num_triangles(),
+                 num_pixel, num_pixel);
 }
 
 PixelForceTorqueCalculator::~PixelForceTorqueCalculator() = default;
 
-int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions& aero, glm::vec3& torque__Nm, glm::vec3& force__N) {
+int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K,
+                                                       AeroConditions& aero, glm::vec3& torque__Nm,
+                                                       glm::vec3& force__N) {
     torque__Nm = glm::vec3(0.0f);
     force__N = glm::vec3(0.0f);
     m_wetted_area__m2 = 0.0;
@@ -231,8 +227,9 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
 
     const float rel_speed = glm::length(v_rel__m_per_s);
     if (!std::isfinite(rel_speed)) {
-        SPDLOG_ERROR("calc_aero_torque_force called with a non-finite relative velocity ({}, {}, {}); the load is undefined, returning NaN and an error code",
-            v_rel__m_per_s.x, v_rel__m_per_s.y, v_rel__m_per_s.z);
+        SPDLOG_ERROR("calc_aero_torque_force called with a non-finite relative velocity ({}, {}, {}); the load is "
+                     "undefined, returning NaN and an error code",
+                     v_rel__m_per_s.x, v_rel__m_per_s.y, v_rel__m_per_s.z);
         torque__Nm = glm::vec3(std::numeric_limits<float>::quiet_NaN());
         force__N = glm::vec3(std::numeric_limits<float>::quiet_NaN());
         return -1;
@@ -272,13 +269,15 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     shader.SetUniform1f("u_min_cos_delta", m_min_cos_delta);
     shader.SetUniform1f("u_edge_on_threshold", edge_on_threshold(rel_speed));
     for (const GlslUniform& uniform : m_gsi_model.glsl_uniforms(aero)) {
-        std::visit([&](auto value) {
-            if constexpr (std::is_same_v<decltype(value), int>) {
-                shader.SetUniform1i(uniform.name, value);
-            } else {
-                shader.SetUniform1f(uniform.name, value);
-            }
-        }, uniform.value);
+        std::visit(
+            [&](auto value) {
+                if constexpr (std::is_same_v<decltype(value), int>) {
+                    shader.SetUniform1i(uniform.name, value);
+                } else {
+                    shader.SetUniform1f(uniform.name, value);
+                }
+            },
+            uniform.value);
     }
     m_gpu->vao->Bind();
     std::span<const glm::mat4> model_matrices = m_geometry.get_model_matrices();
@@ -308,7 +307,8 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     // Pass 2
     const float pixel_edge__m = 2.0f * bounding_sphere_radius / static_cast<float>(m_num_pixel);
     const float pixel_area__m2 = pixel_edge__m * pixel_edge__m;
-    const PixelLoadIntegrator::Sums sums = m_gpu->integrator->integrate(integrated_textures, pixel_area__m2, m_pressure_image);
+    const PixelLoadIntegrator::Sums sums =
+        m_gpu->integrator->integrate(integrated_textures, pixel_area__m2, m_pressure_image);
 
     glm::dvec3 force_sum__N = sums.force__N;
     glm::dvec3 torque_sum__Nm = sums.torque__Nm;
@@ -331,18 +331,18 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
             const glm::vec3 centroid{centroids[3 * i], centroids[3 * i + 1], centroids[3 * i + 2]};
             glm::vec3 aero_force__N;
             glm::vec3 aero_torque__Nm;
-            m_gsi_model.calc_aero_force_and_torque(areas[i], normal, centroid, v_rel__m_per_s, surface_temp__K, aero, aero_force__N, aero_torque__Nm);
+            m_gsi_model.calc_aero_force_and_torque(areas[i], normal, centroid, v_rel__m_per_s, surface_temp__K, aero,
+                                                   aero_force__N, aero_torque__Nm);
             force_sum__N += glm::dvec3(aero_force__N);
             torque_sum__Nm += glm::dvec3(aero_torque__Nm);
         }
     }
 
-
     force__N = glm::vec3(force_sum__N);
     torque__Nm = glm::vec3(torque_sum__Nm);
 
-    SPDLOG_DEBUG("calc_aero_torque_force done (|F|={}, |T|={}, wetted area={} m^2)",
-        glm::length(force__N), glm::length(torque__Nm), m_wetted_area__m2);
+    SPDLOG_DEBUG("calc_aero_torque_force done (|F|={}, |T|={}, wetted area={} m^2)", glm::length(force__N),
+                 glm::length(torque__Nm), m_wetted_area__m2);
     return 0;
 }
 

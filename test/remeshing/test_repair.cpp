@@ -16,9 +16,9 @@
 namespace vat::remeshing {
 // Found by argument-dependent lookup, so gtest can print stats in failure messages.
 std::ostream& operator<<(std::ostream& os, const RepairStats& s) {
-    return os << "merged " << s.merged_vertices << ", unused " << s.removed_unused_vertices
-              << ", duplicate " << s.removed_duplicate_triangles << ", degenerate "
-              << s.removed_degenerate_triangles << ", split " << s.split_vertices;
+    return os << "merged " << s.merged_vertices << ", unused " << s.removed_unused_vertices << ", duplicate "
+              << s.removed_duplicate_triangles << ", degenerate " << s.removed_degenerate_triangles << ", split "
+              << s.split_vertices;
 }
 } // namespace vat::remeshing
 
@@ -55,9 +55,7 @@ MeshData Flatten(const SurfaceMesh& mesh, std::string name = "m") {
 }
 
 // A unit square in z = 0, split along its diagonal, wound towards +z.
-MeshData Square() {
-    return MeshData{"square", {0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0}, {0, 1, 2, 0, 2, 3}};
-}
+MeshData Square() { return MeshData{"square", {0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0}, {0, 1, 2, 0, 2, 3}}; }
 
 std::vector<MeshData> Load(const char* relative_path) {
     return vat::geometry::load_mesh_data(GetTestDataPath(__FILE__, relative_path));
@@ -153,9 +151,7 @@ TEST(RepairTest, DegenerateTrianglesAreRemoved) {
 TEST(RepairTest, FinOnAPlateIsSplitNotFlipped) {
     // Two plate triangles and a fin standing on their shared edge: three triangles on one
     // edge. The fin's winding is arbitrary relative to the plate and must be kept as is.
-    const MeshData mesh{"fin",
-        {0, 0, 0, 1, 0, 0, 0.5f, 1, 0, 0.5f, -1, 0, 0.5f, 0, 1},
-        {0, 1, 2, 1, 0, 3, 0, 1, 4}};
+    const MeshData mesh{"fin", {0, 0, 0, 1, 0, 0, 0.5f, 1, 0, 0.5f, -1, 0, 0.5f, 0, 1}, {0, 1, 2, 1, 0, 3, 0, 1, 4}};
     const RepairedMesh repaired = repair(mesh);
 
     EXPECT_GT(repaired.stats.split_vertices, 0u);

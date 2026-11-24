@@ -11,11 +11,13 @@
 namespace vat::geometry {
 
 /**
-* A geometry class with a static mesh structure. It implements both the IGeometryShadingData and IGeometryManipulator interfaces. 
-* Altough it implements the IGeometryManipulator interface, the turn_mesh and turn_mesh_around_axis functions do not actually change the geometry's configuration, since the mesh is static.
-* This class is useful for testing and benchmarking purposes, as it provides a simple implementation of the geometry interfaces without the complexity of handling dynamic transformations.
-*/
-class StaticMeshGeometry: public IGeometryShadingData, public IGeometryManipulator {
+ * A geometry class with a static mesh structure. It implements both the IGeometryShadingData and IGeometryManipulator
+ * interfaces. Altough it implements the IGeometryManipulator interface, the turn_mesh and turn_mesh_around_axis
+ * functions do not actually change the geometry's configuration, since the mesh is static. This class is useful for
+ * testing and benchmarking purposes, as it provides a simple implementation of the geometry interfaces without the
+ * complexity of handling dynamic transformations.
+ */
+class StaticMeshGeometry : public IGeometryShadingData, public IGeometryManipulator {
 protected:
     std::vector<MeshData> m_mesh_data;
     std::vector<float> m_vertices;
@@ -23,14 +25,14 @@ protected:
     std::vector<float> m_normals;
     std::vector<float> m_areas;
     std::vector<float> m_centroids;
-	std::vector<glm::mat4> m_model_matrices;
+    std::vector<glm::mat4> m_model_matrices;
     std::vector<unsigned int> m_num_triangles_per_mesh;
     std::vector<std::string> m_mesh_names;
     unsigned int m_total_triangles;
     float m_bounding_sphere_radius;
 
 public:
-	StaticMeshGeometry(std::string file);
+    StaticMeshGeometry(std::string file);
 
     /**
      * Builds a geometry from meshes already in memory, e.g. the output of remeshing.
@@ -63,9 +65,10 @@ public:
      */
     std::span<const MeshData> get_mesh_data() const;
 
-	//IGeometryManipulator interface
+    // IGeometryManipulator interface
     int turn_mesh(int mesh_id, float angle__rad) override;
-    int turn_mesh_around_axis(const int mesh_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) override;
+    int turn_mesh_around_axis(const int mesh_id, float angle__rad, const std::array<float, 3>& origin,
+                              const std::array<float, 3>& axis) override;
     int turn_meshes() override;
 };
 

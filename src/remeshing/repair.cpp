@@ -64,8 +64,8 @@ RepairedMesh repair(const geometry::MeshData& mesh) {
 
     // require_same_orientation: CGAL's default treats the front and back face of a
     // zero-thickness panel as duplicates and deletes one, and with it that side's force.
-    stats.removed_duplicate_triangles = PMP::merge_duplicate_polygons_in_polygon_soup(points, polygons,
-        CGAL::parameters::require_same_orientation(true));
+    stats.removed_duplicate_triangles = PMP::merge_duplicate_polygons_in_polygon_soup(
+        points, polygons, CGAL::parameters::require_same_orientation(true));
 
     stats.removed_unused_vertices = PMP::remove_isolated_points_in_polygon_soup(points, polygons);
 
@@ -88,8 +88,9 @@ RepairedMesh repair(const geometry::MeshData& mesh) {
             }
         }
         if (reversed > 0) {
-            throw std::invalid_argument("mesh \"" + mesh.name + "\": " + std::to_string(reversed)
-                + " of " + std::to_string(polygons.size()) + " triangles are wound opposite to the "
+            throw std::invalid_argument(
+                "mesh \"" + mesh.name + "\": " + std::to_string(reversed) + " of " + std::to_string(polygons.size()) +
+                " triangles are wound opposite to the "
                 "neighbours they share an edge with. The winding decides which side of a triangle "
                 "is loaded, so these already get the wrong sign of force. Make the face orientation "
                 "consistent in the modelling tool and export again.");
@@ -97,8 +98,9 @@ RepairedMesh repair(const geometry::MeshData& mesh) {
         stats.split_vertices = points.size() - points_before;
 
         if (!PMP::is_polygon_soup_a_polygon_mesh(polygons)) {
-            throw std::invalid_argument("mesh \"" + mesh.name + "\" could not be turned into a "
-                "valid surface mesh");
+            throw std::invalid_argument("mesh \"" + mesh.name +
+                                        "\" could not be turned into a "
+                                        "valid surface mesh");
         }
     }
 

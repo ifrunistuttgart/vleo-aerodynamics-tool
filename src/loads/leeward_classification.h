@@ -19,9 +19,8 @@ inline constexpr float EDGE_ON_COS_TOLERANCE = 1e-6f;
  * tolerance is dropped and the threshold is 0, i.e. plain dot(n, v_rel) <= 0.
  */
 [[nodiscard]] inline float edge_on_threshold(float rel_speed__m_per_s) {
-    return (std::isfinite(rel_speed__m_per_s) && rel_speed__m_per_s > 0.0f)
-        ? EDGE_ON_COS_TOLERANCE * rel_speed__m_per_s
-        : 0.0f;
+    return (std::isfinite(rel_speed__m_per_s) && rel_speed__m_per_s > 0.0f) ? EDGE_ON_COS_TOLERANCE * rel_speed__m_per_s
+                                                                            : 0.0f;
 }
 
 /**

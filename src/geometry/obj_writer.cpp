@@ -18,8 +18,7 @@ namespace {
 // comma-decimal locale (e.g. a MATLAB session) cannot change the output.
 void AppendFloat(std::string& line, float value) {
     char buffer[32];
-    const auto [end, error] = std::to_chars(buffer, buffer + sizeof(buffer), value,
-        std::chars_format::general, 9);
+    const auto [end, error] = std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::general, 9);
     if (error != std::errc()) {
         throw std::runtime_error("could not format coordinate");
     }
@@ -46,9 +45,10 @@ void write_obj(StaticMeshGeometry& geometry, const std::string& file) {
     }
     for (std::size_t i = 0; i < meshes.size(); ++i) {
         if (meshes[i].indices.empty()) {
-            throw std::invalid_argument("cannot write " + file + ": mesh " + std::to_string(i)
-                + " (\"" + meshes[i].name + "\") has no triangles and would disappear on reload, "
-                "shifting every later mesh_id");
+            throw std::invalid_argument("cannot write " + file + ": mesh " + std::to_string(i) + " (\"" +
+                                        meshes[i].name +
+                                        "\") has no triangles and would disappear on reload, "
+                                        "shifting every later mesh_id");
         }
     }
 
@@ -66,8 +66,8 @@ void write_obj(StaticMeshGeometry& geometry, const std::string& file) {
     for (const MeshData& mesh : meshes) {
         const std::string name = ObjName(mesh.name);
         if (name != mesh.name) {
-            SPDLOG_WARN("Mesh \"{}\" is written as \"{}\": .obj object names cannot contain whitespace",
-                mesh.name, name);
+            SPDLOG_WARN("Mesh \"{}\" is written as \"{}\": .obj object names cannot contain whitespace", mesh.name,
+                        name);
         }
         out << "o " << name << '\n';
         for (std::size_t v = 0; v < mesh.positions.size(); v += 3) {
@@ -81,9 +81,8 @@ void write_obj(StaticMeshGeometry& geometry, const std::string& file) {
             out << line;
         }
         for (std::size_t t = 0; t < mesh.indices.size(); t += 3) {
-            out << "f " << vertex_offset + mesh.indices[t]
-                << ' ' << vertex_offset + mesh.indices[t + 1]
-                << ' ' << vertex_offset + mesh.indices[t + 2] << '\n';
+            out << "f " << vertex_offset + mesh.indices[t] << ' ' << vertex_offset + mesh.indices[t + 1] << ' '
+                << vertex_offset + mesh.indices[t + 2] << '\n';
         }
         vertex_offset += mesh.positions.size() / 3;
     }

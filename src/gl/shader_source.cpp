@@ -9,14 +9,11 @@ namespace vat::gl {
 
 namespace {
 
-bool is_name_char(char c) {
-    return std::isalnum(static_cast<unsigned char>(c)) != 0 || c == '_';
-}
+bool is_name_char(char c) { return std::isalnum(static_cast<unsigned char>(c)) != 0 || c == '_'; }
 
 // Calls visit(begin, end, name) for every `${name}` in text, in order; [begin, end) spans the
 // whole placeholder.
-template <typename Visit>
-void for_each_placeholder(const std::string& text, Visit visit) {
+template <typename Visit> void for_each_placeholder(const std::string& text, Visit visit) {
     size_t pos = 0;
     while ((pos = text.find("${", pos)) != std::string::npos) {
         size_t name_end = pos + 2;
@@ -24,8 +21,8 @@ void for_each_placeholder(const std::string& text, Visit visit) {
             ++name_end;
         }
         if (name_end == pos + 2 || name_end >= text.size() || text[name_end] != '}') {
-            throw std::invalid_argument("ShaderSource: malformed placeholder at offset " + std::to_string(pos)
-                + "; expected ${name} with name made of letters, digits and underscores");
+            throw std::invalid_argument("ShaderSource: malformed placeholder at offset " + std::to_string(pos) +
+                                        "; expected ${name} with name made of letters, digits and underscores");
         }
         visit(pos, name_end + 1, std::string_view(text).substr(pos + 2, name_end - pos - 2));
         pos = name_end + 1;
@@ -56,13 +53,9 @@ ShaderSource& ShaderSource::set(std::string_view name, std::string value) {
     return *this;
 }
 
-ShaderSource& ShaderSource::set(std::string_view name, long long value) {
-    return set(name, std::to_string(value));
-}
+ShaderSource& ShaderSource::set(std::string_view name, long long value) { return set(name, std::to_string(value)); }
 
-bool ShaderSource::is_set(std::string_view name) const {
-    return find_value(name) != nullptr;
-}
+bool ShaderSource::is_set(std::string_view name) const { return find_value(name) != nullptr; }
 
 std::vector<std::string> ShaderSource::unset_placeholders() const {
     std::vector<std::string> unset;

@@ -9,8 +9,6 @@
 
 using namespace vat::geometry;
 
-
-
 // Test class for StaticMeshGeometry
 class StaticMeshGeometryTest : public ::testing::Test {
 protected:
@@ -18,14 +16,12 @@ protected:
 
     void SetUp() override {
         std::string obj_path = GetTestDataPath(__FILE__, "../geometries/tetraeder.obj");
-		SPDLOG_INFO("[TEST] Loading OBJ from: {}", obj_path);
+        SPDLOG_INFO("[TEST] Loading OBJ from: {}", obj_path);
         geometry = new StaticMeshGeometry(obj_path);
-		SPDLOG_INFO("[TEST] Loaded {} triangles", geometry->get_num_triangles());
+        SPDLOG_INFO("[TEST] Loaded {} triangles", geometry->get_num_triangles());
     }
 
-    void TearDown() override {
-        delete geometry;
-    }
+    void TearDown() override { delete geometry; }
 };
 
 // Test: Load the OBJ file successfully
@@ -44,9 +40,7 @@ TEST_F(StaticMeshGeometryTest, VerifyVertexCount) {
 }
 
 // Test: Verify triangle count
-TEST_F(StaticMeshGeometryTest, VerifyTriangleCount) {
-    EXPECT_EQ(geometry->get_num_triangles(), 4);
-}
+TEST_F(StaticMeshGeometryTest, VerifyTriangleCount) { EXPECT_EQ(geometry->get_num_triangles(), 4); }
 
 // Test: Verify triangle indices
 TEST_F(StaticMeshGeometryTest, VerifyTriangleIndices) {
@@ -57,59 +51,53 @@ TEST_F(StaticMeshGeometryTest, VerifyTriangleIndices) {
 
 // Test: Verify normals are computed
 TEST_F(StaticMeshGeometryTest, VerifyNormals) {
-	auto normals = geometry->get_transformed_normals();
-	// 4 triangles * 3 values per normal = 12 values
-	EXPECT_EQ(normals.size(), 12);
-	EXPECT_EQ(geometry->get_untransformed_normals().size(), 12);
-	float expected_normals[12] = {    0.0f,    0.0f,   -1.0f,
-								  -0.5774f, 0.5774f, 0.5774f,
-								  -0.5774f,-0.5774f, 0.5774f,
-								  1.0f,    0.0f,    0.0f};
-	// Each normal should be normalized (length close to 1)
-	for (size_t i = 0; i < normals.size(); i += 3) {
-		EXPECT_NEAR(normals[i], expected_normals[i], 1e-4f)
-			<< "Normal x at index " << i << " is " << normals[i];
-	}
+    auto normals = geometry->get_transformed_normals();
+    // 4 triangles * 3 values per normal = 12 values
+    EXPECT_EQ(normals.size(), 12);
+    EXPECT_EQ(geometry->get_untransformed_normals().size(), 12);
+    float expected_normals[12] = {0.0f,     0.0f,     -1.0f,   -0.5774f, 0.5774f, 0.5774f,
+                                  -0.5774f, -0.5774f, 0.5774f, 1.0f,     0.0f,    0.0f};
+    // Each normal should be normalized (length close to 1)
+    for (size_t i = 0; i < normals.size(); i += 3) {
+        EXPECT_NEAR(normals[i], expected_normals[i], 1e-4f) << "Normal x at index " << i << " is " << normals[i];
+    }
 }
 
 // Test: Verify centroids are computed
 TEST_F(StaticMeshGeometryTest, VerifyCentroids) {
-	auto centroids = geometry->get_transformed_centroids();
-	// 4 triangles * 3 values per centroid = 12 values
-	EXPECT_EQ(centroids.size(), 12);
-	EXPECT_EQ(geometry->get_untransformed_centroids().size(), 12);
-	float cntroids[12] = { -0.1667f,    0.0f,    0.0f,
-						   -0.1667f, 0.1667f, 0.1667f,
-						   -0.1667f,-0.1667f, 0.1667f,
-							   0.0f,    0.0f, 0.1667f };
-	// Verify centroids are within reasonable bounds
-	for (size_t i = 0; i < centroids.size(); i += 3) {
-		EXPECT_NEAR(centroids[i], cntroids[i], 1e-4f) 
-			<< "Centroid x at index " << i << " is " << centroids[i];
-	}
+    auto centroids = geometry->get_transformed_centroids();
+    // 4 triangles * 3 values per centroid = 12 values
+    EXPECT_EQ(centroids.size(), 12);
+    EXPECT_EQ(geometry->get_untransformed_centroids().size(), 12);
+    float cntroids[12] = {-0.1667f, 0.0f,     0.0f,    -0.1667f, 0.1667f, 0.1667f,
+                          -0.1667f, -0.1667f, 0.1667f, 0.0f,     0.0f,    0.1667f};
+    // Verify centroids are within reasonable bounds
+    for (size_t i = 0; i < centroids.size(); i += 3) {
+        EXPECT_NEAR(centroids[i], cntroids[i], 1e-4f) << "Centroid x at index " << i << " is " << centroids[i];
+    }
 }
 
 // Test: Verify areas are computed
 TEST_F(StaticMeshGeometryTest, VerifyAreas) {
-	auto areas = geometry->get_areas();
-	// 4 triangles = 4 area values
-	EXPECT_EQ(areas.size(), 4);
+    auto areas = geometry->get_areas();
+    // 4 triangles = 4 area values
+    EXPECT_EQ(areas.size(), 4);
 
-	EXPECT_NEAR(areas[0], 0.25f, 1e-4f); // Base triangle area
-	EXPECT_NEAR(areas[1], 0.2165f, 1e-4f); // Side triangle area
-	EXPECT_NEAR(areas[2], 0.2165f, 1e-4f); // Side triangle area
-	EXPECT_NEAR(areas[3], 0.25f, 1e-4f); // Side triangle area
-	// All areas should be positive
-	for (float area : areas) {
-		EXPECT_GT(area, 0.0f) << "Triangle area should be positive";
-	}
+    EXPECT_NEAR(areas[0], 0.25f, 1e-4f);   // Base triangle area
+    EXPECT_NEAR(areas[1], 0.2165f, 1e-4f); // Side triangle area
+    EXPECT_NEAR(areas[2], 0.2165f, 1e-4f); // Side triangle area
+    EXPECT_NEAR(areas[3], 0.25f, 1e-4f);   // Side triangle area
+    // All areas should be positive
+    for (float area : areas) {
+        EXPECT_GT(area, 0.0f) << "Triangle area should be positive";
+    }
 }
 
 // Test: Verify triangles per mesh
 TEST_F(StaticMeshGeometryTest, VerifyTrianglesPerMesh) {
     auto tri_per_mesh = geometry->get_num_triangles_per_mesh();
     EXPECT_EQ(tri_per_mesh.size(), 1); // Single mesh
-    EXPECT_EQ(tri_per_mesh[0], 4); // 4 triangles
+    EXPECT_EQ(tri_per_mesh[0], 4);     // 4 triangles
 }
 
 // Test: Verify bounding sphere radius

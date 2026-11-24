@@ -43,7 +43,7 @@ public:
      *
      * @return A span containing the triangle IDs (indices into the vertex array).
      */
-    virtual  std::span<const std::uint32_t> get_triangle_ids() = 0;
+    virtual std::span<const std::uint32_t> get_triangle_ids() = 0;
 
     /**
      * Retrieves the normals of the triangles in the geometry's meshes, including any

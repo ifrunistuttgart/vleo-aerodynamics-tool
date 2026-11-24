@@ -33,10 +33,10 @@ void WarnIfFileUsesGroups(const aiScene* scene, const std::string& file) {
     }
 
     SPDLOG_WARN("{} appears to separate its parts with groups: found {} group(s) but {} "
-        "mesh(es). Do not use groups in your .obj export -- use the 'o' identifier to "
-        "separate meshes. Each mesh is what turn_mesh_around_axis() rotates, so with "
-        "groups every mesh_id addresses only a fragment of a part.",
-        file, num_group_markers, scene->mNumMeshes);
+                "mesh(es). Do not use groups in your .obj export -- use the 'o' identifier to "
+                "separate meshes. Each mesh is what turn_mesh_around_axis() rotates, so with "
+                "groups every mesh_id addresses only a fragment of a part.",
+                file, num_group_markers, scene->mNumMeshes);
 }
 
 } // namespace
@@ -47,8 +47,8 @@ std::vector<MeshData> load_mesh_data(const std::string& file) {
 
     // Load the scene with post-processing flags
     const aiScene* scene = importer.ReadFile(file,
-        aiProcess_Triangulate |           // Ensure all faces are triangles
-        aiProcess_JoinIdenticalVertices // Join identical vertices
+                                             aiProcess_Triangulate |             // Ensure all faces are triangles
+                                                 aiProcess_JoinIdenticalVertices // Join identical vertices
     );
 
     if (!scene || scene->mNumMeshes == 0) {
@@ -67,8 +67,8 @@ std::vector<MeshData> load_mesh_data(const std::string& file) {
     std::size_t num_triangles = 0;
     for (unsigned int mesh_idx = 0; mesh_idx < scene->mNumMeshes; ++mesh_idx) {
         const aiMesh* mesh = scene->mMeshes[mesh_idx];
-        SPDLOG_DEBUG("Processing mesh {} (\"{}\") with {} faces and {} vertices",
-            mesh_idx, mesh->mName.C_Str(), mesh->mNumFaces, mesh->mNumVertices);
+        SPDLOG_DEBUG("Processing mesh {} (\"{}\") with {} faces and {} vertices", mesh_idx, mesh->mName.C_Str(),
+                     mesh->mNumFaces, mesh->mNumVertices);
 
         MeshData& data = meshes.emplace_back();
         data.name = mesh->mName.C_Str();
@@ -95,8 +95,8 @@ std::vector<MeshData> load_mesh_data(const std::string& file) {
         }
         if (num_dropped > 0) {
             SPDLOG_WARN("{}: mesh {} (\"{}\") contains {} point/line element(s); they are "
-                "ignored, only triangles enter the calculation. Check the export settings.",
-                file, mesh_idx, data.name, num_dropped);
+                        "ignored, only triangles enter the calculation. Check the export settings.",
+                        file, mesh_idx, data.name, num_dropped);
         }
         num_triangles += data.indices.size() / 3;
     }

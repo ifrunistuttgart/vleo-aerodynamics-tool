@@ -49,7 +49,7 @@ TEST(MeshQualityTest, TetrahedronHasKnownValues) {
     EXPECT_NEAR(q.mean_area__m2, (2 * equilateral_area + 2 * right_area) / 4, 1e-6);
     EXPECT_NEAR(q.aspect_ratio.min, 1.0, 1e-6);
     EXPECT_NEAR(q.aspect_ratio.max, right_aspect, 1e-5);
-    EXPECT_NEAR(q.min_altitude__m.min, 0.5, 1e-6);                                // right: 2A / 1
+    EXPECT_NEAR(q.min_altitude__m.min, 0.5, 1e-6);                                   // right: 2A / 1
     EXPECT_NEAR(q.min_altitude__m.max, 2 * equilateral_area / std::sqrt(0.5), 1e-6); // equilateral
     EXPECT_NEAR(q.bounding_sphere_radius__m, 0.5f, 1e-7f);
 }
@@ -65,9 +65,7 @@ TEST(MeshQualityTest, SliverIsNarrowAndHasLargeAspectRatio) {
 
 TEST(MeshQualityTest, DegenerateTrianglesAreCountedNotRanked) {
     // One proper triangle and one whose corners are collinear.
-    const MeshQuality q = QualityOf(
-        {0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0},
-        {0, 1, 2, 0, 1, 3});
+    const MeshQuality q = QualityOf({0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0}, {0, 1, 2, 0, 1, 3});
 
     EXPECT_EQ(q.num_triangles, 2u);
     EXPECT_EQ(q.num_degenerate, 1u);
@@ -100,7 +98,8 @@ TEST(MeshQualityTest, TurningAMeshKeepsTriangleShapes) {
     const std::string path = GetTestDataPath(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj");
     RotatableMeshGeometry geometry(path);
     const MeshQuality before = compute_mesh_quality(geometry);
-    geometry.turn_mesh_around_axis(1, 1.2f, std::array<float, 3>{-0.15f, 0.1f, 0.05f}, std::array<float, 3>{0.0f, 1.0f, 0.0f});
+    geometry.turn_mesh_around_axis(1, 1.2f, std::array<float, 3>{-0.15f, 0.1f, 0.05f},
+                                   std::array<float, 3>{0.0f, 1.0f, 0.0f});
     const MeshQuality after = compute_mesh_quality(geometry);
 
     EXPECT_NEAR(after.total_area__m2, before.total_area__m2, 1e-6f * before.total_area__m2);

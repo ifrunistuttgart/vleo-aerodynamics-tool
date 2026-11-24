@@ -1,3 +1,1 @@
-target_sources(geometry_test PRIVATE
-	tetraeder_vector.h
-)
+target_sources(geometry_test PRIVATE tetraeder_vector.h)

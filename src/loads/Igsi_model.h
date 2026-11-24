@@ -42,7 +42,9 @@ public:
      * @param aero_torque__Nm Output parameter for the calculated aerodynamic torque [Nm].
      * @return 0 on success, or a non-zero error code on failure.
      */
-    virtual int calc_aero_force_and_torque(float area__m2, const glm::vec3& normal, const glm::vec3& centroid__m, const glm::vec3& v_rel__m_per_s, float surf_temp__K, AeroConditions& aero, glm::vec3& aero_force__N, glm::vec3& aero_torque__Nm) = 0;
+    virtual int calc_aero_force_and_torque(float area__m2, const glm::vec3& normal, const glm::vec3& centroid__m,
+                                           const glm::vec3& v_rel__m_per_s, float surf_temp__K, AeroConditions& aero,
+                                           glm::vec3& aero_force__N, glm::vec3& aero_torque__Nm) = 0;
 
     /**
      * Force per unit wetted area that the gas exerts on a surface element [N/m^2].
@@ -57,7 +59,8 @@ public:
      * @param aero A structure containing atmospheric and interaction conditions.
      * @return The force per unit wetted area [N/m^2].
      */
-    [[nodiscard]] virtual glm::vec3 force_per_area(const glm::vec3& normal, const glm::vec3& v_rel__m_per_s, float surf_temp__K, const AeroConditions& aero) const {
+    [[nodiscard]] virtual glm::vec3 force_per_area(const glm::vec3& normal, const glm::vec3& v_rel__m_per_s,
+                                                   float surf_temp__K, const AeroConditions& aero) const {
         throw std::logic_error("force_per_area is not implemented for this GSI model");
     }
 
@@ -77,9 +80,7 @@ public:
      *
      * @return The GLSL source, or an empty string if the model has no GPU implementation.
      */
-    [[nodiscard]] virtual std::string glsl_force_per_projected_area() const {
-        return {};
-    }
+    [[nodiscard]] virtual std::string glsl_force_per_projected_area() const { return {}; }
 
     /**
      * Values for the uniforms that glsl_force_per_projected_area() declares.
@@ -90,9 +91,7 @@ public:
      * @param aero A structure containing atmospheric and interaction conditions.
      * @return One entry per uniform.
      */
-    [[nodiscard]] virtual std::vector<GlslUniform> glsl_uniforms(const AeroConditions& aero) const {
-        return {};
-    }
+    [[nodiscard]] virtual std::vector<GlslUniform> glsl_uniforms(const AeroConditions& aero) const { return {}; }
 
     virtual ~IGSIModel() = default;
 

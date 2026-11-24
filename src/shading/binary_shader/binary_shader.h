@@ -38,30 +38,33 @@ namespace vat::shading {
  */
 class BinaryShader : public IShadingAlgorithm {
 private:
-	std::unique_ptr<gl::FrameBuffer> m_frame_buffer;
-	std::unique_ptr<gl::Shader> m_shader;
-	std::unique_ptr<gl::VertexArray> m_vao;
-	std::unique_ptr<VisibilityReducer> m_visibility;
-	const unsigned int MAX_TRIANGLES = (2u << 28) - 1; //keeps the per-triangle visibility buffer to a sane size
-	unsigned int m_numTriangles = 0;
-	unsigned int m_num_msaa_samples = 0;
-	const unsigned int REQUESTED_MSAA_SAMPLES;
-	const unsigned int NUM_PIXEL = 800;
+    std::unique_ptr<gl::FrameBuffer> m_frame_buffer;
+    std::unique_ptr<gl::Shader> m_shader;
+    std::unique_ptr<gl::VertexArray> m_vao;
+    std::unique_ptr<VisibilityReducer> m_visibility;
+    const unsigned int MAX_TRIANGLES = (2u << 28) - 1; // keeps the per-triangle visibility buffer to a sane size
+    unsigned int m_numTriangles = 0;
+    unsigned int m_num_msaa_samples = 0;
+    const unsigned int REQUESTED_MSAA_SAMPLES;
+    const unsigned int NUM_PIXEL = 800;
 
-	void draw_meshes(const glm::mat4& view_projection, std::span<const unsigned int> num_triangles_per_mesh,
-		std::span<const glm::mat4> model_matrices);
+    void draw_meshes(const glm::mat4& view_projection, std::span<const unsigned int> num_triangles_per_mesh,
+                     std::span<const glm::mat4> model_matrices);
+
 public:
-	/**
-	 * @param num_pixel   Edge length of the square render target.
-	 * @param num_msaa_samples Samples per pixel; 1 means no anti-aliasing, > 1 enables MSAA.
-	 */
-	explicit BinaryShader(unsigned int num_pixel, unsigned int num_msaa_samples = 1);
-	~BinaryShader() override;
-	int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) override;
-	std::vector<float> shade_geometry(glm::vec3 v_rel_hat, float bounding_sphere_radius, std::span<const unsigned int> num_triangles_per_mesh, std::span<const glm::mat4> model_matrices) override;
+    /**
+     * @param num_pixel   Edge length of the square render target.
+     * @param num_msaa_samples Samples per pixel; 1 means no anti-aliasing, > 1 enables MSAA.
+     */
+    explicit BinaryShader(unsigned int num_pixel, unsigned int num_msaa_samples = 1);
+    ~BinaryShader() override;
+    int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) override;
+    std::vector<float> shade_geometry(glm::vec3 v_rel_hat, float bounding_sphere_radius,
+                                      std::span<const unsigned int> num_triangles_per_mesh,
+                                      std::span<const glm::mat4> model_matrices) override;
 
-	// Samples per pixel actually used, after clamping to the driver limits; 0 before set_vertices().
-	unsigned int get_num_msaa_samples() const { return m_num_msaa_samples; }
+    // Samples per pixel actually used, after clamping to the driver limits; 0 before set_vertices().
+    unsigned int get_num_msaa_samples() const { return m_num_msaa_samples; }
 };
 
 } // namespace vat::shading

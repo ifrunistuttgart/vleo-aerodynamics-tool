@@ -14,16 +14,14 @@ using namespace vat::geometry;
 
 namespace {
 
-std::string TetraPath() {
-    return GetTestDataPath(__FILE__, "../geometries/tetraeder.obj");
-}
+std::string TetraPath() { return GetTestDataPath(__FILE__, "../geometries/tetraeder.obj"); }
 
 // test/geometries/tetraeder.obj written out by hand: same vertices, faces 1-based there.
 MeshData HandBuiltTetra(std::string name = "") {
     return MeshData{
         std::move(name),
-        {0.0f, -0.5f, 0.0f,  0.0f, 0.5f, 0.0f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.0f, 0.0f},
-        {0, 3, 1,  1, 3, 2,  2, 3, 0,  0, 1, 2},
+        {0.0f, -0.5f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f},
+        {0, 3, 1, 1, 3, 2, 2, 3, 0, 0, 1, 2},
     };
 }
 

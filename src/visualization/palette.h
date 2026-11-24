@@ -33,9 +33,7 @@ inline const glm::vec3 kMeshPalette[] = {
  * Wraps around for geometries with more meshes than the palette holds; the repeats stay
  * usable because the legend spells out the id.
  */
-inline glm::vec3 MeshColor(std::size_t mesh_index) {
-    return kMeshPalette[mesh_index % std::size(kMeshPalette)];
-}
+inline glm::vec3 MeshColor(std::size_t mesh_index) { return kMeshPalette[mesh_index % std::size(kMeshPalette)]; }
 
 // Colours the shading view maps triangle visibility between.
 inline const glm::vec3 kVisibleTriangleColor(0.0f, 1.0f, 0.0f);

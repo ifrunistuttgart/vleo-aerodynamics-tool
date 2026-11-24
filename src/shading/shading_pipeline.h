@@ -24,8 +24,8 @@ private:
 
     // Marks the constructor that takes an already resolved, non-optional num_pixel.
     struct ResolvedTag {};
-    ShadingPipeline(IGeometryShadingData& geometry, ShadingAlgorithmType algorithm_type,
-        unsigned int num_pixel, unsigned int num_msaa_samples, ResolvedTag);
+    ShadingPipeline(IGeometryShadingData& geometry, ShadingAlgorithmType algorithm_type, unsigned int num_pixel,
+                    unsigned int num_msaa_samples, ResolvedTag);
 
 public:
     /**
@@ -43,12 +43,8 @@ public:
      *         (for example the geometry has too many triangles, or the render target does
      *         not fit in GPU memory).
      */
-    ShadingPipeline(
-        IGeometryShadingData& geometry,
-        ShadingAlgorithmType algorithm_type,
-        std::optional<unsigned int> num_pixel = std::nullopt,
-        unsigned int num_msaa_samples = 1
-    );
+    ShadingPipeline(IGeometryShadingData& geometry, ShadingAlgorithmType algorithm_type,
+                    std::optional<unsigned int> num_pixel = std::nullopt, unsigned int num_msaa_samples = 1);
 
     unsigned int get_num_pixel() const { return m_num_pixel; }
 

@@ -89,7 +89,7 @@ TEST(PixelSizingTest, PipelineRendersAtTheRequestedResolutionBeyondTheScreen) {
     for (int j = 0; j <= ny; ++j) {
         for (int i = 0; i <= nx; ++i) {
             panel.positions.insert(panel.positions.end(),
-                {-0.5f + static_cast<float>(i) / nx, -0.5f + static_cast<float>(j) / ny, 0.0f});
+                                   {-0.5f + static_cast<float>(i) / nx, -0.5f + static_cast<float>(j) / ny, 0.0f});
         }
     }
     for (int j = 0; j < ny; ++j) {

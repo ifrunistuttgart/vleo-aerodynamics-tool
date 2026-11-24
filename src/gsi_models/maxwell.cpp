@@ -7,21 +7,19 @@
 
 namespace vat::gsi_models {
 
-Maxwell::Maxwell(const float alpha_e){
-    set_alpha_e(alpha_e);
-}
+Maxwell::Maxwell(const float alpha_e) { set_alpha_e(alpha_e); }
 
-int Maxwell::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, const glm::vec3 &centroid__m,
-                                     const glm::vec3 &v_rel__m_per_s, float surf_temp__K, AeroConditions &aero, glm::vec3 &aero_force__N,
-                                     glm::vec3 &aero_torque__Nm) {
+int Maxwell::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal, const glm::vec3& centroid__m,
+                                        const glm::vec3& v_rel__m_per_s, float surf_temp__K, AeroConditions& aero,
+                                        glm::vec3& aero_force__N, glm::vec3& aero_torque__Nm) {
     aero_force__N = force_per_area(normal, v_rel__m_per_s, surf_temp__K, aero) * area__m2;
     aero_torque__Nm = glm::cross(centroid__m, aero_force__N);
     return 0;
 }
 
-glm::vec3 Maxwell::force_per_area(const glm::vec3 &normal, const glm::vec3 &v_rel__m_per_s, float surf_temp__K,
-                                 const AeroConditions &aero) const {
-    if(glm::dot(v_rel__m_per_s, normal)< 0.0f) {
+glm::vec3 Maxwell::force_per_area(const glm::vec3& normal, const glm::vec3& v_rel__m_per_s, float surf_temp__K,
+                                  const AeroConditions& aero) const {
+    if (glm::dot(v_rel__m_per_s, normal) < 0.0f) {
         return glm::vec3(0.0f); // No aerodynamic force if the surface is facing away from the flow
     }
     // Extract aerodynamic conditions
@@ -31,16 +29,19 @@ glm::vec3 Maxwell::force_per_area(const glm::vec3 &normal, const glm::vec3 &v_re
     const float epsilon = 1 - m_alpha_e;
     const float particle_mass__kg = aero.particle_mass__kg;
 
-    glm::vec3 v_rel_inv__m_per_s = -v_rel__m_per_s; // Invert velocity to match GSIMs convention (velocity of gas relative to surface)
+    glm::vec3 v_rel_inv__m_per_s =
+        -v_rel__m_per_s; // Invert velocity to match GSIMs convention (velocity of gas relative to surface)
 
     const float v_rel_magnitude__m_per_s = glm::length(v_rel_inv__m_per_s);
     if (v_rel_magnitude__m_per_s < 1e-10f) {
-        SPDLOG_WARN("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.", v_rel_magnitude__m_per_s);
+        SPDLOG_WARN("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.",
+                    v_rel_magnitude__m_per_s);
         return glm::vec3(0.0f); // No relative velocity, no force
     }
 
     // Most probable thermal velocity of the gas
-    const float thermal_velocity__m_per_s = std::sqrt(2.0f * BOLTZMANN_CONSTANT__J_PER_K * temperature_i__K / particle_mass__kg);
+    const float thermal_velocity__m_per_s =
+        std::sqrt(2.0f * BOLTZMANN_CONSTANT__J_PER_K * temperature_i__K / particle_mass__kg);
 
     const float molecular_speed_ratio = v_rel_magnitude__m_per_s / thermal_velocity__m_per_s;
 
@@ -61,7 +62,7 @@ glm::vec3 Maxwell::force_per_area(const glm::vec3 &normal, const glm::vec3 &v_re
     const float s2 = s * s;
     const float sin2_alpha = sin_alpha * sin_alpha;
     const float cos_2alpha = cos_alpha * cos_alpha - sin2_alpha; // Double angle: cos(2*alpha)
-    const float sqrt_pi = 1.77245385f; // Precomputed value of sqrt(pi)
+    const float sqrt_pi = 1.77245385f;                           // Precomputed value of sqrt(pi)
 
     const float exp_term = std::exp(-s2 * sin2_alpha);
     const float erf_term = std::erf(s * sin_alpha);
@@ -90,7 +91,7 @@ std::string Maxwell::glsl_force_per_projected_area() const {
     return std::string(common_glsl::helpers) + maxwell_glsl::force_per_projected_area;
 }
 
-std::vector<GlslUniform> Maxwell::glsl_uniforms(const AeroConditions &aero) const {
+std::vector<GlslUniform> Maxwell::glsl_uniforms(const AeroConditions& aero) const {
     return {
         {"u_gsi_density", aero.density__kg_per_m3},
         {"u_gsi_T_inf", aero.T_atmospheric__K},
@@ -119,12 +120,10 @@ void Maxwell::set_alpha_e(float alpha_e) {
     if (alpha_e < 0.0f) {
         SPDLOG_WARN("alpha_e must be positive, setting to 0.0");
         m_alpha_e = 0.0f;
-    }
-    else if (alpha_e > 1.0f) {
+    } else if (alpha_e > 1.0f) {
         SPDLOG_WARN("alpha_e must be less than 1.0, setting to 1.0");
         m_alpha_e = 1.0f;
-    }
-    else {
+    } else {
         m_alpha_e = alpha_e;
     }
 }

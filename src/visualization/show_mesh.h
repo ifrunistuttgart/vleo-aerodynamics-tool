@@ -47,16 +47,13 @@ struct ViewOptions {
  *
  * @param geometry - Reference to the geometry shading data.
  * @param triangle_visibility - Vector containing the visibility values for each triangle.
- * @param v_rel__m_per_s - relative velocity vector of the geometry with respect to the surrounding gas, in the satellite's body frame.
+ * @param v_rel__m_per_s - relative velocity vector of the geometry with respect to the surrounding gas, in the
+ * satellite's body frame.
  * @param options - Shared view settings.
  * @throws std::invalid_argument if triangle_visibility does not have one entry per triangle.
  */
-void ShowShading(
-    IGeometryShadingData& geometry,
-    const std::vector<float>& triangle_visibility,
-    const glm::vec3& v_rel__m_per_s,
-    const ViewOptions& options = {}
-);
+void ShowShading(IGeometryShadingData& geometry, const std::vector<float>& triangle_visibility,
+                 const glm::vec3& v_rel__m_per_s, const ViewOptions& options = {});
 
 /**
  * Displays a geometry with each mesh in its own color, plus a legend naming them.
@@ -91,7 +88,6 @@ void ShowMeshes(IGeometryShadingData& geometry, const ViewOptions& options = {})
  * @throws std::invalid_argument if the geometry has no meshes, or a hinge has an out-of-range
  *         mesh_id or a zero-length axis.
  */
-void ShowHinges(IGeometryShadingData& geometry, const std::vector<Hinge>& hinges,
-    const ViewOptions& options = {});
+void ShowHinges(IGeometryShadingData& geometry, const std::vector<Hinge>& hinges, const ViewOptions& options = {});
 
 } // namespace vat::visualization

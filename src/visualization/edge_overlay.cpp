@@ -45,8 +45,7 @@ float EdgeOverlay::TrianglePixelExtent(vtkRenderer* renderer, float extent__m) {
 }
 
 float EdgeOverlay::FadeAlpha(float extent__px) {
-    const float t = std::clamp(
-        (extent__px - kEdgeFadeMinPx) / (kEdgeFadeFullPx - kEdgeFadeMinPx), 0.0f, 1.0f);
+    const float t = std::clamp((extent__px - kEdgeFadeMinPx) / (kEdgeFadeFullPx - kEdgeFadeMinPx), 0.0f, 1.0f);
     return t * t * (3.0f - 2.0f * t); // smoothstep
 }
 
@@ -55,9 +54,7 @@ void EdgeOverlay::ApplyForCamera(vtkRenderer* renderer) {
         return;
     }
 
-    const float alpha = m_enabled
-        ? FadeAlpha(TrianglePixelExtent(renderer, m_mean_triangle_extent__m))
-        : 0.0f;
+    const float alpha = m_enabled ? FadeAlpha(TrianglePixelExtent(renderer, m_mean_triangle_extent__m)) : 0.0f;
 
     for (Mesh& mesh : m_meshes) {
         if (alpha <= kEdgeInvisibleAlpha) {

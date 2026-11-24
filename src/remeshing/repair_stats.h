@@ -21,8 +21,9 @@ struct RepairStats {
     std::size_t split_vertices = 0;
 
     bool changed() const {
-        return merged_vertices + removed_unused_vertices + removed_duplicate_triangles
-            + removed_degenerate_triangles + split_vertices > 0;
+        return merged_vertices + removed_unused_vertices + removed_duplicate_triangles + removed_degenerate_triangles +
+                   split_vertices >
+               0;
     }
 };
 

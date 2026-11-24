@@ -27,8 +27,7 @@ protected:
 
     void SetUp() override {
         const auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
-        out_path = std::filesystem::temp_directory_path()
-            / (std::string("vat_obj_writer_") + info->name() + ".obj");
+        out_path = std::filesystem::temp_directory_path() / (std::string("vat_obj_writer_") + info->name() + ".obj");
     }
 
     void TearDown() override {
@@ -111,9 +110,7 @@ TEST_F(ObjWriterTest, AwkwardCoordinatesReadBackWithinOneUlp) {
     // Values with no short decimal form, a wide range of magnitudes, and 5e-4, whose
     // shortest decimal spelling assimp reads back one ulp low.
     const std::vector<float> positions = {
-        0.1f, 1.0f / 3.0f, -2.0f / 7.0f,
-        1.0e-7f, 123456.789f, -0.000123456f,
-        3.14159265f, -1.0e6f, 5.0e-4f,
+        0.1f, 1.0f / 3.0f, -2.0f / 7.0f, 1.0e-7f, 123456.789f, -0.000123456f, 3.14159265f, -1.0e6f, 5.0e-4f,
     };
     StaticMeshGeometry original(std::vector<MeshData>{Triangle("tri", positions)});
     write_obj(original, Out());
@@ -150,7 +147,8 @@ TEST_F(ObjWriterTest, WhitespaceInNamesBecomesUnderscores) {
 
 TEST_F(ObjWriterTest, TurnedGeometryWritesUntransformedMeshes) {
     RotatableMeshGeometry geometry(GetTestDataPath(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj"));
-    StaticMeshGeometry untransformed_reference(GetTestDataPath(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj"));
+    StaticMeshGeometry untransformed_reference(
+        GetTestDataPath(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj"));
     geometry.turn_mesh_around_axis(1, 0.3f, ORIGIN, AXIS);
 
     EXPECT_NO_THROW(write_obj(geometry, Out()));

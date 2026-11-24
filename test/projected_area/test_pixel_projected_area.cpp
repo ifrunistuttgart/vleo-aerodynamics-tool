@@ -10,7 +10,7 @@ TEST(PixelProjectedAreaTest, FaceOnPlateGivesItsArea) {
     InMemoryGeometry plate;
     // Counter-clockwise seen from +x, so the normal is +x.
     plate.add_quad(glm::vec3(0.0f, -0.5f, -0.5f), glm::vec3(0.0f, 0.5f, -0.5f), glm::vec3(0.0f, 0.5f, 0.5f),
-        glm::vec3(0.0f, -0.5f, 0.5f));
+                   glm::vec3(0.0f, -0.5f, 0.5f));
 
     constexpr unsigned int num_pixel = 512;
     PixelProjectedArea projected_area(plate, num_pixel);

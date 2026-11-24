@@ -8,69 +8,49 @@
 namespace vat::gl {
 
 // Constructor: create compute shader directly from provided source string
-ComputeShader::ComputeShader(const std::string& computeSource)
-    : m_FilePath(""), m_ComputeShaderID(0)
-{
+ComputeShader::ComputeShader(const std::string& computeSource) : m_FilePath(""), m_ComputeShaderID(0) {
     if (computeSource.empty()) {
-		SPDLOG_ERROR("Computeshader source is empty");
+        SPDLOG_ERROR("Computeshader source is empty");
         return;
     }
     m_ComputeShaderID = CreateShader(computeSource);
 }
 
-ComputeShader::ComputeShader(const ShaderSource& computeSource)
-    : m_FilePath(""), m_ComputeShaderID(0)
-{
+ComputeShader::ComputeShader(const ShaderSource& computeSource) : m_FilePath(""), m_ComputeShaderID(0) {
     m_ComputeShaderID = CreateShader(computeSource.glsl());
 }
 
-ComputeShader::~ComputeShader()
-{
-    GLCall(glDeleteProgram(m_ComputeShaderID));
-}
+ComputeShader::~ComputeShader() { GLCall(glDeleteProgram(m_ComputeShaderID)); }
 
-void ComputeShader::Bind() const
-{
-    GLCall(glUseProgram(m_ComputeShaderID));
-}
+void ComputeShader::Bind() const { GLCall(glUseProgram(m_ComputeShaderID)); }
 
-void ComputeShader::Unbind() const
-{
-    GLCall(glUseProgram(0));
-}
+void ComputeShader::Unbind() const { GLCall(glUseProgram(0)); }
 
-void ComputeShader::dispatch(unsigned int groups_x, unsigned int groups_y, unsigned int groups_z) const
-{
+void ComputeShader::dispatch(unsigned int groups_x, unsigned int groups_y, unsigned int groups_z) const {
     GLCall(glDispatchCompute(groups_x, groups_y, groups_z));
 }
 
-void ComputeShader::SetUniform1i(const std::string& name, int value)
-{
+void ComputeShader::SetUniform1i(const std::string& name, int value) {
     GLCall(glUniform1i(GetUniformLocation(name), value));
 }
 
-void ComputeShader::SetUniform1f(const std::string& name, float value)
-{
+void ComputeShader::SetUniform1f(const std::string& name, float value) {
     GLCall(glUniform1f(GetUniformLocation(name), value));
 }
 
-void ComputeShader::SetUniform3f(const std::string& name, const glm::vec3& value)
-{
+void ComputeShader::SetUniform3f(const std::string& name, const glm::vec3& value) {
     GLCall(glUniform3f(GetUniformLocation(name), value.x, value.y, value.z));
 }
 
-void ComputeShader::SetUniform4f(const std::string& name, float v0, float v1, float v2, float v3)
-{
+void ComputeShader::SetUniform4f(const std::string& name, float v0, float v1, float v2, float v3) {
     GLCall(glUniform4f(GetUniformLocation(name), v0, v1, v2, v3));
 }
 
-void ComputeShader::setUniformMat4f(const std::string& name, const glm::mat4& matrix)
-{
+void ComputeShader::setUniformMat4f(const std::string& name, const glm::mat4& matrix) {
     GLCall(glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &matrix[0][0]));
 }
 
-int ComputeShader::GetUniformLocation(const std::string& name)
-{
+int ComputeShader::GetUniformLocation(const std::string& name) {
     if (m_UniformLocationCache.find(name) != m_UniformLocationCache.end())
         return m_UniformLocationCache[name];
 
@@ -81,13 +61,12 @@ int ComputeShader::GetUniformLocation(const std::string& name)
     return location;
 }
 
-unsigned int ComputeShader::CreateShader(const std::string& source)
-{
+unsigned int ComputeShader::CreateShader(const std::string& source) {
     unsigned int program = glCreateProgram();
     unsigned int cs = CompileShader(GL_COMPUTE_SHADER, source);
 
     if (cs == 0) {
-		SPDLOG_ERROR("Compute shader compilation failed, aborting shader program creation.");
+        SPDLOG_ERROR("Compute shader compilation failed, aborting shader program creation.");
         return 0;
     }
 
@@ -100,10 +79,9 @@ unsigned int ComputeShader::CreateShader(const std::string& source)
     return program;
 }
 
-unsigned int ComputeShader::CompileShader(unsigned int type, const std::string& source)
-{
+unsigned int ComputeShader::CompileShader(unsigned int type, const std::string& source) {
     if (source.empty()) {
-		SPDLOG_ERROR("Compute shader source is empty, cannot compile shader.");
+        SPDLOG_ERROR("Compute shader source is empty, cannot compile shader.");
         return 0;
     }
 
@@ -114,8 +92,7 @@ unsigned int ComputeShader::CompileShader(unsigned int type, const std::string& 
 
     int result;
     glGetShaderiv(id, GL_COMPILE_STATUS, &result);
-    if (result == GL_FALSE)
-    {
+    if (result == GL_FALSE) {
         int length;
         glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
         std::string message(length, '\0');
@@ -125,7 +102,7 @@ unsigned int ComputeShader::CompileShader(unsigned int type, const std::string& 
         const GLubyte* glVersion = glGetString(GL_VERSION);
         const GLubyte* glslVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
         SPDLOG_ERROR("OpenGL: {}\nGLSL: {}", glVersion ? reinterpret_cast<const char*>(glVersion) : "unknown",
-            glslVersion ? reinterpret_cast<const char*>(glslVersion) : "unknown");
+                     glslVersion ? reinterpret_cast<const char*>(glslVersion) : "unknown");
 
         SPDLOG_ERROR("Compute shader source:\n{}", ShaderSource::numbered(source));
 

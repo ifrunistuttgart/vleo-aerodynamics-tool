@@ -40,9 +40,10 @@ private:
     std::unique_ptr<gl::VertexArray> m_triangle_vao;
     std::unique_ptr<gl::VertexArray> m_cop_vao;
     std::unique_ptr<VisibilityReducer> m_visibility;
-    const unsigned int MAX_TRIANGLES = (2u << 28) - 1; //keeps the per-triangle visibility buffer to a sane size
+    const unsigned int MAX_TRIANGLES = (2u << 28) - 1; // keeps the per-triangle visibility buffer to a sane size
     unsigned int m_numTriangles = 0;
     const unsigned int NUM_PIXEL = 800;
+
 public:
     /// Distance (model units) the centroid is moved along its normal.
     static constexpr float NORMAL_OFFSET = 0.005f;
@@ -50,11 +51,9 @@ public:
     explicit CoPShader(unsigned int num_pixel);
     ~CoPShader() override;
     int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) override;
-    std::vector<float> shade_geometry(glm::vec3 v_rel_hat,
-                                       float bounding_sphere_radius,
-                                       std::span<const unsigned int> num_triangles_per_mesh,
-                                       std::span<const glm::mat4> model_matrices
-                                       ) override;
+    std::vector<float> shade_geometry(glm::vec3 v_rel_hat, float bounding_sphere_radius,
+                                      std::span<const unsigned int> num_triangles_per_mesh,
+                                      std::span<const glm::mat4> model_matrices) override;
 };
 
 } // namespace vat::shading

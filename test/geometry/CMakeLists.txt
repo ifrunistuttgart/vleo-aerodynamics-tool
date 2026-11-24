@@ -1,9 +1,21 @@
 find_package(GTest)
 find_package(spdlog REQUIRED CONFIG)
 
-add_executable(geometry_test test_helpers.h test_mesh_data.cpp test_mesh_quality.cpp test_obj_writer.cpp test_mesh_grouping.cpp test_rotatable_mesh_geometry.cpp test_static_mesh_geometry.cpp)
+add_executable(
+    geometry_test
+    test_helpers.h
+    test_mesh_data.cpp
+    test_mesh_quality.cpp
+    test_obj_writer.cpp
+    test_mesh_grouping.cpp
+    test_rotatable_mesh_geometry.cpp
+    test_static_mesh_geometry.cpp
+)
 
-target_link_libraries(geometry_test PRIVATE GTest::gtest_main spdlog::spdlog Vat::geometry)
+target_link_libraries(
+    geometry_test
+    PRIVATE GTest::gtest_main spdlog::spdlog Vat::geometry
+)
 
 include(GoogleTest)
 gtest_discover_tests(geometry_test)

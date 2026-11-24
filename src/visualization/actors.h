@@ -24,12 +24,11 @@ namespace vat::visualization::actors {
  * scale.
  */
 vtkSmartPointer<vtkActor> Arrow(const glm::vec3& dir, float length, const glm::vec3& color,
-    double relative_shaft_radius, double relative_tip_radius, double relative_tip_length);
+                                double relative_shaft_radius, double relative_tip_radius, double relative_tip_length);
 
 /** Arrow whose tail sits at tail__m rather than at the body-frame origin. */
-vtkSmartPointer<vtkActor> ArrowAt(const glm::vec3& tail__m, const glm::vec3& dir, float length,
-    const glm::vec3& color, double relative_shaft_radius, double relative_tip_radius,
-    double relative_tip_length);
+vtkSmartPointer<vtkActor> ArrowAt(const glm::vec3& tail__m, const glm::vec3& dir, float length, const glm::vec3& color,
+                                  double relative_shaft_radius, double relative_tip_radius, double relative_tip_length);
 
 vtkSmartPointer<vtkActor> Sphere(const glm::vec3& center__m, float radius, const glm::vec3& color);
 
@@ -38,8 +37,8 @@ vtkSmartPointer<vtkActor> Sphere(const glm::vec3& center__m, float radius, const
  *
  * Two actors rather than one, so it adds itself to the renderer instead of returning.
  */
-void AddArcArrow(vtkRenderer* renderer, const glm::vec3& center__m, const glm::vec3& axis_hat,
-    float radius, float tube_radius, const glm::vec3& color);
+void AddArcArrow(vtkRenderer* renderer, const glm::vec3& center__m, const glm::vec3& axis_hat, float radius,
+                 float tube_radius, const glm::vec3& color);
 
 /** The three body-frame axis arrows, scaled to the geometry. */
 void AddBodyAxes(vtkRenderer* renderer, float bounding_sphere_radius);
@@ -59,8 +58,8 @@ std::vector<vtkSmartPointer<vtkPolyData>> PerMeshPolyData(IGeometryShadingData& 
  * @throws std::invalid_argument if triangle_visibility does not have one entry per triangle.
  */
 vtkSmartPointer<vtkPolyData> VisibilityColoredPolyData(IGeometryShadingData& geometry,
-    const std::vector<float>& triangle_visibility,
-    const glm::vec3& visible_color, const glm::vec3& hidden_color);
+                                                       const std::vector<float>& triangle_visibility,
+                                                       const glm::vec3& visible_color, const glm::vec3& hidden_color);
 
 /** Mesh actor in a single flat colour. */
 vtkSmartPointer<vtkActor> MeshActor(vtkPolyData* polydata, const glm::vec3& color, double opacity);

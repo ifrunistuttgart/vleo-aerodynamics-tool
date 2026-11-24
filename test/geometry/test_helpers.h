@@ -15,10 +15,7 @@ inline std::string GetTestDataPath(const char* sourceFile, const std::string& fi
     return data_file.string();
 }
 
-template <typename T>
-std::vector<T> ToVector(std::span<const T> s) {
-    return std::vector<T>(s.begin(), s.end());
-}
+template <typename T> std::vector<T> ToVector(std::span<const T> s) { return std::vector<T>(s.begin(), s.end()); }
 
 // Every derived array compared exactly, not within a tolerance.
 inline void ExpectSameGeometry(vat::geometry::StaticMeshGeometry& a, vat::geometry::StaticMeshGeometry& b) {

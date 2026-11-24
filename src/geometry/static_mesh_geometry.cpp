@@ -7,26 +7,23 @@
 
 namespace vat::geometry {
 
-StaticMeshGeometry::StaticMeshGeometry(std::string file)
-    : StaticMeshGeometry(load_mesh_data(file)) {
-}
+StaticMeshGeometry::StaticMeshGeometry(std::string file) : StaticMeshGeometry(load_mesh_data(file)) {}
 
 StaticMeshGeometry::StaticMeshGeometry(std::vector<MeshData> meshes)
-    : IGeometryShadingData(), IGeometryManipulator(),
-      m_mesh_data(std::move(meshes)), m_total_triangles(0), m_bounding_sphere_radius(0.0f) {
+    : IGeometryShadingData(), IGeometryManipulator(), m_mesh_data(std::move(meshes)), m_total_triangles(0),
+      m_bounding_sphere_radius(0.0f) {
 
     for (std::size_t mesh_idx = 0; mesh_idx < m_mesh_data.size(); ++mesh_idx) {
         MeshData& mesh = m_mesh_data[mesh_idx];
         const std::size_t num_vertices = mesh.positions.size() / 3;
         if (mesh.positions.size() % 3 != 0 || mesh.indices.size() % 3 != 0) {
-            throw std::invalid_argument("mesh " + std::to_string(mesh_idx)
-                + ": positions and indices must both come in triples");
+            throw std::invalid_argument("mesh " + std::to_string(mesh_idx) +
+                                        ": positions and indices must both come in triples");
         }
         for (const std::uint32_t index : mesh.indices) {
             if (index >= num_vertices) {
-                throw std::invalid_argument("mesh " + std::to_string(mesh_idx)
-                    + " references vertex " + std::to_string(index)
-                    + ", but has only " + std::to_string(num_vertices));
+                throw std::invalid_argument("mesh " + std::to_string(mesh_idx) + " references vertex " +
+                                            std::to_string(index) + ", but has only " + std::to_string(num_vertices));
             }
         }
 
@@ -93,14 +90,13 @@ StaticMeshGeometry::StaticMeshGeometry(std::vector<MeshData> meshes)
     // Calculate bounding sphere radius
     float max_distance = 0.0f;
     for (size_t i = 0; i < m_vertices.size(); i += 3) {
-        float distance = std::sqrt(m_vertices[i] * m_vertices[i] + 
-                                   m_vertices[i + 1] * m_vertices[i + 1] + 
+        float distance = std::sqrt(m_vertices[i] * m_vertices[i] + m_vertices[i + 1] * m_vertices[i + 1] +
                                    m_vertices[i + 2] * m_vertices[i + 2]);
         max_distance = std::max(max_distance, distance);
     }
     m_bounding_sphere_radius = max_distance;
 
-	SPDLOG_INFO("Finished loading model. Total triangles: {}", m_total_triangles);
+    SPDLOG_INFO("Finished loading model. Total triangles: {}", m_total_triangles);
 }
 
 std::span<const MeshData> StaticMeshGeometry::get_mesh_data() const {
@@ -151,19 +147,16 @@ std::span<const unsigned int> StaticMeshGeometry::get_num_triangles_per_mesh() {
     return std::span<const unsigned int>(m_num_triangles_per_mesh.data(), m_num_triangles_per_mesh.size());
 }
 
-const unsigned int StaticMeshGeometry::get_num_triangles() {
-    return m_total_triangles;
-}
+const unsigned int StaticMeshGeometry::get_num_triangles() { return m_total_triangles; }
 
-float StaticMeshGeometry::get_bounding_sphere_radius() {
-    return m_bounding_sphere_radius;
-}
+float StaticMeshGeometry::get_bounding_sphere_radius() { return m_bounding_sphere_radius; }
 
 int StaticMeshGeometry::turn_mesh(int mesh_id, float angle__rad) {
     // Not implemented for static mesh
     return -1;
 }
-int StaticMeshGeometry::turn_mesh_around_axis(const int mesh_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) {
+int StaticMeshGeometry::turn_mesh_around_axis(const int mesh_id, float angle__rad, const std::array<float, 3>& origin,
+                                              const std::array<float, 3>& axis) {
     // Not implemented for static mesh
     return -1;
 }

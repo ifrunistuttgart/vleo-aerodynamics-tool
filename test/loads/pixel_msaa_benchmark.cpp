@@ -32,9 +32,7 @@ constexpr float SPEED__M_PER_S = 7800.0f;
 constexpr unsigned int SAMPLE_COUNTS[] = {1u, 8u};
 constexpr unsigned int RESOLUTIONS[] = {256u, 512u, 1024u, 2000u};
 
-AeroConditions leo_conditions() {
-    return AeroConditions{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f};
-}
+AeroConditions leo_conditions() { return AeroConditions{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f}; }
 
 struct Loads {
     glm::dvec3 force__N;
@@ -84,10 +82,11 @@ TEST(PixelMsaaBenchmark, DISABLED_MsaaBenchmark) {
                         const Loads loads = evaluate(pixel, directions[d] * SPEED__M_PER_S);
                         const double scale = glm::length(references[d].force__N);
                         max_force = std::max(max_force, glm::length(loads.force__N - references[d].force__N) / scale);
-                        max_torque = std::max(max_torque, glm::length(loads.torque__Nm - references[d].torque__Nm) / (scale * radius));
+                        max_torque = std::max(max_torque, glm::length(loads.torque__Nm - references[d].torque__Nm) /
+                                                              (scale * radius));
                     }
                     std::printf("ACCURACY %s,%s,%u,%u,%.3e,%.3e\n", body_name, model_name, num_pixel,
-                        pixel.num_msaa_samples(), max_force, max_torque);
+                                pixel.num_msaa_samples(), max_force, max_torque);
                 }
             }
         }
@@ -103,7 +102,8 @@ TEST(PixelMsaaBenchmark, DISABLED_MsaaBenchmark) {
             for (unsigned int num_pixel : RESOLUTIONS) {
                 std::vector<std::unique_ptr<PixelForceTorqueCalculator>> calculators;
                 for (unsigned int samples : SAMPLE_COUNTS) {
-                    calculators.push_back(std::make_unique<PixelForceTorqueCalculator>(*geometry, *model, num_pixel, samples));
+                    calculators.push_back(
+                        std::make_unique<PixelForceTorqueCalculator>(*geometry, *model, num_pixel, samples));
                     for (int warm_up = 0; warm_up < 5; ++warm_up) {
                         evaluate(*calculators.back(), v);
                     }
@@ -119,7 +119,7 @@ TEST(PixelMsaaBenchmark, DISABLED_MsaaBenchmark) {
                 for (size_t c = 0; c < calculators.size(); ++c) {
                     std::sort(times[c].begin(), times[c].end());
                     std::printf("RUNTIME %s,%s,%u,%u,%.3f\n", body_name, model_name, num_pixel,
-                        calculators[c]->num_msaa_samples(), times[c][times[c].size() / 2]);
+                                calculators[c]->num_msaa_samples(), times[c][times[c].size() / 2]);
                 }
             }
         }

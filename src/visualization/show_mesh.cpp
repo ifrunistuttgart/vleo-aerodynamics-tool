@@ -75,24 +75,19 @@ void ValidateHinges(const std::vector<Hinge>& hinges, std::size_t num_meshes) {
 
 } // namespace
 
-void ShowShading(
-    IGeometryShadingData& geometry,
-    const std::vector<float>& triangle_visibility,
-    const glm::vec3& v_rel__m_per_s,
-    const ViewOptions& options) {
-    SPDLOG_DEBUG("ShowShading start (triangles={}, |v_rel|={})",
-        geometry.get_num_triangles(), glm::length(v_rel__m_per_s));
+void ShowShading(IGeometryShadingData& geometry, const std::vector<float>& triangle_visibility,
+                 const glm::vec3& v_rel__m_per_s, const ViewOptions& options) {
+    SPDLOG_DEBUG("ShowShading start (triangles={}, |v_rel|={})", geometry.get_num_triangles(),
+                 glm::length(v_rel__m_per_s));
 
     // Throws if the visibility vector does not match the geometry.
-    vtkSmartPointer<vtkPolyData> mesh = actors::VisibilityColoredPolyData(
-        geometry, triangle_visibility, kVisibleTriangleColor, kHiddenTriangleColor);
+    vtkSmartPointer<vtkPolyData> mesh =
+        actors::VisibilityColoredPolyData(geometry, triangle_visibility, kVisibleTriangleColor, kHiddenTriangleColor);
 
     const float bounding_sphere_radius = geometry.get_bounding_sphere_radius();
-    const float wind_length =
-        bounding_sphere_radius > 0.0f ? bounding_sphere_radius * 1.3f : 1.0f;
-    const glm::vec3 wind_hat = glm::length(v_rel__m_per_s) > 0.0f
-        ? glm::normalize(v_rel__m_per_s)
-        : glm::vec3(1.0f, 0.0f, 0.0f);
+    const float wind_length = bounding_sphere_radius > 0.0f ? bounding_sphere_radius * 1.3f : 1.0f;
+    const glm::vec3 wind_hat =
+        glm::length(v_rel__m_per_s) > 0.0f ? glm::normalize(v_rel__m_per_s) : glm::vec3(1.0f, 0.0f, 0.0f);
 
     Viewer viewer(Viewer::Config{
         .title = "VAT Mesh Visibility + Wind",
@@ -114,8 +109,7 @@ void ShowMeshes(IGeometryShadingData& geometry, const ViewOptions& options) {
     RequireMeshes(geometry, "ShowMeshes");
 
     const std::vector<std::string> labels = MeshLabels(geometry);
-    SPDLOG_DEBUG("ShowMeshes start (meshes={}, triangles={})",
-        labels.size(), geometry.get_num_triangles());
+    SPDLOG_DEBUG("ShowMeshes start (meshes={}, triangles={})", labels.size(), geometry.get_num_triangles());
 
     const std::vector<vtkSmartPointer<vtkPolyData>> per_mesh = actors::PerMeshPolyData(geometry);
 
@@ -139,8 +133,7 @@ void ShowMeshes(IGeometryShadingData& geometry, const ViewOptions& options) {
     viewer.Run();
 }
 
-void ShowHinges(IGeometryShadingData& geometry, const std::vector<Hinge>& hinges,
-    const ViewOptions& options) {
+void ShowHinges(IGeometryShadingData& geometry, const std::vector<Hinge>& hinges, const ViewOptions& options) {
     RequireMeshes(geometry, "ShowHinges");
 
     const std::vector<std::string> mesh_labels = MeshLabels(geometry);
@@ -177,8 +170,7 @@ void ShowHinges(IGeometryShadingData& geometry, const std::vector<Hinge>& hinges
 
         viewer.AddActor(actors::Sphere(hinge.origin__m, marker_radius, color));
         viewer.AddActor(actors::ArrowAt(tail, axis_hat, axis_length, color, 0.004, 0.011, 0.028));
-        actors::AddArcArrow(viewer.renderer(), hinge.origin__m, axis_hat, arc_radius,
-            arc_tube_radius, color);
+        actors::AddArcArrow(viewer.renderer(), hinge.origin__m, axis_hat, arc_radius, arc_tube_radius, color);
     }
 
     viewer.AddBodyAxes(bounding_sphere_radius);
@@ -191,8 +183,8 @@ void ShowHinges(IGeometryShadingData& geometry, const std::vector<Hinge>& hinges
     legend_colors.reserve(hinges.size());
     for (const Hinge& hinge : hinges) {
         const std::size_t mesh_index = static_cast<std::size_t>(hinge.mesh_id);
-        legend_labels.push_back(std::format("{} @ ({:.3g}, {:.3g}, {:.3g})",
-            mesh_labels[mesh_index], hinge.origin__m.x, hinge.origin__m.y, hinge.origin__m.z));
+        legend_labels.push_back(std::format("{} @ ({:.3g}, {:.3g}, {:.3g})", mesh_labels[mesh_index], hinge.origin__m.x,
+                                            hinge.origin__m.y, hinge.origin__m.z));
         legend_colors.push_back(MeshColor(mesh_index));
     }
     if (!legend_labels.empty()) {

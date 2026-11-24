@@ -2,20 +2,20 @@
 #include <span>
 #include <vector>
 #include <glm/glm.hpp>
-#include "Igeometry_shading_data.h"    
+#include "Igeometry_shading_data.h"
 
 namespace vat {
 
 /**
  * Interface for the shading pipeline.
  *
- * The shading pipeline is responsible for determining the visibility (shading) of 
+ * The shading pipeline is responsible for determining the visibility (shading) of
  * geometry triangles from the perspective of the incoming gas flow.
  * This is used to determine which triangles are exposed to the flow and thus
  * contribute to the aerodynamic loads.
  */
 class IShadingPipeline {
-    public:
+public:
     /**
      * Calculates the visibility/shading for all triangles in the geometry model.
      *
@@ -26,7 +26,7 @@ class IShadingPipeline {
      */
     virtual std::vector<float> shade(const glm::vec3& v_rel_hat) = 0;
 
-	virtual ~IShadingPipeline() = default;
+    virtual ~IShadingPipeline() = default;
 };
 
 } // namespace vat

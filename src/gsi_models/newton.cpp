@@ -6,26 +6,28 @@
 
 namespace vat::gsi_models {
 
-int Newton::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, const glm::vec3 &centroid__m,
-                                     const glm::vec3 &v_rel__m_per_s, float surf_temp__K, AeroConditions &aero, glm::vec3 &aero_force__N,
-                                     glm::vec3 &aero_torque__Nm) {
+int Newton::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal, const glm::vec3& centroid__m,
+                                       const glm::vec3& v_rel__m_per_s, float surf_temp__K, AeroConditions& aero,
+                                       glm::vec3& aero_force__N, glm::vec3& aero_torque__Nm) {
     aero_force__N = force_per_area(normal, v_rel__m_per_s, surf_temp__K, aero) * area__m2;
     aero_torque__Nm = glm::cross(centroid__m, aero_force__N);
     return 0;
 }
 
-glm::vec3 Newton::force_per_area(const glm::vec3 &normal, const glm::vec3 &v_rel__m_per_s, float surf_temp__K,
-                                 const AeroConditions &aero) const {
-    if(glm::dot(v_rel__m_per_s, normal)< 0.0f) {
+glm::vec3 Newton::force_per_area(const glm::vec3& normal, const glm::vec3& v_rel__m_per_s, float surf_temp__K,
+                                 const AeroConditions& aero) const {
+    if (glm::dot(v_rel__m_per_s, normal) < 0.0f) {
         return glm::vec3(0.0f); // No aerodynamic force if the surface is facing away from the flow
     }
 
     const float density__kg_per_m3 = aero.density__kg_per_m3;
 
-    glm::vec3 v_rel_inv__m_per_s = -v_rel__m_per_s; // Invert velocity to match GSIMs convention (velocity of gas relative to surface)
+    glm::vec3 v_rel_inv__m_per_s =
+        -v_rel__m_per_s; // Invert velocity to match GSIMs convention (velocity of gas relative to surface)
     const float v_rel_magnitude__m_per_s = glm::length(v_rel_inv__m_per_s);
     if (v_rel_magnitude__m_per_s < 1e-10f) {
-        SPDLOG_WARN("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.", v_rel_magnitude__m_per_s);
+        SPDLOG_WARN("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.",
+                    v_rel_magnitude__m_per_s);
         return glm::vec3(0.0f); // No relative velocity, no force
     }
 
@@ -42,7 +44,7 @@ glm::vec3 Newton::force_per_area(const glm::vec3 &normal, const glm::vec3 &v_rel
     const float sin_d = std::sqrt(std::max(0.0f, 1.0f - cos_d * cos_d));
 
     // --- Cp Calculation ---
-    const float cp = 2.0f * cos_d*cos_d;
+    const float cp = 2.0f * cos_d * cos_d;
 
     // --- conversion to Cd and Cl ---
     const float cd = cp * cos_d;
@@ -53,11 +55,9 @@ glm::vec3 Newton::force_per_area(const glm::vec3 &normal, const glm::vec3 &v_rel
     return q * cl * lift_dir + q * cd * drag_dir;
 }
 
-std::string Newton::glsl_force_per_projected_area() const {
-    return newton_glsl::force_per_projected_area;
-}
+std::string Newton::glsl_force_per_projected_area() const { return newton_glsl::force_per_projected_area; }
 
-std::vector<GlslUniform> Newton::glsl_uniforms(const AeroConditions &aero) const {
+std::vector<GlslUniform> Newton::glsl_uniforms(const AeroConditions& aero) const {
     return {{"u_gsi_density", aero.density__kg_per_m3}};
 }
 

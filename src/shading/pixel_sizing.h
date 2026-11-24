@@ -55,7 +55,7 @@ unsigned int max_auto_num_pixel(unsigned int num_msaa_samples);
  * @throws std::invalid_argument if either length is not positive and finite.
  */
 unsigned int num_pixel_for_triangle_width(float bounding_sphere_radius__m, float triangle_width__m,
-    ShadingAlgorithmType type);
+                                          ShadingAlgorithmType type);
 
 /**
  * Suggests num_pixel for a geometry in its current pose.
@@ -71,6 +71,6 @@ unsigned int num_pixel_for_triangle_width(float bounding_sphere_radius__m, float
  * @throws std::invalid_argument if the geometry has no triangles.
  */
 unsigned int suggest_num_pixel(IGeometryShadingData& geometry, ShadingAlgorithmType type,
-    unsigned int num_msaa_samples = 1);
+                               unsigned int num_msaa_samples = 1);
 
 } // namespace vat::shading

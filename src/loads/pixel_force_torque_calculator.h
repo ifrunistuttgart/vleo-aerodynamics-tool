@@ -56,14 +56,16 @@ public:
      *         num_msaa_samples is 0.
      * @throws std::runtime_error if the G-buffer cannot be allocated even with one sample.
      */
-    PixelForceTorqueCalculator(IGeometryShadingData& geometry, IGSIModel& gsi_model, unsigned int num_pixel, unsigned int num_msaa_samples = 1,
-        bool keep_pressure_image = false, float min_cos_delta = 1e-3f, FlowRegime flow_regime = FlowRegime::Hypothermal);
+    PixelForceTorqueCalculator(IGeometryShadingData& geometry, IGSIModel& gsi_model, unsigned int num_pixel,
+                               unsigned int num_msaa_samples = 1, bool keep_pressure_image = false,
+                               float min_cos_delta = 1e-3f, FlowRegime flow_regime = FlowRegime::Hypothermal);
     ~PixelForceTorqueCalculator() override;
 
     PixelForceTorqueCalculator(const PixelForceTorqueCalculator&) = delete;
     PixelForceTorqueCalculator& operator=(const PixelForceTorqueCalculator&) = delete;
 
-    int calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions& aero, glm::vec3& torque__Nm, glm::vec3& force__N) override;
+    int calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions& aero,
+                               glm::vec3& torque__Nm, glm::vec3& force__N) override;
 
     void set_flow_regime(FlowRegime regime) override { m_flow_regime.store(regime); }
     [[nodiscard]] FlowRegime get_flow_regime() const override { return m_flow_regime.load(); }
@@ -98,7 +100,7 @@ private:
     const unsigned int m_num_pixel;
     const bool m_keep_pressure_image;
     const float m_min_cos_delta;
-    unsigned int m_num_msaa_samples = 1; // after clamping; set in the constructor
+    unsigned int m_num_msaa_samples = 1;   // after clamping; set in the constructor
     std::atomic<FlowRegime> m_flow_regime; // run-time switchable; atomic so a concurrent set is not a data race
     std::unique_ptr<GpuState> m_gpu;
 

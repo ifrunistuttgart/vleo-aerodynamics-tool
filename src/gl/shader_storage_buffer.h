@@ -39,10 +39,7 @@ public:
      */
     void read_back(std::span<std::byte> out) const;
 
-    template <class T>
-    void read_back(std::span<T> out) const {
-        read_back(std::as_writable_bytes(out));
-    }
+    template <class T> void read_back(std::span<T> out) const { read_back(std::as_writable_bytes(out)); }
 
     [[nodiscard]] unsigned int get_buffer_id() const { return m_buffer_id; }
     [[nodiscard]] std::size_t get_size_bytes() const { return m_size_bytes; }

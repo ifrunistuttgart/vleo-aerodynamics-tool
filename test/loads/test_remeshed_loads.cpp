@@ -22,8 +22,8 @@ using namespace vat;
 namespace {
 
 std::string Shuttlecock() {
-    return (std::filesystem::path(__FILE__).parent_path()
-        / "../../matlab/examples/geometries/shuttlecock_960.obj").string();
+    return (std::filesystem::path(__FILE__).parent_path() / "../../matlab/examples/geometries/shuttlecock_960.obj")
+        .string();
 }
 
 // Includes directions that put the wings in each other's shadow, where sliver
@@ -44,9 +44,10 @@ struct Loads {
 Loads Evaluate(IGeometryShadingData& geometry, unsigned int num_pixel) {
     gsi_models::Sentman sentman(1, 0.9f);
     AeroConditions aero{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f};
-    auto pipeline = num_pixel == 0
-        ? std::make_unique<shading::ShadingPipeline>(geometry, shading::ShadingAlgorithmType::CoP)
-        : std::make_unique<shading::ShadingPipeline>(geometry, shading::ShadingAlgorithmType::CoP, num_pixel);
+    auto pipeline =
+        num_pixel == 0
+            ? std::make_unique<shading::ShadingPipeline>(geometry, shading::ShadingAlgorithmType::CoP)
+            : std::make_unique<shading::ShadingPipeline>(geometry, shading::ShadingAlgorithmType::CoP, num_pixel);
     loads::HybridForceTorqueCalculator calculator(geometry, *pipeline, sentman);
     Loads out{};
     for (std::size_t i = 0; i < FLOWS.size(); ++i) {
@@ -86,8 +87,8 @@ TEST(RemeshedLoadsTest, RemeshedMeshAtAutomaticNumPixelMatchesAFineReference) {
     const float original_error = WorstForceError(Evaluate(original, 4000), reference);
 
     std::printf("worst force error vs reference: remeshed at num_pixel %u: %.3f %%, original at 4000: %.3f %%\n",
-        shading::suggest_num_pixel(*remeshed.geometry, shading::ShadingAlgorithmType::CoP),
-        100.0f * remeshed_error, 100.0f * original_error);
+                shading::suggest_num_pixel(*remeshed.geometry, shading::ShadingAlgorithmType::CoP),
+                100.0f * remeshed_error, 100.0f * original_error);
 
     // Measured: 0.03 % for the remeshed mesh, 2.7 % for the original. The bounds leave
     // room for other GPUs rasterising edge cases differently.

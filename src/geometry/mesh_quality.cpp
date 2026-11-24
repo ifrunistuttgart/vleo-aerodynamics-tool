@@ -55,8 +55,10 @@ MeshQuality compute_mesh_quality(IGeometryShadingData& geometry) {
         const double c = Distance(p0, p1);
         const double longest = std::max({a, b, c});
 
-        const double e1[3] = {static_cast<double>(p1[0]) - p0[0], static_cast<double>(p1[1]) - p0[1], static_cast<double>(p1[2]) - p0[2]};
-        const double e2[3] = {static_cast<double>(p2[0]) - p0[0], static_cast<double>(p2[1]) - p0[1], static_cast<double>(p2[2]) - p0[2]};
+        const double e1[3] = {static_cast<double>(p1[0]) - p0[0], static_cast<double>(p1[1]) - p0[1],
+                              static_cast<double>(p1[2]) - p0[2]};
+        const double e2[3] = {static_cast<double>(p2[0]) - p0[0], static_cast<double>(p2[1]) - p0[1],
+                              static_cast<double>(p2[2]) - p0[2]};
         const double cx = e1[1] * e2[2] - e1[2] * e2[1];
         const double cy = e1[2] * e2[0] - e1[0] * e2[2];
         const double cz = e1[0] * e2[1] - e1[1] * e2[0];
