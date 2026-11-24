@@ -30,6 +30,11 @@ pixi run -e format format          # format the whole repository
 After `setup-hooks`, every `git commit` formats the staged files. If a hook changes a
 file, the commit stops. Review the changes, `git add` them and commit again.
 
+A hook reported as `Failed` is usually not an error. prek marks a formatter as failed
+whenever it changed files. Run the command again: a hook that still fails has an issue it
+cannot fix automatically, such as a MATLAB line that is too long (see
+[MATLAB: `miss_hit.cfg`](#matlab-miss_hitcfg)).
+
 ## Commands
 
 | Command | What it does |
@@ -86,7 +91,8 @@ The check set is deliberately small, to be widened once the existing findings ar
     `bugprone-signed-bitwise`, `performance-enum-size`
 - `HeaderFilterRegex` only reports findings in `src/`, `test/`, `examples/` and
   `bindings/`, never in third-party headers.
-- `WarningsAsErrors` is empty, so findings never fail the run.
+- `WarningsAsErrors` is empty, so clang-tidy warnings are reported but not turned into
+  errors. Compile errors, such as the CGAL one under Known limitations, are still errors.
 
 ### CMake: gersemi
 
@@ -104,6 +110,12 @@ file.
     semicolon on purpose.
 - The hook skips `matlab/bin/` and `matlab/resources/`, which hold build output and the
   generated toolbox.
+- The hook runs `mh_style --fix --brief`: it fixes what it can and prints each remaining
+  issue on one line (`file:line:col: message [rule]`).
+- `mh_style` cannot wrap long lines, so a `line_length` issue keeps the hook failing until
+  you wrap the line by hand with `...`. `mh_style` aligns continuation lines under the
+  innermost open bracket, so a break right after `(` does not shorten anything. Split the
+  argument list instead, or move a long sub-expression into a local variable.
 
 ### Hooks: `.pre-commit-config.yaml`
 
@@ -115,7 +127,9 @@ standard pre-commit format, so `pre-commit` works on this file as well.
 
 - clang-tidy cannot parse CGAL's `FPU.h`, so the sources in `src/remeshing/` are only
   partly analysed.
-- No CI job runs these tools yet. Formatting is enforced only by the local hooks.
-- The existing sources have not been reformatted yet. The first `format` run on the
-  whole repository will change many files. Commit that run on its own, separate from other
-  work.
+- No CI job runs these tools yet. Formatting is enforced only by the local hooks, and only
+  in clones where `setup-hooks` was run. Git never installs hooks from a clone.
+- The C++ doc-comment style (Javadoc, see [README.md](README.md#contributing)) is not
+  checked by any tool yet.
+- prek may print `WARN ignoring SSL_CERT_DIR: no certificates found in ...`. It is harmless
+  and does not affect the result.

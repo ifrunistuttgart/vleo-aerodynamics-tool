@@ -177,6 +177,30 @@ touching the rest of the pipeline. Parameters can also be set by name at runtime
 
 Actively developed research code. Be aware, bugs might still exist.
 
+## Contributing
+
+C++, CMake and MATLAB code is formatted automatically, and C++ and MATLAB are linted. All
+tools are pinned in `pixi.lock` and run through pixi:
+
+| Language | Formatter | Linter |
+|---|---|---|
+| C/C++ | clang-format | clang-tidy |
+| CMake | gersemi | — |
+| MATLAB | MISS_HIT (`mh_style`) | MATLAB `codeIssues` |
+
+```powershell
+pixi run -e format setup-hooks                # one-time: format staged files on every commit
+pixi run -e format format                     # format the whole repository
+pixi run -e matlab lint-matlab                # lint matlab/+vat (needs MATLAB on PATH)
+pixi run build; pixi run -e tidy lint-cpp     # lint the C++ sources with clang-tidy
+```
+
+See [LINTING.md](LINTING.md) for the configuration, how to run a single tool, and the known
+limitations.
+
+**Documentation comments.** Document C++ code in Javadoc style: `/** ... */` blocks with
+`@brief`, `@param`, `@return` and `@throws` tags.
+
 ## Citation
 
 If VAT contributes to published work, please cite:

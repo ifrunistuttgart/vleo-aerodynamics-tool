@@ -17,7 +17,8 @@ repos:
 
       - id: mh-style
         name: MISS_HIT style
-        entry: pixi run -e format mh_style --fix
+        # --brief: one line per remaining issue instead of three lines of source context.
+        entry: pixi run -e format mh_style --fix --brief
         language: system
         files: \.m$
         exclude: ^matlab/(bin|resources)/
