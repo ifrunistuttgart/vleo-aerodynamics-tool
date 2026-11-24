@@ -3,21 +3,32 @@
 
 namespace vat::gsi_models {
 
+/**
+ * @brief Sentman gas-surface interaction model with an energy accommodation coefficient.
+ *
+ * GSI parameter name for set_gsi_parameter()/get_gsi_parameter(): "alpha_e".
+ *
+ * References:
+ *    [1] L.H.Sentman, “Free Molecule Flow Theory and Its Application to the Determination of Aerodynamic
+ *        Forces,” Defense Technical Information Center, Fort Belvoir, VA, LMSC-448514, Oct. 1961.
+ *    [2] F.Tuttas, C.Traub, M.Pfeiffer, and W.Fichter, “Generalized Treatment of Energy Accommodation in
+ *        Gas-Surface Interactions for Satellite Aerodynamics Applications,” 2024,
+ *        arXiv.doi:10.48550/ARXIV.2411.11597.
+ *    [3] G.Koppenwallner, “Energy Accomodation Coefficient and Momentum Transfer Modeling,” HTG-TN-08-11,
+ *        Dec. 2009.
+ */
 class Sentman : public IGSIModel {
 public:
     /**
-     * Constructor for the Sentman GSI model.
+     * @brief Constructor for the Sentman GSI model.
      *
-     * References:
-     *    [1] L.H.Sentman, “Free Molecule Flow Theory and Its Application to the Determination of Aerodynamic Forces,”
-     * Defense Technical Information Center, Fort Belvoir, VA, LMSC-448514, Oct. 1961. [2] F.Tuttas, C.Traub,
-     * M.Pfeiffer, and W.Fichter, “Generalized Treatment of Energy Accommodation in Gas-Surface Interactions for
-     * Satellite Aerodynamics Applications,” 2024, arXiv.doi:10.48550/ARXIV.2411.11597. [3] G.Koppenwallner, “Energy
-     * Accomodation Coefficient and Momentum Transfer Modeling,” HTG-TN-08-11, Dec. 2009.
-     * @param temperature_ratio_method: Scalar value of the method to calculate the temperature ratio
-     *                             1: Exact term according to [1]
-     *                             2: Hyperthermal approximation according to [1]
-     *                             3: Hyperthermal approximation according to [2]
+     * @param temperature_ratio_method How the temperature ratio is calculated:
+     *                                 1: Exact term according to [1]
+     *                                 2: Hyperthermal approximation according to [1]
+     *                                 3: Hyperthermal approximation according to [2]
+     * @param alpha_e Energy accommodation coefficient, in [0, 1]; out-of-range values are
+     *        clamped with a warning (see set_alpha_e()).
+     * @throws std::invalid_argument if temperature_ratio_method is not 1, 2 or 3.
      */
     Sentman(int temperature_ratio_method, float alpha_e);
     ~Sentman() override = default;
@@ -32,7 +43,12 @@ public:
     void set_gsi_parameter(std::string name, float value) override;
     [[nodiscard]] float get_gsi_parameter(std::string name) const override;
 
+    /** @brief Energy accommodation coefficient, in [0, 1]. */
     [[nodiscard]] float get_alpha_e() const { return m_alpha_e; }
+    /**
+     * @brief Sets the energy accommodation coefficient.
+     * @param alpha_e New value; values below 0 or above 1 are clamped to [0, 1] with a warning.
+     */
     void set_alpha_e(float alpha_e);
 
 private:

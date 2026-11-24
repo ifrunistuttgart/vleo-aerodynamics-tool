@@ -19,8 +19,8 @@
 
 namespace vat::visualization {
 
-/*
- * A window in the toolbox's house style: dark background, an orientation marker, the
+/**
+ * @brief A window in the toolbox's house style: dark background, an orientation marker, the
  * nadir-pointing initial camera, a legend, and the triangle-edge overlay with its
  * keyboard toggle.
  *
@@ -33,62 +33,85 @@ namespace vat::visualization {
  */
 class Viewer {
 public:
+    /** @brief Window settings fixed at construction. */
     struct Config {
-        /** Window title. */
+        /** @brief Window title. */
         std::string title;
 
         /**
-         * Order-independent transparency. Needed when the model itself is translucent,
+         * @brief Order-independent transparency. Needed when the model itself is translucent,
          * because without it VTK blends actors in the order they were added rather than
          * by depth, putting far surfaces in front of near ones.
          */
         bool depth_peeling = false;
 
-        /** Whether the triangle-edge overlay starts switched on. */
+        /** @brief Whether the triangle-edge overlay starts switched on. */
         bool show_triangle_edges = true;
     };
 
+    /**
+     * @brief Creates the window, renderer, interactor and orientation marker; nothing is shown
+     * until Run().
+     * @param config Window settings.
+     */
     explicit Viewer(Config config);
 
     Viewer(const Viewer&) = delete;
     Viewer& operator=(const Viewer&) = delete;
 
     /**
-     * Adds a mesh in a single flat colour, with its triangle edges drawn over it.
+     * @brief Adds a mesh in a single flat colour, with its triangle edges drawn over it.
      *
      * The edges go on the mesh's own actor rather than on a second wireframe one: VTK
      * offsets edge geometry in depth itself, so it sits on the surface instead of
      * z-fighting with it, which a separately overlaid actor would do.
+     *
+     * @param polydata Mesh to show.
+     * @param color RGB colour, components in [0, 1].
+     * @param opacity Opacity in [0, 1]; below 1 consider Config::depth_peeling.
      */
     void AddMesh(vtkPolyData* polydata, const glm::vec3& color, double opacity = 1.0);
 
     /**
-     * Adds a mesh coloured from its own per-cell scalars.
+     * @brief Adds a mesh coloured from its own per-cell scalars.
      *
-     * @param edge_fade_target - What the triangle edges fade into as they shrink. A
+     * @param polydata Mesh to show, with per-cell colour scalars.
+     * @param edge_fade_target What the triangle edges fade into as they shrink. A
      *        scalar-coloured surface has no single colour of its own, so the caller has
      *        to name the closest stand-in.
      */
     void AddScalarColoredMesh(vtkPolyData* polydata, const glm::vec3& edge_fade_target);
 
-    /** Adds anything that is not a mesh: arrows, hinge markers, and so on. */
+    /** @brief Adds anything that is not a mesh: arrows, hinge markers, and so on. */
     void AddActor(vtkSmartPointer<vtkActor> actor);
 
-    /** Typical triangle size, which sets where the edge overlay starts to fade. */
+    /**
+     * @brief Sets the typical triangle size, which sets where the edge overlay starts to fade.
+     * @param extent__m Typical triangle extent [m], e.g. from actors::MeanTriangleExtent().
+     */
     void SetMeanTriangleExtent(float extent__m);
 
+    /**
+     * @brief Adds the body-frame axis arrows; see actors::AddBodyAxes().
+     * @param bounding_sphere_radius Radius the arrows are scaled to [m].
+     */
     void AddBodyAxes(float bounding_sphere_radius);
 
     /**
-     * Legend in the top-left corner: one row per entry, drawn in that entry's colour so
+     * @brief Legend in the top-left corner: one row per entry, drawn in that entry's colour so
      * the colour itself is the key and no separate swatch is needed.
+     *
+     * At most 14 rows are shown; with more labels the last row reads "... and N more".
+     *
+     * @param labels Row texts.
+     * @param colors Row colours; must have at least as many entries as labels.
      */
     void AddLegend(const std::vector<std::string>& labels, const std::vector<glm::vec3>& colors);
 
-    /** For the few things that add several actors of their own, such as the arc arrows. */
+    /** @brief The renderer, for the few things that add several actors of their own, such as the arc arrows. */
     vtkRenderer* renderer() { return m_renderer; }
 
-    /** Shows the window and blocks until the user closes it. */
+    /** @brief Shows the window and blocks until the user closes it. */
     void Run();
 
 private:

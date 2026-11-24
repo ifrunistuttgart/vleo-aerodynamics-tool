@@ -4,7 +4,7 @@
 namespace vat::projected_area {
 
 /**
- * Dummy GSI model that measures the projected area instead of a physical load.
+ * @brief Dummy GSI model that measures the projected area instead of a physical load.
  *
  * For every windward element it returns the force (A * cos(delta), 0, 0), where A is the element area and
  * delta the angle between the surface normal and the flow. Summed by a load calculator, the first component
@@ -13,9 +13,11 @@ namespace vat::projected_area {
  * components are zero; the torque is only cross(centroid, force) and has no physical meaning.
  *
  * PixelProjectedArea runs it in PixelForceTorqueCalculator and returns that x component.
+ * It has no GSI parameters: set_gsi_parameter() and get_gsi_parameter() only log a warning.
  */
 class ProjectedArea : public IGSIModel {
 public:
+    /** @brief Creates the model; it has no parameters. */
     ProjectedArea() = default;
     ~ProjectedArea() override = default;
 

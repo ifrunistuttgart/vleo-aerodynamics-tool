@@ -7,27 +7,27 @@
 namespace vat::visualization {
 
 /**
- * Definition of a single hinge: which mesh turns, and about what.
+ * @brief Definition of a single hinge: which mesh turns, and about what.
  *
  * These are exactly the arguments passed to
  * IGeometryManipulator::turn_mesh_around_axis(), collected so that a hinge can be
  * inspected visually before it is used to actually rotate anything.
  */
 struct Hinge {
-    /** Index of the mesh this hinge turns, in model-file order. */
+    /** @brief Index of the mesh this hinge turns, in model-file order. */
     int mesh_id;
-    /** The point the mesh turns about, in the body frame [m]. */
+    /** @brief The point the mesh turns about, in the body frame [m]. */
     glm::vec3 origin__m;
-    /** The axis the mesh turns about. Need not be normalised. */
+    /** @brief The axis the mesh turns about. Need not be normalised, must not be zero. */
     glm::vec3 axis;
 };
 
 /**
- * Settings shared by every view.
+ * @brief Settings shared by every view.
  */
 struct ViewOptions {
     /**
-     * Whether the triangle-edge overlay starts switched on.
+     * @brief Whether the triangle-edge overlay starts switched on.
      *
      * The overlay shows how the model is discretised, which is what the shading pass
      * actually rasterises. It can also be toggled in the window with the T key, so this
@@ -40,23 +40,23 @@ struct ViewOptions {
 };
 
 /**
- * Displays a geometry with its triangles colored according to their visibility to the
+ * @brief Displays a geometry with its triangles colored according to their visibility to the
  * surrounding gas, based on the shading data and relative velocity.
  *
  * Blocks until the user closes the window.
  *
- * @param geometry - Reference to the geometry shading data.
- * @param triangle_visibility - Vector containing the visibility values for each triangle.
- * @param v_rel__m_per_s - relative velocity vector of the geometry with respect to the surrounding gas, in the
- * satellite's body frame.
- * @param options - Shared view settings.
+ * @param geometry The geometry to show, in its current pose.
+ * @param triangle_visibility Visibility in [0, 1] of each triangle, in triangle order.
+ * @param v_rel__m_per_s Velocity of the geometry relative to the surrounding gas, in the body
+ *        frame [m/s].
+ * @param options Shared view settings.
  * @throws std::invalid_argument if triangle_visibility does not have one entry per triangle.
  */
 void ShowShading(IGeometryShadingData& geometry, const std::vector<float>& triangle_visibility,
                  const glm::vec3& v_rel__m_per_s, const ViewOptions& options = {});
 
 /**
- * Displays a geometry with each mesh in its own color, plus a legend naming them.
+ * @brief Displays a geometry with each mesh in its own color, plus a legend naming them.
  *
  * Every legend entry is labelled 'id <mesh_id>  "<name>"', where mesh_id is the value
  * turn_mesh_around_axis() expects and name comes from the model file. This is the view
@@ -64,14 +64,14 @@ void ShowShading(IGeometryShadingData& geometry, const std::vector<float>& trian
  *
  * Blocks until the user closes the window.
  *
- * @param geometry - Reference to the geometry shading data.
- * @param options - Shared view settings.
+ * @param geometry The geometry to show, in its current pose.
+ * @param options Shared view settings.
  * @throws std::invalid_argument if the geometry contains no meshes.
  */
 void ShowMeshes(IGeometryShadingData& geometry, const ViewOptions& options = {});
 
 /**
- * Displays the given hinges on top of the geometry, so hinge definitions can be checked
+ * @brief Displays the given hinges on top of the geometry, so hinge definitions can be checked
  * before they are used.
  *
  * Each hinge is drawn as a sphere at the hinge point, a straight arrow along the
@@ -82,9 +82,9 @@ void ShowMeshes(IGeometryShadingData& geometry, const ViewOptions& options = {})
  *
  * Blocks until the user closes the window.
  *
- * @param geometry - Reference to the geometry shading data.
- * @param hinges - The hinge definitions to display. Each mesh_id must be a valid mesh index.
- * @param options - Shared view settings.
+ * @param geometry The geometry to show, in its current pose.
+ * @param hinges The hinge definitions to display. Each mesh_id must be a valid mesh index.
+ * @param options Shared view settings.
  * @throws std::invalid_argument if the geometry has no meshes, or a hinge has an out-of-range
  *         mesh_id or a zero-length axis.
  */

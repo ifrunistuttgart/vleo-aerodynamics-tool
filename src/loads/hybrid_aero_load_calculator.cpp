@@ -12,9 +12,6 @@
 
 namespace vat::loads {
 
-/**
- * @param geometry
- */
 HybridForceTorqueCalculator::HybridForceTorqueCalculator(IGeometryShadingData& geometry,
                                                          IShadingPipeline& shading_pipeline, IGSIModel& gsi_model,
                                                          FlowRegime flow_regime)

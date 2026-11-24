@@ -1,6 +1,7 @@
-//
-// Created by Jan_L on 08.06.2026.
-//
+/**
+ * @file
+ * @brief MATLAB mex gateway of the toolbox: the C++ side of the MATLAB package matlab/+vat.
+ */
 #include "mex.hpp"
 #include "matlab_logger.h"
 
@@ -61,8 +62,30 @@ using vat::visualization::ShowHinges;
 using vat::visualization::ShowMeshes;
 using vat::visualization::ShowShading;
 
+/**
+ * @brief The mex entry point. MATLAB calls operator() for every `vat.*` call.
+ *
+ * Protocol: the first input is a command string "<class>.<cmd>", split on the last dot, where
+ * <class> mirrors the MATLAB package path (e.g. "gsi_models.Sentman.new",
+ * "loads.PixelForceTorqueCalculator.calc_aero_force_torque", "none.setLogLevel"). The remaining
+ * inputs are the command's arguments; their types and counts are checked and a mismatch throws
+ * std::invalid_argument, as does an unknown command. Every exception is logged and rethrown, so
+ * MATLAB receives it as an error.
+ *
+ * Objects live in per-type maps keyed by an integer handle. "new" creates an object and returns
+ * its handle; handles count up per type and are not reused. "delete" erases the object. Pipelines
+ * and calculators hold references to the geometry and GSI model they were built with, and the
+ * gateway does not check whether a handle that is deleted is still referenced: the MATLAB wrapper
+ * classes keep those objects alive by holding them, and deleting a referenced object directly
+ * leaves a dangling reference.
+ *
+ * All log output (spdlog and MatlabLogger) goes to the MATLAB console.
+ *
+ * Must stay in the global namespace: MATLAB looks the class up by its name.
+ */
 class MexFunction : public matlab::mex::Function {
 public:
+    /** @brief Routes spdlog's default logger to the MATLAB console, at debug level. */
     MexFunction() {
         matlab_logger = std::make_unique<MatlabLogger>(getEngine(), LEVEL_DEBUG);
         auto sink = std::make_shared<MatlabSink<std::mutex>>(*matlab_logger);
@@ -70,6 +93,11 @@ public:
         spdlog::set_default_logger(logger);
         set_spdlog_level(LEVEL_DEBUG); // Default log level
     };
+    /**
+     * @brief Sets spdlog's level from a MatlabLogger level.
+     * @param level LEVEL_DEBUG, LEVEL_INFO, LEVEL_WARN or LEVEL_ERROR; any other value switches
+     *        spdlog off.
+     */
     void set_spdlog_level(int level) {
         // Set spdlog level based on the LOG_LEVEL macro
         if (level == LEVEL_DEBUG) {
@@ -85,6 +113,13 @@ public:
         }
     }
 
+    /**
+     * @brief Dispatches one MATLAB call; see the class documentation for the protocol.
+     * @param outputs MATLAB output arguments.
+     * @param inputs MATLAB input arguments; inputs[0] is the command string.
+     * @throws std::invalid_argument for an unknown command or a malformed argument list, and
+     *         rethrows every exception of the toolbox.
+     */
     void operator()(matlab::mex::ArgumentList outputs, matlab::mex::ArgumentList inputs) {
         try {
             validate_input_size_min(inputs, 1);
@@ -906,7 +941,7 @@ private:
         return inputs[idx].getType() == matlab::data::ArrayType::MATLAB_STRING;
     };
 
-    // Every view takes the same trailing options argument, so build it in one place.
+    /** @brief ViewOptions from the logical flags at inputs[idx]; every view takes the same trailing argument. */
     static vat::visualization::ViewOptions view_options(matlab::mex::ArgumentList& inputs, int idx) {
         matlab::data::TypedArray<bool> const flags = inputs[idx];
         vat::visualization::ViewOptions options;
@@ -914,8 +949,11 @@ private:
         return options;
     };
 
-    // Remesh arguments as the MATLAB wrapper passes them, starting at idx: triangle count
-    // (int), edge length (double), feature angle (double), iterations (int).
+    /**
+     * @brief RemeshOptions from the arguments as the MATLAB wrapper passes them, starting at idx:
+     * triangle count (int), edge length (double), feature angle (double), iterations (int).
+     * @throws std::invalid_argument on a type mismatch or a negative count or iteration number.
+     */
     RemeshOptions remesh_options(matlab::mex::ArgumentList& inputs, int idx) {
         validate_argument(inputs, idx, "int", 1);
         validate_argument(inputs, idx + 1, "double", 1);
@@ -969,6 +1007,14 @@ private:
         return inputs[idx].getType() == matlab::data::ArrayType::LOGICAL;
     };
 
+    /**
+     * @brief Checks the type and element count of inputs[idx].
+     * @param inputs MATLAB input arguments.
+     * @param idx Argument index.
+     * @param expected_type "int", "uint", "double", "float", "logical" or "string".
+     * @param expected_size Required number of elements.
+     * @throws std::invalid_argument on a mismatch (also logged).
+     */
     void validate_argument(matlab::mex::ArgumentList& inputs, int idx, const std::string& expected_type,
                            int expected_size) {
         if (expected_type == "int" && !is_int(inputs, idx)) {
@@ -1011,6 +1057,7 @@ private:
         }
     };
 
+    /** @brief Throws std::invalid_argument unless there are exactly expected_size inputs. */
     void validate_input_size(matlab::mex::ArgumentList& inputs, int expected_size) {
         if (inputs.size() != expected_size) {
             matlab_logger->log(LEVEL_ERROR,
@@ -1020,6 +1067,7 @@ private:
         }
     };
 
+    /** @brief Throws std::invalid_argument unless there are exactly expected_size outputs. */
     void validate_output_size(matlab::mex::ArgumentList& outputs, int expected_size) {
         if (outputs.size() != expected_size) {
             matlab_logger->log(LEVEL_ERROR,
@@ -1029,6 +1077,7 @@ private:
         }
     };
 
+    /** @brief Throws std::invalid_argument if there are fewer than min_size inputs. */
     void validate_input_size_min(matlab::mex::ArgumentList& inputs, int min_size) {
         if (inputs.size() < min_size) {
             matlab_logger->log(

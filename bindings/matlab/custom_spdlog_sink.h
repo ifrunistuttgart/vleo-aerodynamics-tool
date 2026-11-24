@@ -3,10 +3,25 @@
 #include "matlab_logger.h"
 #include <filesystem>
 
+/**
+ * @brief spdlog sink that forwards every message to a MatlabLogger.
+ *
+ * @tparam Mutex Mutex type of spdlog::sinks::base_sink (e.g. std::mutex).
+ */
 template <typename Mutex> class MatlabSink : public spdlog::sinks::base_sink<Mutex> {
 public:
+    /**
+     * @brief Creates the sink.
+     * @param matlab_logger Logger to forward to; referenced, must outlive the sink and every
+     *        spdlog logger that uses it.
+     */
     MatlabSink(MatlabLogger& matlab_logger) : matlab_logger_(matlab_logger) {}
 
+    /**
+     * @brief Maps an spdlog level to a MatlabLogger level.
+     * @param level spdlog level; trace maps to LEVEL_DEBUG and critical to LEVEL_ERROR.
+     * @return The LEVEL_* value; LEVEL_INFO for anything unknown.
+     */
     static int map_spdlog_level(spdlog::level::level_enum level) {
         switch (level) {
         case spdlog::level::trace:

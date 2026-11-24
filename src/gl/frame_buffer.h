@@ -7,6 +7,11 @@
 
 namespace vat::gl {
 
+/**
+ * @brief Framebuffer object with a depth renderbuffer and optional colour textures.
+ *
+ * Non-copyable. A context must be current when the framebuffer is created, used and destroyed.
+ */
 class FrameBuffer {
 private:
     unsigned int m_FrameBufferID = 0;
@@ -23,39 +28,70 @@ private:
     void check_completeness();
 
 public:
-    // Creates the framebuffer with a depth buffer and no colour attachment (a depth-only
-    // framebuffer). With `num_msaa_samples` > 1 the depth buffer is multisampled (MSAA);
-    // 1 is an ordinary framebuffer. Leaves the framebuffer bound.
+    /**
+     * @brief Creates the framebuffer with a depth buffer and no colour attachment (a depth-only
+     * framebuffer).
+     *
+     * Leaves the framebuffer bound. Check is_complete(): allocation may fail without throwing.
+     *
+     * @param width Width in pixels.
+     * @param heigth Height in pixels.
+     * @param num_msaa_samples With > 1 the depth buffer is multisampled (MSAA); 1 is an ordinary
+     *        framebuffer.
+     */
     FrameBuffer(unsigned int width, unsigned int heigth, unsigned int num_msaa_samples = 1);
     ~FrameBuffer();
 
     FrameBuffer(const FrameBuffer&) = delete;
     FrameBuffer& operator=(const FrameBuffer&) = delete;
 
-    // One colour attachment per texture, in order, all of them draw buffers. Replaces earlier
-    // attachments. The framebuffer keeps the textures alive. Every texture must be non-null,
-    // valid and have the framebuffer's size and sample count, otherwise std::invalid_argument
-    // is thrown and nothing changes. Leaves the framebuffer bound; is_complete() is updated.
+    /**
+     * @brief Attaches one colour attachment per texture, in order, all of them draw buffers.
+     *
+     * Replaces earlier attachments. The framebuffer keeps the textures alive. Leaves the
+     * framebuffer bound; is_complete() is updated.
+     *
+     * @param colorTextures Textures to attach; each must be non-null, valid and have the
+     *        framebuffer's size and sample count.
+     * @throws std::invalid_argument if a texture violates that; nothing changes then.
+     */
     void attach_color_textures(std::span<const std::shared_ptr<Texture2D>> colorTextures);
 
-    // False if the depth buffer could not be allocated (e.g. out of memory) or the
-    // framebuffer is incomplete.
+    /**
+     * @brief False if the depth buffer could not be allocated (e.g. out of memory) or the
+     * framebuffer is incomplete.
+     */
     bool is_complete() const { return m_complete; }
 
+    /** @brief Binds the framebuffer as GL_FRAMEBUFFER. */
     void Bind() const;
+    /** @brief Binds the default framebuffer. */
     void UnBind() const;
-    // Clears every attached colour texture to zero (each through Texture2D::clear(), so integer
-    // and float formats are both handled) and then the depth buffer. The framebuffer must be bound.
+    /**
+     * @brief Clears every attached colour texture to zero, then the depth buffer.
+     *
+     * Each texture goes through Texture2D::clear(), so integer and float formats are both
+     * handled. The framebuffer must be bound.
+     */
     void Clear() const;
-    // Clears the depth buffer only.
+    /** @brief Clears the depth buffer only. */
     void ClearDepth() const;
-    // Resolves every colour attachment of this (multisampled) framebuffer into the same attachment
-    // of `target` (single-sample, same size and attachment count) with glBlitFramebuffer. How the
-    // samples are combined is up to the driver; GL only says they are typically averaged.
-    // Leaves no framebuffer bound. Throws std::invalid_argument on a size or attachment mismatch.
+    /**
+     * @brief Resolves every colour attachment of this (multisampled) framebuffer into the same
+     * attachment of `target` with glBlitFramebuffer.
+     *
+     * How the samples are combined is up to the driver; GL only says they are typically
+     * averaged. Leaves no framebuffer bound.
+     *
+     * @param target Single-sample framebuffer of the same size and attachment count.
+     * @throws std::invalid_argument on a size or attachment mismatch.
+     */
     void resolve_color_into(const FrameBuffer& target) const;
+    /** @brief Width in pixels. */
     [[nodiscard]] unsigned int get_width() const { return m_width; }
+    /** @brief Height in pixels. */
     [[nodiscard]] unsigned int get_height() const { return m_height; }
+    /** @brief Samples per pixel of the depth buffer, as requested in the constructor. */
     [[nodiscard]] unsigned int get_num_msaa_samples() const { return m_num_msaa_samples; }
 };
 

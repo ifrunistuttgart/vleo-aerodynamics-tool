@@ -4,17 +4,35 @@
 #include <memory>
 #include <mexAdapter.hpp>
 
+/** @brief MatlabLogger levels; a message is printed if its level is >= the logger's level. */
 #define LEVEL_ERROR 3
 #define LEVEL_WARN 2
 #define LEVEL_INFO 1
 #define LEVEL_DEBUG 0
 
+/**
+ * @brief Prints log messages to the MATLAB console through fprintf.
+ *
+ * Errors go to stderr (shown in red), everything else to stdout.
+ */
 class MatlabLogger {
 public:
+    /**
+     * @brief Creates the logger.
+     * @param matlab_ptr MATLAB engine to print through; shared.
+     * @param log_level Lowest level that is printed.
+     */
     MatlabLogger(std::shared_ptr<matlab::engine::MATLABEngine> matlab_ptr, int log_level = LEVEL_DEBUG)
         : log_level_(log_level) {
         matlab_ptr_ = std::move(matlab_ptr);
     }
+    /**
+     * @brief Prints msg with its source location if level >= the current log level.
+     * @param level One of the LEVEL_* values; an unknown level prints a warning instead.
+     * @param msg Message text.
+     * @param file Source file name to show.
+     * @param line Source line to show.
+     */
     void log(int level, const std::string& msg, std::string file, int line) {
         if (level >= log_level_) {
             switch (level) {
@@ -36,6 +54,7 @@ public:
             }
         }
     }
+    /** @brief Sets the lowest level that is printed. */
     void set_log_level(int level) { log_level_ = level; }
 
 private:

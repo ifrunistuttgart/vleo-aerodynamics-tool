@@ -15,8 +15,10 @@
 namespace vat::shading {
 
 /**
- * Centre-of-pressure visibility: a triangle is visible (1.0) if its centroid survives the
- * depth test, otherwise 0.0. The render structure is the one of BinaryShader.
+ * @brief Centre-of-pressure visibility: a triangle is visible (1.0) if its centroid survives the
+ * depth test, otherwise 0.0.
+ *
+ * The render structure is the one of BinaryShader.
  *
  * Two passes over a depth-only framebuffer:
  *   1. depth pre-pass of the triangles (GL_LESS, depth writes on),
@@ -45,9 +47,13 @@ private:
     const unsigned int NUM_PIXEL = 800;
 
 public:
-    /// Distance (model units) the centroid is moved along its normal.
+    /** @brief Distance (model units) the centroid is moved along its normal. */
     static constexpr float NORMAL_OFFSET = 0.005f;
 
+    /**
+     * @brief Stores the settings; GPU resources are created in set_vertices().
+     * @param num_pixel Edge length of the square render target.
+     */
     explicit CoPShader(unsigned int num_pixel);
     ~CoPShader() override;
     int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) override;

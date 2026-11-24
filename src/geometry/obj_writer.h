@@ -6,7 +6,7 @@
 namespace vat::geometry {
 
 /**
- * Writes a geometry to a Wavefront .obj file that the toolbox loads back unchanged.
+ * @brief Writes a geometry to a Wavefront .obj file that the toolbox loads back unchanged.
  *
  * Each mesh becomes one `o` object, in mesh_id order and with its name, so hinge
  * definitions written against the original file keep addressing the same parts.

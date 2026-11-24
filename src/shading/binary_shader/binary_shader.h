@@ -13,7 +13,7 @@
 namespace vat::shading {
 
 /**
- * Binary visibility: a triangle is visible (1.0) if any of its fragments survives the
+ * @brief Binary visibility: a triangle is visible (1.0) if any of its fragments survives the
  * depth test, otherwise 0.0.
  *
  * Two passes over a depth-only framebuffer:
@@ -53,8 +53,11 @@ private:
 
 public:
     /**
+     * @brief Stores the settings; GPU resources are created in set_vertices().
+     *
      * @param num_pixel   Edge length of the square render target.
      * @param num_msaa_samples Samples per pixel; 1 means no anti-aliasing, > 1 enables MSAA.
+     *        0 is treated as 1.
      */
     explicit BinaryShader(unsigned int num_pixel, unsigned int num_msaa_samples = 1);
     ~BinaryShader() override;
@@ -63,7 +66,11 @@ public:
                                       std::span<const unsigned int> num_triangles_per_mesh,
                                       std::span<const glm::mat4> model_matrices) override;
 
-    // Samples per pixel actually used, after clamping to the driver limits; 0 before set_vertices().
+    /**
+     * @brief Samples per pixel actually used; 0 before set_vertices().
+     *
+     * Clamped to the driver limit, then halved until the depth buffer could be allocated.
+     */
     unsigned int get_num_msaa_samples() const { return m_num_msaa_samples; }
 };
 

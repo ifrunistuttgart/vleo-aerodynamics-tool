@@ -1,3 +1,7 @@
+// Loads the shuttlecock and shows its meshes, each in its own colour, with a legend of
+// mesh ids and names.
+//
+//   pixi run run-example import_and_visualize
 #include <memory>          // for std::unique_ptr
 #include <filesystem>      // for std::filesystem::path
 #include <source_location> // for std::source_location

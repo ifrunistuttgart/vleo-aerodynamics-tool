@@ -3,16 +3,19 @@
 
 namespace vat::gsi_models {
 
+/**
+ * @brief Newtonian (purely normal momentum exchange) gas-surface interaction model.
+ *
+ * It has no GSI parameters: set_gsi_parameter() and get_gsi_parameter() only log a warning.
+ *
+ * References:
+ *   [1] Luciana A. Sinpetru, Nicholas H. Crisp, David Mostaza-Prieto, Sabrina Livadiotti, and Peter C. E. Roberts.
+ *       ADBSat: Methodology of a novel panel method tool for aerodynamic analysis of satellites. Computer Physics
+ *       Communications, 275:108326, June 2022.
+ */
 class Newton : public IGSIModel {
 public:
-    /**
-     * Constructor for the Newton GSI model.
-     *
-     * References:
-     *   [1] Luciana A. Sinpetru, Nicholas H. Crisp, David Mostaza-Prieto, Sabrina Livadiotti, and Peter C. E. Roberts.
-     *       ADBSat: Methodology of a novel panel method tool for aerodynamic analysis of satellites. Computer Physics
-     * Communications, 275:108326, June 2022.
-     */
+    /** @brief Constructor for the Newton GSI model. */
     Newton() = default;
     ~Newton() override = default;
 

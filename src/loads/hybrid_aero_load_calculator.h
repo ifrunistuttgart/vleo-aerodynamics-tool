@@ -7,13 +7,28 @@
 
 namespace vat::loads {
 
+/**
+ * @brief Load calculator that combines a per-triangle visibility from a shading pipeline with
+ * a per-triangle GSI evaluation on the CPU.
+ *
+ * Each evaluation shades once, then loops over all triangles with the transformed normals and
+ * centroids, evaluates the GSI model per triangle and multiplies its load by the triangle's
+ * visibility. Leeward triangles (see is_leeward()) skip the visibility lookup and count with
+ * visibility 1.0, or are skipped entirely in FlowRegime::Hyperthermal. Triangles whose
+ * dot(n, v_rel) is NaN are skipped.
+ *
+ * The geometry, shading pipeline and GSI model are held by reference: the caller owns them
+ * and must keep them alive for as long as the calculator is used.
+ */
 class HybridForceTorqueCalculator : public IAeroLoadCalculator {
 public:
     /**
-     * Constructor for the hybrid force and torque calculator.
-     * @param geometry Reference to the geometry shading data.
-     * @param shading_pipeline Reference to the shading pipeline.
-     * @param gsi_model Reference to the GSI model.
+     * @brief Creates the calculator; does no GPU work itself.
+     *
+     * @param geometry Geometry to evaluate; referenced, must outlive the calculator.
+     * @param shading_pipeline Visibility source; referenced, must outlive the calculator. It
+     *        should be built for the same geometry.
+     * @param gsi_model GSI model; referenced, must outlive the calculator.
      * @param flow_regime Hyperthermal skips leeward-facing triangles; see FlowRegime.
      */
     HybridForceTorqueCalculator(IGeometryShadingData& geometry, IShadingPipeline& shading_pipeline,

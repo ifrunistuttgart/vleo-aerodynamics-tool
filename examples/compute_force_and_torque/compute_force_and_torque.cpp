@@ -1,3 +1,8 @@
+// Computes the aerodynamic force and torque on the shuttlecock with the hybrid calculator:
+// a CoP shading pipeline decides which triangles the flow reaches, and the Sentman GSI
+// model gives the load on each of them. Shows the shaded mesh at the end.
+//
+//   pixi run run-example compute_force_and_torque
 #include <memory>
 #include <filesystem>
 #include <source_location>
