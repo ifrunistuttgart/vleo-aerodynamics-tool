@@ -6,7 +6,6 @@
 using namespace vat;
 using namespace vat::gsi_models;
 
-
 // Test Fixture
 class SentmanTest : public ::testing::Test {
 protected:
@@ -14,8 +13,8 @@ protected:
     AeroConditions create_leo_conditions() {
         AeroConditions cond;
         cond.density__kg_per_m3 = 1.2482e-11f;
-        cond.T_atmospheric__K = 934.0f;          // Exospheric temperature
-        cond.particle_mass__kg = 16 * 1.6605390689252e-27f;       // Atomic oxygen mass
+        cond.T_atmospheric__K = 934.0f;                     // Exospheric temperature
+        cond.particle_mass__kg = 16 * 1.6605390689252e-27f; // Atomic oxygen mass
         return cond;
     }
 };
@@ -30,7 +29,7 @@ TEST_F(SentmanTest, Constructor_ValidMethods_Construct) {
 // implementation (calcAeroForceAndTorque.m); tolerances are about 0.1 % of the force.
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
     // Arrange
-    Sentman sentman{ 1, 0.9f };
+    Sentman sentman{1, 0.9f};
     glm::vec3 normal(0.0f, 0.0f, -1.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(-0.166667f, 0.0f, 0.0f);
@@ -43,9 +42,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
     glm::vec3 expected_torque = glm::vec3(0.0f, 3.6311f, 0.0f) * 1e-7f;
 
     // Act
-    sentman.calc_aero_force_and_torque(
-        0.25f, normal, centroid, velocity, 300.0f, conditions, force, torque
-    );
+    sentman.calc_aero_force_and_torque(0.25f, normal, centroid, velocity, 300.0f, conditions, force, torque);
 
     // Assert
     EXPECT_NEAR(force.x, expected_force.x, 1e-9f);
@@ -58,7 +55,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod11) {
 
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
     // Arrange
-    Sentman sentman{ 1, 0.9f };
+    Sentman sentman{1, 0.9f};
     glm::vec3 normal(1.0f, 0.0f, 0.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(0.0f, 0.0f, 0.1666667f);
@@ -71,9 +68,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
     glm::vec3 expected_force = glm::vec3(-2.3140f, 0.0f, 0.0f) * 1e-4f;
 
     // Act
-    sentman.calc_aero_force_and_torque(
-        0.25f, normal, centroid, velocity, 300.0f, conditions, force, torque
-    );
+    sentman.calc_aero_force_and_torque(0.25f, normal, centroid, velocity, 300.0f, conditions, force, torque);
 
     // Assert
     EXPECT_NEAR(force.x, expected_force.x, 1e-8f);
@@ -85,7 +80,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod12) {
 }
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
     // Arrange
-    Sentman sentman{ 2, 0.9f };
+    Sentman sentman{2, 0.9f};
     glm::vec3 normal(1.0f, 1.0f, 0.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(1.0f, 1.0f, 1.0f);
@@ -98,9 +93,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
     glm::vec3 expected_force = glm::vec3(-6.2133f, -0.8435f, 0.0f) * 1e-4f;
 
     // Act
-    sentman.calc_aero_force_and_torque(
-        1.0f, normal, centroid, velocity, 300.0f, conditions, force, torque
-    );
+    sentman.calc_aero_force_and_torque(1.0f, normal, centroid, velocity, 300.0f, conditions, force, torque);
 
     // Assert
     EXPECT_NEAR(force.x, expected_force.x, 1e-7f);
@@ -113,7 +106,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod2) {
 
 TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod3) {
     // Arrange
-    Sentman sentman{ 3, 0.9f };
+    Sentman sentman{3, 0.9f};
     glm::vec3 normal(1.0f, 1.0f, 0.0f);
     normal = glm::normalize(normal);
     glm::vec3 centroid(1.0f, 1.0f, 1.0f);
@@ -126,9 +119,7 @@ TEST_F(SentmanTest, CalcForceAndTorque_TemperatureRatioMethod3) {
     glm::vec3 expected_force = glm::vec3(-6.1990f, -0.8292f, 0.0f) * 1e-4f;
 
     // Act
-    sentman.calc_aero_force_and_torque(
-        1.0f, normal, centroid, velocity, 300.0f, conditions, force, torque
-    );
+    sentman.calc_aero_force_and_torque(1.0f, normal, centroid, velocity, 300.0f, conditions, force, torque);
 
     // Assert
     EXPECT_NEAR(force.x, expected_force.x, 1e-7f);

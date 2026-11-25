@@ -21,9 +21,9 @@ using namespace vat;
 
 namespace {
 
-std::string Shuttlecock() {
-    return (std::filesystem::path(__FILE__).parent_path()
-        / "../../matlab/examples/geometries/shuttlecock_960.obj").string();
+std::string shuttlecock() {
+    return (std::filesystem::path(__FILE__).parent_path() / "../../matlab/examples/geometries/shuttlecock_960.obj")
+        .string();
 }
 
 // Includes directions that put the wings in each other's shadow, where sliver
@@ -41,12 +41,13 @@ struct Loads {
 };
 
 // num_pixel 0 means: let the pipeline choose.
-Loads Evaluate(IGeometryShadingData& geometry, unsigned int num_pixel) {
+Loads evaluate(IGeometryShadingData& geometry, unsigned int num_pixel) {
     gsi_models::Sentman sentman(1, 0.9f);
     AeroConditions aero{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f};
-    auto pipeline = num_pixel == 0
-        ? std::make_unique<shading::ShadingPipeline>(geometry, shading::ShadingAlgorithmType::CoP)
-        : std::make_unique<shading::ShadingPipeline>(geometry, shading::ShadingAlgorithmType::CoP, num_pixel);
+    auto pipeline =
+        num_pixel == 0
+            ? std::make_unique<shading::ShadingPipeline>(geometry, shading::ShadingAlgorithmType::CoP)
+            : std::make_unique<shading::ShadingPipeline>(geometry, shading::ShadingAlgorithmType::CoP, num_pixel);
     loads::HybridForceTorqueCalculator calculator(geometry, *pipeline, sentman);
     Loads out{};
     for (std::size_t i = 0; i < FLOWS.size(); ++i) {
@@ -56,7 +57,7 @@ Loads Evaluate(IGeometryShadingData& geometry, unsigned int num_pixel) {
 }
 
 // Worst force difference over all flows, relative to the largest reference force.
-float WorstForceError(const Loads& loads, const Loads& reference) {
+float worst_force_error(const Loads& loads, const Loads& reference) {
     float scale = 0.0f, worst = 0.0f;
     for (std::size_t i = 0; i < FLOWS.size(); ++i) {
         scale = std::max(scale, glm::length(reference.force__N[i]));
@@ -71,23 +72,23 @@ float WorstForceError(const Loads& loads, const Loads& reference) {
 // at the pipeline's own num_pixel reproduces a much finer reference, and does so far
 // better than the original sliver mesh at a generous num_pixel.
 TEST(RemeshedLoadsTest, RemeshedMeshAtAutomaticNumPixelMatchesAFineReference) {
-    geometry::StaticMeshGeometry original(Shuttlecock());
+    geometry::StaticMeshGeometry original(shuttlecock());
 
     remeshing::RemeshOptions fine;
     fine.target_triangle_count = 80000;
     remeshing::RemeshResult reference_mesh = remeshing::remesh(original, fine);
-    const Loads reference = Evaluate(*reference_mesh.geometry, 6400);
+    const Loads reference = evaluate(*reference_mesh.geometry, 6400);
 
     remeshing::RemeshOptions modest;
     modest.target_triangle_count = 20000;
     remeshing::RemeshResult remeshed = remeshing::remesh(original, modest);
-    const float remeshed_error = WorstForceError(Evaluate(*remeshed.geometry, 0), reference);
+    const float remeshed_error = worst_force_error(evaluate(*remeshed.geometry, 0), reference);
 
-    const float original_error = WorstForceError(Evaluate(original, 4000), reference);
+    const float original_error = worst_force_error(evaluate(original, 4000), reference);
 
     std::printf("worst force error vs reference: remeshed at num_pixel %u: %.3f %%, original at 4000: %.3f %%\n",
-        shading::suggest_num_pixel(*remeshed.geometry, shading::ShadingAlgorithmType::CoP),
-        100.0f * remeshed_error, 100.0f * original_error);
+                shading::suggest_num_pixel(*remeshed.geometry, shading::ShadingAlgorithmType::CoP),
+                100.0f * remeshed_error, 100.0f * original_error);
 
     // Measured: 0.03 % for the remeshed mesh, 2.7 % for the original. The bounds leave
     // room for other GPUs rasterising edge cases differently.

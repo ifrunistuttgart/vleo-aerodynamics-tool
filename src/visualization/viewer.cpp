@@ -25,11 +25,11 @@ namespace {
  * a final "... and N more" row instead. Models are usually a handful of meshes, but an
  * .obj that stores every face as its own object easily runs to dozens.
  */
-constexpr std::size_t kMaxLegendEntries = 14;
-constexpr int kLegendFontSize = 17;
-constexpr double kLegendRowHeight = 0.028; // normalised viewport
-constexpr double kLegendTop = 0.955;       // normalised viewport
-constexpr double kLegendLeft = 0.015;      // normalised viewport
+constexpr std::size_t MAX_LEGEND_ENTRIES = 14;
+constexpr int LEGEND_FONT_SIZE = 17;
+constexpr double LEGEND_ROW_HEIGHT = 0.028; // normalised viewport
+constexpr double LEGEND_TOP = 0.955;        // normalised viewport
+constexpr double LEGEND_LEFT = 0.015;       // normalised viewport
 
 /*
  * The edge-overlay hint. Top-right, because the legend owns the top-left and the
@@ -37,13 +37,12 @@ constexpr double kLegendLeft = 0.015;      // normalised viewport
  * earlier dim version in the bottom corner went unnoticed, which makes a keyboard-only
  * toggle useless.
  */
-constexpr int kHintFontSize = 17;
-const glm::vec3 kHintColor(0.80f, 0.80f, 0.84f);
-constexpr double kHintRight = 0.985; // normalised viewport
-constexpr double kHintTop = 0.955;   // normalised viewport
+constexpr int HINT_FONT_SIZE = 17;
+const glm::vec3 HINT_COLOR(0.80f, 0.80f, 0.84f);
+constexpr double HINT_RIGHT = 0.985; // normalised viewport
+constexpr double HINT_TOP = 0.955;   // normalised viewport
 
-vtkSmartPointer<vtkTextActor> TextActor(const std::string& text, int font_size,
-    const glm::vec3& color) {
+vtkSmartPointer<vtkTextActor> text_actor(const std::string& text, int font_size, const glm::vec3& color) {
     auto actor = vtkSmartPointer<vtkTextActor>::New();
     actor->SetInput(text.c_str());
     actor->SetTextScaleModeToNone(); // honour SetFontSize instead of fitting to a box
@@ -85,65 +84,57 @@ Viewer::Viewer(Config config) : m_config(std::move(config)) {
 
     m_edges.set_enabled(m_config.show_triangle_edges);
 
-    InstallObservers();
-    AddEdgeHint();
+    install_observers();
+    add_edge_hint();
 
-    m_renderer->SetBackground(kBackgroundColor.r, kBackgroundColor.g, kBackgroundColor.b);
-    m_render_window->SetSize(kWindowWidth, kWindowHeight);
+    m_renderer->SetBackground(BACKGROUND_COLOR.r, BACKGROUND_COLOR.g, BACKGROUND_COLOR.b);
+    m_render_window->SetSize(WINDOW_WIDTH, WINDOW_HEIGHT);
     m_render_window->SetWindowName(m_config.title.c_str());
 }
 
-void Viewer::InstallObservers() {
+void Viewer::install_observers() {
     m_key_callback = vtkSmartPointer<vtkCallbackCommand>::New();
-    m_key_callback->SetCallback(OnKeyPress);
+    m_key_callback->SetCallback(on_key_press);
     m_key_callback->SetClientData(this);
     m_interactor->AddObserver(vtkCommand::KeyPressEvent, m_key_callback);
 
     m_render_callback = vtkSmartPointer<vtkCallbackCommand>::New();
-    m_render_callback->SetCallback(OnStartRender);
+    m_render_callback->SetCallback(on_start_render);
     m_render_callback->SetClientData(this);
     m_renderer->AddObserver(vtkCommand::StartEvent, m_render_callback);
 }
 
-void Viewer::AddEdgeHint() {
+void Viewer::add_edge_hint() {
     // Upper case in the label only: the key itself is matched case-insensitively, and a
     // lone lower-case letter in a sentence does not read as a key to press.
-    std::string key_label(kEdgeToggleKey);
+    std::string key_label(EDGE_TOGGLE_KEY);
     for (char& c : key_label) {
         c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
     }
 
-    m_edge_hint = TextActor(
-        std::format("Press  {}  to toggle triangle edges", key_label), kHintFontSize,
-        kHintColor);
+    m_edge_hint = text_actor(std::format("Press  {}  to toggle triangle edges", key_label), HINT_FONT_SIZE, HINT_COLOR);
     m_edge_hint->GetTextProperty()->SetJustificationToRight();
-    m_edge_hint->GetPositionCoordinate()->SetValue(kHintRight, kHintTop);
+    m_edge_hint->GetPositionCoordinate()->SetValue(HINT_RIGHT, HINT_TOP);
     m_renderer->AddActor2D(m_edge_hint);
 }
 
-void Viewer::AddMesh(vtkPolyData* polydata, const glm::vec3& color, double opacity) {
-    vtkSmartPointer<vtkActor> actor = actors::MeshActor(polydata, color, opacity);
-    m_edges.Register(actor, color);
+void Viewer::add_mesh(vtkPolyData* polydata, const glm::vec3& color, double opacity) {
+    vtkSmartPointer<vtkActor> actor = actors::mesh_actor(polydata, color, opacity);
+    m_edges.register_actor(actor, color);
     m_renderer->AddActor(actor);
 }
 
-void Viewer::AddScalarColoredMesh(vtkPolyData* polydata, const glm::vec3& edge_fade_target) {
-    vtkSmartPointer<vtkActor> actor = actors::ScalarColoredMeshActor(polydata);
-    m_edges.Register(actor, edge_fade_target);
+void Viewer::add_scalar_colored_mesh(vtkPolyData* polydata, const glm::vec3& edge_fade_target) {
+    vtkSmartPointer<vtkActor> actor = actors::scalar_colored_mesh_actor(polydata);
+    m_edges.register_actor(actor, edge_fade_target);
     m_renderer->AddActor(actor);
 }
 
-void Viewer::AddActor(vtkSmartPointer<vtkActor> actor) {
-    m_renderer->AddActor(std::move(actor));
-}
+void Viewer::add_actor(vtkSmartPointer<vtkActor> actor) { m_renderer->AddActor(std::move(actor)); }
 
-void Viewer::SetMeanTriangleExtent(float extent__m) {
-    m_edges.set_mean_triangle_extent__m(extent__m);
-}
+void Viewer::set_mean_triangle_extent__m(float extent__m) { m_edges.set_mean_triangle_extent__m(extent__m); }
 
-void Viewer::AddBodyAxes(float bounding_sphere_radius) {
-    actors::AddBodyAxes(m_renderer, bounding_sphere_radius);
-}
+void Viewer::add_body_axes(float bounding_sphere_radius) { actors::add_body_axes(m_renderer, bounding_sphere_radius); }
 
 /*
  * The rows are individual text actors rather than a vtkLegendBoxActor, which derives its
@@ -156,10 +147,9 @@ void Viewer::AddBodyAxes(float bounding_sphere_radius) {
  * knowing how wide each label renders, which depends on the font the platform happens to
  * supply. The bottom-left is taken by the orientation marker, hence the top.
  */
-void Viewer::AddLegend(const std::vector<std::string>& labels,
-    const std::vector<glm::vec3>& colors) {
-    const bool truncated = labels.size() > kMaxLegendEntries;
-    const std::size_t shown = truncated ? kMaxLegendEntries - 1 : labels.size();
+void Viewer::add_legend(const std::vector<std::string>& labels, const std::vector<glm::vec3>& colors) {
+    const bool truncated = labels.size() > MAX_LEGEND_ENTRIES;
+    const std::size_t shown = truncated ? MAX_LEGEND_ENTRIES - 1 : labels.size();
 
     std::vector<std::string> rows;
     std::vector<glm::vec3> row_colors;
@@ -173,10 +163,9 @@ void Viewer::AddLegend(const std::vector<std::string>& labels,
     }
 
     for (std::size_t row = 0; row < rows.size(); ++row) {
-        vtkSmartPointer<vtkTextActor> actor =
-            TextActor(rows[row], kLegendFontSize, row_colors[row]);
-        actor->GetPositionCoordinate()->SetValue(
-            kLegendLeft, kLegendTop - kLegendRowHeight * static_cast<double>(row));
+        vtkSmartPointer<vtkTextActor> actor = text_actor(rows[row], LEGEND_FONT_SIZE, row_colors[row]);
+        actor->GetPositionCoordinate()->SetValue(LEGEND_LEFT,
+                                                 LEGEND_TOP - LEGEND_ROW_HEIGHT * static_cast<double>(row));
         m_renderer->AddActor2D(actor);
     }
 }
@@ -190,7 +179,7 @@ void Viewer::AddLegend(const std::vector<std::string>& labels,
  * The offset has to be behind (-x): from in front, a screen-up of -z places +y on the
  * left instead, inverting the convention this view exists to show.
  */
-void Viewer::PlaceCamera() {
+void Viewer::place_camera() {
     vtkCamera* camera = m_renderer->GetActiveCamera();
     camera->SetFocalPoint(0.0, 0.0, 0.0);
     camera->SetPosition(-1.0, 0.55, -0.75); // -x behind, +y right, -z above
@@ -202,16 +191,16 @@ void Viewer::PlaceCamera() {
     m_renderer->ResetCamera();
 }
 
-void Viewer::Run() {
+void Viewer::run() {
     m_render_window->Render();
-    PlaceCamera();
+    place_camera();
     m_render_window->Render();
 
     m_interactor->Initialize();
     m_interactor->Start();
 }
 
-void Viewer::OnKeyPress(vtkObject* caller, unsigned long, void* client_data, void*) {
+void Viewer::on_key_press(vtkObject* caller, unsigned long, void* client_data, void*) {
     auto* interactor = static_cast<vtkRenderWindowInteractor*>(caller);
     auto* viewer = static_cast<Viewer*>(client_data);
 
@@ -220,21 +209,21 @@ void Viewer::OnKeyPress(vtkObject* caller, unsigned long, void* client_data, voi
         return;
     }
     const std::string key(key_sym);
-    if (key != kEdgeToggleKey && key != "T") {
+    if (key != EDGE_TOGGLE_KEY && key != "T") {
         return;
     }
 
-    // Only flips the flag; OnStartRender applies it, so the key and the zoom fade never
+    // Only flips the flag; on_start_render applies it, so the key and the zoom fade never
     // fight over the same property.
-    viewer->m_edges.Toggle();
+    viewer->m_edges.toggle();
     SPDLOG_DEBUG("Triangle edges toggled {}", viewer->m_edges.enabled() ? "on" : "off");
     interactor->GetRenderWindow()->Render();
 }
 
-void Viewer::OnStartRender(vtkObject* caller, unsigned long, void* client_data, void*) {
+void Viewer::on_start_render(vtkObject* caller, unsigned long, void* client_data, void*) {
     auto* renderer = static_cast<vtkRenderer*>(caller);
     auto* viewer = static_cast<Viewer*>(client_data);
-    viewer->m_edges.ApplyForCamera(renderer);
+    viewer->m_edges.apply_for_camera(renderer);
 }
 
 } // namespace vat::visualization

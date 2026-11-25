@@ -38,7 +38,7 @@ pipeline_cop    = vat.shading.ShadingPipeline(geometry, 1, num_pixel);
 visibility_binary = pipeline_binary.shade(v_rel);   % one value per triangle, 1 or 0
 visibility_cop    = pipeline_cop.shade(v_rel);
 fprintf('Visible triangles: %d (Binary), %d (CoP) of %d\n', ...
-    nnz(visibility_binary), nnz(visibility_cop), geometry.get_num_triangles());
+        nnz(visibility_binary), nnz(visibility_cop), geometry.get_num_triangles());
 
 vat.visualization.show_shading(geometry, visibility_cop, v_rel);
 

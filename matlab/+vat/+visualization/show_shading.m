@@ -10,12 +10,12 @@ function show_shading(geometry, triangle_visbility, velocity__m_per_s, options)
     %   See also vat.visualization.show_meshes, vat.visualization.show_hinges, vat.shading.ShadingPipeline/shade
 
     arguments
-        geometry (1,1) vat.geometry.RotatableMeshGeometry
-        triangle_visbility (:,1) single
-        velocity__m_per_s (1,3) double
-        options.ShowTriangleEdges (1,1) logical = true
+        geometry (1, 1) vat.geometry.RotatableMeshGeometry
+        triangle_visbility (:, 1) single
+        velocity__m_per_s (1, 3) double
+        options.ShowTriangleEdges (1, 1) logical = true
     end
-    
+
     MexGateway("visualization.show_shading", int32(geometry.handle_), ...
-        triangle_visbility, velocity__m_per_s, logical(options.ShowTriangleEdges));
+               triangle_visbility, velocity__m_per_s, logical(options.ShowTriangleEdges));
 end

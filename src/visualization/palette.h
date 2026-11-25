@@ -6,17 +6,20 @@
 
 namespace vat::visualization {
 
-inline constexpr int kWindowWidth = 1200;
-inline constexpr int kWindowHeight = 900;
+/** @brief Initial window width [px]. */
+inline constexpr int WINDOW_WIDTH = 1200;
+/** @brief Initial window height [px]. */
+inline constexpr int WINDOW_HEIGHT = 900;
 
-inline const glm::vec3 kBackgroundColor(0.08f, 0.08f, 0.1f);
+/** @brief Background colour of every view. */
+inline const glm::vec3 BACKGROUND_COLOR(0.08f, 0.08f, 0.1f);
 
-/*
- * Okabe-Ito qualitative palette, which stays distinguishable under the common forms of
+/**
+ * @brief Okabe-Ito qualitative palette, which stays distinguishable under the common forms of
  * colour blindness. The original palette's black is replaced by a light grey, because
- * black is invisible against kBackgroundColor.
+ * black is invisible against BACKGROUND_COLOR.
  */
-inline const glm::vec3 kMeshPalette[] = {
+inline const glm::vec3 MESH_PALETTE[] = {
     glm::vec3(0.902f, 0.624f, 0.000f), // orange
     glm::vec3(0.337f, 0.706f, 0.914f), // sky blue
     glm::vec3(0.000f, 0.620f, 0.451f), // bluish green
@@ -28,24 +31,26 @@ inline const glm::vec3 kMeshPalette[] = {
 };
 
 /**
- * Colour of mesh number mesh_index.
+ * @brief Colour of mesh number mesh_index.
  *
  * Wraps around for geometries with more meshes than the palette holds; the repeats stay
  * usable because the legend spells out the id.
+ *
+ * @param mesh_index 0-based mesh index.
+ * @return The palette colour.
  */
-inline glm::vec3 MeshColor(std::size_t mesh_index) {
-    return kMeshPalette[mesh_index % std::size(kMeshPalette)];
-}
+inline glm::vec3 mesh_color(std::size_t mesh_index) { return MESH_PALETTE[mesh_index % std::size(MESH_PALETTE)]; }
 
-// Colours the shading view maps triangle visibility between.
-inline const glm::vec3 kVisibleTriangleColor(0.0f, 1.0f, 0.0f);
-inline const glm::vec3 kHiddenTriangleColor(0.15f, 0.2f, 0.8f);
+/** @brief Shading view colour of a fully visible triangle. */
+inline const glm::vec3 VISIBLE_TRIANGLE_COLOR(0.0f, 1.0f, 0.0f);
+/** @brief Shading view colour of a hidden triangle. */
+inline const glm::vec3 HIDDEN_TRIANGLE_COLOR(0.15f, 0.2f, 0.8f);
 
-// The wind arrow in the shading view.
-inline const glm::vec3 kWindColor(1.0f, 0.85f, 0.1f);
+/** @brief Colour of the wind arrow in the shading view. */
+inline const glm::vec3 WIND_COLOR(1.0f, 0.85f, 0.1f);
 
-// Body-frame axis arrows: x, y, z.
-inline const glm::vec3 kAxisColors[] = {
+/** @brief Colours of the body-frame axis arrows: x, y, z. */
+inline const glm::vec3 AXIS_COLORS[] = {
     glm::vec3(1.0f, 0.0f, 0.0f),
     glm::vec3(0.0f, 1.0f, 0.0f),
     glm::vec3(0.0f, 0.5f, 1.0f),

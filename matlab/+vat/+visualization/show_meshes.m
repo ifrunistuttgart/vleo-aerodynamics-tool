@@ -25,10 +25,10 @@ function show_meshes(geometry, options)
     %   See also vat.visualization.show_shading, vat.visualization.show_hinges
 
     arguments
-        geometry (1,1) vat.geometry.RotatableMeshGeometry
-        options.ShowTriangleEdges (1,1) logical = true
+        geometry (1, 1) vat.geometry.RotatableMeshGeometry
+        options.ShowTriangleEdges (1, 1) logical = true
     end
 
     MexGateway("visualization.show_meshes", int32(geometry.handle_), ...
-        logical(options.ShowTriangleEdges));
+               logical(options.ShowTriangleEdges));
 end

@@ -26,7 +26,10 @@
 #   cmake -DTARGET_FILE=... -DDEST_DIR=... -DSEARCH_DIR=... -P stage_matlab_bin.cmake
 
 if(NOT DEFINED TARGET_FILE OR NOT DEFINED DEST_DIR OR NOT DEFINED SEARCH_DIR)
-    message(FATAL_ERROR "stage_matlab_bin.cmake requires TARGET_FILE, DEST_DIR and SEARCH_DIR to be set")
+    message(
+        FATAL_ERROR
+        "stage_matlab_bin.cmake requires TARGET_FILE, DEST_DIR and SEARCH_DIR to be set"
+    )
 endif()
 
 get_filename_component(DEST_DIR "${DEST_DIR}" ABSOLUTE)
@@ -34,10 +37,12 @@ get_filename_component(target_dir "${TARGET_FILE}" DIRECTORY)
 get_filename_component(target_dir "${target_dir}" ABSOLUTE)
 
 if(target_dir STREQUAL DEST_DIR)
-    message(FATAL_ERROR
+    message(
+        FATAL_ERROR
         "stage_matlab_bin.cmake: TARGET_FILE must not be linked into DEST_DIR "
         "(${DEST_DIR}); dependencies would resolve to the already-staged copies "
-        "and never refresh. See the comment at the top of this file.")
+        "and never refresh. See the comment at the top of this file."
+    )
 endif()
 
 # Normalize paths to forward slashes before matching the exclude regexes below.
@@ -48,7 +53,8 @@ if(POLICY CMP0207)
     cmake_policy(SET CMP0207 NEW)
 endif()
 
-file(GET_RUNTIME_DEPENDENCIES
+file(
+    GET_RUNTIME_DEPENDENCIES
     MODULES "${TARGET_FILE}"
     DIRECTORIES "${SEARCH_DIR}"
     RESOLVED_DEPENDENCIES_VAR resolved_deps
@@ -58,12 +64,21 @@ file(GET_RUNTIME_DEPENDENCIES
     # MATLAB's own runtime libraries (libmx/libmex/libmat/libMatlabDataArray/
     # libMatlabEngine), which live in MATLAB's install directory and are always on
     # MATLAB's own search path whenever it loads a MEX file.
-    PRE_EXCLUDE_REGEXES "api-ms-.*" "ext-ms-.*" "libmx.*" "libmex.*" "libmat.*" "libMatlab.*"
+    PRE_EXCLUDE_REGEXES
+        "api-ms-.*"
+        "ext-ms-.*"
+        "libmx.*"
+        "libmex.*"
+        "libmat.*"
+        "libMatlab.*"
     POST_EXCLUDE_REGEXES ".*[Ss]ystem32.*"
 )
 
 if(unresolved_deps)
-    message(WARNING "stage_matlab_bin.cmake: could not resolve dependencies for ${TARGET_FILE}: ${unresolved_deps}")
+    message(
+        WARNING
+        "stage_matlab_bin.cmake: could not resolve dependencies for ${TARGET_FILE}: ${unresolved_deps}"
+    )
 endif()
 
 # Belt and braces: if anything still resolved out of the staging directory, the
@@ -72,9 +87,11 @@ foreach(dep IN LISTS resolved_deps)
     get_filename_component(dep_dir "${dep}" DIRECTORY)
     get_filename_component(dep_dir "${dep_dir}" ABSOLUTE)
     if(dep_dir STREQUAL DEST_DIR)
-        message(FATAL_ERROR
+        message(
+            FATAL_ERROR
             "stage_matlab_bin.cmake: ${dep} resolved out of the staging directory "
-            "instead of ${SEARCH_DIR}; staged DLLs would never refresh.")
+            "instead of ${SEARCH_DIR}; staged DLLs would never refresh."
+        )
     endif()
 endforeach()
 
@@ -92,7 +109,12 @@ set(locked_files "")
 set(num_updated 0)
 foreach(src IN LISTS to_stage)
     get_filename_component(name "${src}" NAME)
-    file(COPY_FILE "${src}" "${DEST_DIR}/${name}" ONLY_IF_DIFFERENT RESULT copy_error)
+    file(
+        COPY_FILE "${src}"
+        "${DEST_DIR}/${name}"
+        ONLY_IF_DIFFERENT
+        RESULT copy_error
+    )
     if(copy_error)
         list(APPEND locked_files "${name}")
     endif()
@@ -119,12 +141,17 @@ endforeach()
 
 if(locked_files)
     list(JOIN locked_files "\n    " locked_list)
-    message(FATAL_ERROR
+    message(
+        FATAL_ERROR
         "stage_matlab_bin.cmake: could not write these files into ${DEST_DIR}:\n"
         "    ${locked_list}\n"
         "They are locked by a running MATLAB that has loaded the toolbox.\n"
-        "Run  clear mex  in MATLAB -- you do not need to close it -- and build again.")
+        "Run  clear mex  in MATLAB -- you do not need to close it -- and build again."
+    )
 endif()
 
 list(LENGTH resolved_deps num_deps)
-message(STATUS "stage_matlab_bin.cmake: staged ${mex_stem} + ${num_deps} runtime DLL(s) into ${DEST_DIR}")
+message(
+    STATUS
+    "stage_matlab_bin.cmake: staged ${mex_stem} + ${num_deps} runtime DLL(s) into ${DEST_DIR}"
+)

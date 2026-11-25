@@ -4,20 +4,26 @@
 
 namespace vat::shading {
 
-/*
- * Choosing num_pixel from the mesh.
+/**
+ * @file
+ * @brief Choosing num_pixel from the mesh.
  *
  * The orthographic frustum spans the bounding sphere, 2R across, so one pixel is
  * 2R / num_pixel wide. A triangle is lit or shadowed as a whole, and what decides how
  * well the raster resolves it is its narrowest width w (smallest altitude), not its area.
  * Asking for k pixels across w gives num_pixel = 2R k / w.
  *
- * Below about 2.1 pixels both algorithms lose triangles outright: Binary sees a triangle
- * only if it covers a pixel centre, and CoP draws each centroid into the ID image as a
- * point, so two centroids in one pixel leave only the later one visible. (Incircle, and
- * centroid spacing, of 2w/3 against a pixel diagonal gives w >= 2.12 pixels.)
+ * Below about 2.1 pixels Binary (without MSAA) loses triangles outright: it sees a triangle
+ * only if it covers a pixel centre. (An incircle of 2w/3 against a pixel diagonal gives
+ * w >= 2.12 pixels.)
  *
- * Above that the two part ways. Measured on the remeshed shuttlecock against a reference
+ * The CoP figures below were measured with the earlier CoP implementation, which drew each
+ * centroid into an R32UI ID image as a point, so two centroids in one pixel left only the
+ * later one visible; the same 2.1-pixel bound applied to the centroid spacing. The current
+ * CoPShader instead marks every centroid point that passes the depth test in an SSBO, so two
+ * centroids in one pixel are both kept. The numbers have not been re-measured since.
+ *
+ * Above that bound the two part ways. Measured on the remeshed shuttlecock against a reference
  * of 307k triangles at num_pixel 8192, worst force error over eight flow directions:
  *
  * - CoP keeps improving up to 6-7 pixels across the 5th-percentile width and is flat after,
@@ -30,35 +36,51 @@ namespace vat::shading {
  * Hence 7 pixels for CoP and 3 for Binary, the no-loss bound plus margin.
  */
 
-/** Pixels across a triangle's narrowest width that suggest_num_pixel() aims for. */
+/**
+ * @brief Pixels across a triangle's narrowest width that suggest_num_pixel() aims for.
+ * @param type Shading algorithm.
+ * @return 3 for Binary, 7 for CoP.
+ * @throws std::invalid_argument for an unknown type.
+ */
 float pixels_per_triangle_width(ShadingAlgorithmType type);
 
-/** Smallest num_pixel suggest_num_pixel() returns, so tiny meshes are still rasterised finely. */
+/** @brief Smallest num_pixel suggest_num_pixel() returns, so tiny meshes are still rasterised finely. */
 inline constexpr unsigned int MIN_AUTO_NUM_PIXEL = 256;
 /**
- * Largest num_pixel suggest_num_pixel() returns without MSAA: the per-pixel buffer (CoP's R32UI
- * ID image, Binary's 32-bit depth buffer) is then 256 MB. A mesh that asks for more has
- * triangles too thin for any sensible raster and should be remeshed instead.
+ * @brief Largest num_pixel suggest_num_pixel() returns without MSAA.
+ *
+ * The per-pixel buffer (the depth buffer of Binary and CoP, 4 bytes per pixel) is then 256 MB. A mesh that
+ * asks for more has triangles too thin for any sensible raster and should be remeshed instead.
  */
 inline constexpr unsigned int MAX_AUTO_NUM_PIXEL = 8192;
 
 /**
- * The cap above for a given sample count. The multisampled depth buffer holds
- * num_pixel^2 * samples * 4 bytes, so the cap shrinks by sqrt(samples) to keep it at 256 MB.
- * Never below MIN_AUTO_NUM_PIXEL.
+ * @brief The cap above for a given sample count.
+ *
+ * The multisampled depth buffer holds num_pixel^2 * samples * 4 bytes, so the cap shrinks by
+ * sqrt(samples) to keep it at 256 MB.
+ *
+ * @param num_msaa_samples Samples per pixel; 0 is treated as 1.
+ * @return floor(MAX_AUTO_NUM_PIXEL / sqrt(num_msaa_samples)), never below MIN_AUTO_NUM_PIXEL.
  */
 unsigned int max_auto_num_pixel(unsigned int num_msaa_samples);
 
 /**
- * num_pixel = ceil(2 R k / w), with k from pixels_per_triangle_width(). Not clamped.
+ * @brief num_pixel = ceil(2 R k / w), with k from pixels_per_triangle_width().
  *
+ * Not clamped to the auto range; only saturated at the largest unsigned int.
+ *
+ * @param bounding_sphere_radius__m Bounding sphere radius R [m].
+ * @param triangle_width__m Triangle width w to resolve [m].
+ * @param type Shading algorithm, which sets k.
+ * @return The required num_pixel.
  * @throws std::invalid_argument if either length is not positive and finite.
  */
 unsigned int num_pixel_for_triangle_width(float bounding_sphere_radius__m, float triangle_width__m,
-    ShadingAlgorithmType type);
+                                          ShadingAlgorithmType type);
 
 /**
- * Suggests num_pixel for a geometry in its current pose.
+ * @brief Suggests num_pixel for a geometry in its current pose.
  *
  * Sized for the 5th-percentile narrowest triangle width rather than the very narrowest, so
  * a handful of stray slivers cannot drive it up, and clamped to [MIN_AUTO_NUM_PIXEL,
@@ -66,11 +88,14 @@ unsigned int num_pixel_for_triangle_width(float bounding_sphere_radius__m, float
  * (median aspect ratio above 3) or the value had to be clamped -- in both cases remeshing
  * is the fix.
  *
+ * @param geometry Geometry to size the raster for.
+ * @param type Shading algorithm the pipeline will use.
  * @param num_msaa_samples Samples per pixel the pipeline will use (1 = no MSAA); only lowers
  *        the upper cap, to bound the depth buffer's memory.
+ * @return The suggested num_pixel.
  * @throws std::invalid_argument if the geometry has no triangles.
  */
 unsigned int suggest_num_pixel(IGeometryShadingData& geometry, ShadingAlgorithmType type,
-    unsigned int num_msaa_samples = 1);
+                               unsigned int num_msaa_samples = 1);
 
 } // namespace vat::shading

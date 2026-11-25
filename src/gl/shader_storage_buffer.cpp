@@ -8,15 +8,11 @@ namespace vat::gl {
 
 namespace {
 
-GLenum to_gl_usage(BufferUsage usage) {
-    return usage == BufferUsage::StaticDraw ? GL_STATIC_DRAW : GL_DYNAMIC_READ;
-}
+GLenum to_gl_usage(BufferUsage usage) { return usage == BufferUsage::StaticDraw ? GL_STATIC_DRAW : GL_DYNAMIC_READ; }
 
 } // namespace
 
-ShaderStorageBuffer::ShaderStorageBuffer(std::size_t size_bytes, BufferUsage usage) {
-    allocate({}, size_bytes, usage);
-}
+ShaderStorageBuffer::ShaderStorageBuffer(std::size_t size_bytes, BufferUsage usage) { allocate({}, size_bytes, usage); }
 
 ShaderStorageBuffer::ShaderStorageBuffer(std::span<const std::byte> data, BufferUsage usage) {
     allocate(data, data.size(), usage);

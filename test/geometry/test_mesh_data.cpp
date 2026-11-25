@@ -14,23 +14,21 @@ using namespace vat::geometry;
 
 namespace {
 
-std::string TetraPath() {
-    return GetTestDataPath(__FILE__, "../geometries/tetraeder.obj");
-}
+std::string tetra_path() { return get_test_data_path(__FILE__, "../geometries/tetraeder.obj"); }
 
 // test/geometries/tetraeder.obj written out by hand: same vertices, faces 1-based there.
-MeshData HandBuiltTetra(std::string name = "") {
+MeshData hand_built_tetra(std::string name = "") {
     return MeshData{
         std::move(name),
-        {0.0f, -0.5f, 0.0f,  0.0f, 0.5f, 0.0f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.0f, 0.0f},
-        {0, 3, 1,  1, 3, 2,  2, 3, 0,  0, 1, 2},
+        {0.0f, -0.5f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f},
+        {0, 3, 1, 1, 3, 2, 2, 3, 0, 0, 1, 2},
     };
 }
 
 } // namespace
 
 TEST(MeshDataTest, LoaderKeepsIndexedConnectivity) {
-    const std::vector<MeshData> meshes = load_mesh_data(TetraPath());
+    const std::vector<MeshData> meshes = load_mesh_data(tetra_path());
     ASSERT_EQ(meshes.size(), 1u);
 
     // Shared corners stay shared: 4 vertices, not one per triangle corner.
@@ -45,45 +43,45 @@ TEST(MeshDataTest, LoaderKeepsIndexedConnectivity) {
         }
         return out;
     };
-    EXPECT_EQ(corners(meshes[0]), corners(HandBuiltTetra()));
+    EXPECT_EQ(corners(meshes[0]), corners(hand_built_tetra()));
 }
 
 TEST(MeshDataTest, MissingFileThrows) {
-    const std::string missing = GetTestDataPath(__FILE__, "does_not_exist.obj");
+    const std::string missing = get_test_data_path(__FILE__, "does_not_exist.obj");
     EXPECT_THROW(load_mesh_data(missing), std::runtime_error);
     EXPECT_THROW(StaticMeshGeometry{std::string(missing)}, std::runtime_error);
     EXPECT_THROW(RotatableMeshGeometry{std::string(missing)}, std::runtime_error);
 }
 
 TEST(MeshDataTest, FileWithoutMeshesThrows) {
-    const std::string empty_file = GetTestDataPath(__FILE__, "../geometries/empty.obj");
+    const std::string empty_file = get_test_data_path(__FILE__, "../geometries/empty.obj");
     EXPECT_THROW(load_mesh_data(empty_file), std::runtime_error);
     EXPECT_THROW(StaticMeshGeometry{std::string(empty_file)}, std::runtime_error);
 }
 
 TEST(MeshDataTest, FileWithoutTrianglesThrows) {
-    const std::string lines_only = GetTestDataPath(__FILE__, "../geometries/lines_only.obj");
+    const std::string lines_only = get_test_data_path(__FILE__, "../geometries/lines_only.obj");
     EXPECT_THROW(load_mesh_data(lines_only), std::runtime_error);
 }
 
 TEST(MeshDataTest, StrayLinesAreDroppedButTrianglesKept) {
     const std::vector<MeshData> meshes =
-        load_mesh_data(GetTestDataPath(__FILE__, "../geometries/triangle_with_line.obj"));
+        load_mesh_data(get_test_data_path(__FILE__, "../geometries/triangle_with_line.obj"));
     ASSERT_EQ(meshes.size(), 1u);
     EXPECT_EQ(meshes[0].indices.size(), 3u);
 }
 
 TEST(MeshDataTest, ArrayConstructionMatchesFileConstructionExactly) {
-    StaticMeshGeometry from_file(TetraPath());
+    StaticMeshGeometry from_file(tetra_path());
     std::vector<MeshData> meshes;
-    meshes.push_back(HandBuiltTetra(from_file.get_mesh_names()[0]));
+    meshes.push_back(hand_built_tetra(from_file.get_mesh_names()[0]));
     StaticMeshGeometry from_arrays(std::move(meshes));
 
-    ExpectSameGeometry(from_file, from_arrays);
+    expect_same_geometry(from_file, from_arrays);
 }
 
 TEST(MeshDataTest, GeometryExposesTheMeshesItWasBuiltFrom) {
-    const std::string path = GetTestDataPath(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
+    const std::string path = get_test_data_path(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
     StaticMeshGeometry geometry(path);
     const std::vector<MeshData> loaded = load_mesh_data(path);
 
@@ -98,11 +96,11 @@ TEST(MeshDataTest, GeometryExposesTheMeshesItWasBuiltFrom) {
 
     // Rebuilding from what the geometry kept must give the geometry back.
     StaticMeshGeometry rebuilt(std::vector<MeshData>(kept.begin(), kept.end()));
-    ExpectSameGeometry(geometry, rebuilt);
+    expect_same_geometry(geometry, rebuilt);
 }
 
 TEST(MeshDataTest, UnnamedMeshesGetTheirIndexAsName) {
-    std::vector<MeshData> meshes{HandBuiltTetra(), HandBuiltTetra("named")};
+    std::vector<MeshData> meshes{hand_built_tetra(), hand_built_tetra("named")};
     StaticMeshGeometry geometry(std::move(meshes));
 
     EXPECT_EQ(geometry.get_mesh_names()[0], "Mesh_0");
@@ -111,18 +109,18 @@ TEST(MeshDataTest, UnnamedMeshesGetTheirIndexAsName) {
 }
 
 TEST(MeshDataTest, MalformedMeshesAreRejected) {
-    MeshData ragged = HandBuiltTetra();
+    MeshData ragged = hand_built_tetra();
     ragged.positions.pop_back();
     EXPECT_THROW(StaticMeshGeometry(std::vector<MeshData>{ragged}), std::invalid_argument);
 
-    MeshData out_of_range = HandBuiltTetra();
+    MeshData out_of_range = hand_built_tetra();
     out_of_range.indices.back() = 4;
     EXPECT_THROW(StaticMeshGeometry(std::vector<MeshData>{out_of_range}), std::invalid_argument);
 }
 
 TEST(MeshDataTest, RotatableGeometryFromArraysTurnsLikeOneFromFile) {
-    RotatableMeshGeometry from_file(TetraPath());
-    RotatableMeshGeometry from_arrays(std::vector<MeshData>{HandBuiltTetra()});
+    RotatableMeshGeometry from_file(tetra_path());
+    RotatableMeshGeometry from_arrays(std::vector<MeshData>{hand_built_tetra()});
 
     const float angle__rad = 0.7f;
     const std::array<float, 3> origin{0.1f, 0.0f, 0.0f};
@@ -130,9 +128,9 @@ TEST(MeshDataTest, RotatableGeometryFromArraysTurnsLikeOneFromFile) {
     from_file.turn_mesh_around_axis(0, angle__rad, origin, axis);
     from_arrays.turn_mesh_around_axis(0, angle__rad, origin, axis);
 
-    EXPECT_EQ(ToVector(from_file.get_transformed_vertices()), ToVector(from_arrays.get_transformed_vertices()));
-    EXPECT_EQ(ToVector(from_file.get_transformed_normals()), ToVector(from_arrays.get_transformed_normals()));
-    EXPECT_EQ(ToVector(from_file.get_transformed_centroids()), ToVector(from_arrays.get_transformed_centroids()));
+    EXPECT_EQ(to_vector(from_file.get_transformed_vertices()), to_vector(from_arrays.get_transformed_vertices()));
+    EXPECT_EQ(to_vector(from_file.get_transformed_normals()), to_vector(from_arrays.get_transformed_normals()));
+    EXPECT_EQ(to_vector(from_file.get_transformed_centroids()), to_vector(from_arrays.get_transformed_centroids()));
     // The indexed source data is the untransformed mesh, whatever the pose.
-    EXPECT_EQ(from_arrays.get_mesh_data()[0].positions, HandBuiltTetra().positions);
+    EXPECT_EQ(from_arrays.get_mesh_data()[0].positions, hand_built_tetra().positions);
 }

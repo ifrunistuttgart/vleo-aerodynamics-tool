@@ -8,10 +8,8 @@
 
 namespace vat::shading {
 
-std::unique_ptr<IShadingAlgorithm> create_shading_algorithm(
-    ShadingAlgorithmType type,
-    unsigned int num_pixel,
-    unsigned int num_msaa_samples) {
+std::unique_ptr<IShadingAlgorithm> create_shading_algorithm(ShadingAlgorithmType type, unsigned int num_pixel,
+                                                            unsigned int num_msaa_samples) {
 
     if (num_msaa_samples == 0) {
         throw std::invalid_argument("num_msaa_samples must be at least 1 (1 = no anti-aliasing)");

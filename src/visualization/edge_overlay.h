@@ -8,8 +8,8 @@
 
 namespace vat::visualization {
 
-/*
- * The triangle-edge overlay: the mesh actors it draws edges on, and the rule that
+/**
+ * @brief The triangle-edge overlay: the mesh actors it draws edges on, and the rule that
  * decides how much weight those edges carry at the current zoom.
  *
  * Which triangles a model is built from is not cosmetic. The shading pass rasterises
@@ -26,47 +26,65 @@ namespace vat::visualization {
 class EdgeOverlay {
 public:
     /**
-     * Adds a mesh actor to the overlay.
+     * @brief Adds a mesh actor to the overlay.
      *
-     * @param actor - The mesh actor to draw triangle edges on.
-     * @param surface_color - What the edges dissolve into as the triangles shrink.
+     * @param actor The mesh actor to draw triangle edges on.
+     * @param surface_color What the edges dissolve into as the triangles shrink.
      *        Fading towards the surface rather than towards nothing is what keeps the
      *        transition from popping.
      */
-    void Register(vtkSmartPointer<vtkActor> actor, const glm::vec3& surface_color);
+    void register_actor(vtkSmartPointer<vtkActor> actor, const glm::vec3& surface_color);
 
     /**
-     * Sets the typical triangle size the fade is measured against, as the side of a
-     * square with the mean triangle area. Costs one pass over the geometry's areas
-     * rather than a measurement per frame.
+     * @brief Sets the typical triangle size the fade is measured against, as the side of a
+     * square with the mean triangle area.
+     *
+     * Costs one pass over the geometry's areas rather than a measurement per frame.
+     *
+     * @param extent__m Typical triangle extent [m], e.g. from actors::mean_triangle_extent().
      */
     void set_mean_triangle_extent__m(float extent__m) { m_mean_triangle_extent__m = extent__m; }
 
+    /** @brief Switches the overlay on or off; takes effect at the next apply_for_camera(). */
     void set_enabled(bool enabled) { m_enabled = enabled; }
+    /** @brief Whether the overlay is switched on. */
     bool enabled() const { return m_enabled; }
-    void Toggle() { m_enabled = !m_enabled; }
+    /** @brief Flips enabled(). */
+    void toggle() { m_enabled = !m_enabled; }
 
-    /** True once at least one mesh has been registered. */
+    /** @brief True while no mesh has been registered yet. */
     bool empty() const { return m_meshes.empty(); }
 
     /**
-     * Re-colours every registered mesh's edges for the camera as it stands. Called
-     * before each render, so the fade tracks the zoom continuously.
+     * @brief Re-colours every registered mesh's edges for the camera as it stands.
+     *
+     * Called before each render, so the fade tracks the zoom continuously.
+     *
+     * @param renderer Renderer whose camera and viewport are measured.
      */
-    void ApplyForCamera(vtkRenderer* renderer);
+    void apply_for_camera(vtkRenderer* renderer);
 
     /**
-     * How many pixels a triangle of the given world-space extent spans, for this
-     * renderer's camera. Handles both projection modes. Returns 0 if the camera or
-     * viewport is unusable.
+     * @brief How many pixels a triangle of the given world-space extent spans, for this
+     * renderer's camera.
+     *
+     * Handles both projection modes.
+     *
+     * @param renderer Renderer whose camera and viewport are used.
+     * @param extent__m Triangle extent in world space [m].
+     * @return The extent in pixels; 0 if the camera or viewport is unusable.
      */
-    static float TrianglePixelExtent(vtkRenderer* renderer, float extent__m);
+    static float triangle_pixel_extent(vtkRenderer* renderer, float extent__m);
 
     /**
-     * Weight the edges should carry at that pixel size, in [0, 1]. Smoothstepped, so
-     * the fade has no hard corners.
+     * @brief Weight the edges should carry at that pixel size.
+     *
+     * Smoothstepped, so the fade has no hard corners.
+     *
+     * @param extent__px Typical triangle extent on screen [px].
+     * @return The edge weight, in [0, 1].
      */
-    static float FadeAlpha(float extent__px);
+    static float fade_alpha(float extent__px);
 
 private:
     struct Mesh {

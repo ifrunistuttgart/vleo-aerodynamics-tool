@@ -19,12 +19,12 @@
 
 namespace vat::visualization {
 
-/*
- * A window in the toolbox's house style: dark background, an orientation marker, the
+/**
+ * @brief A window in the toolbox's house style: dark background, an orientation marker, the
  * nadir-pointing initial camera, a legend, and the triangle-edge overlay with its
  * keyboard toggle.
  *
- * A view builds one of these, adds what it wants to show, and calls Run(). Everything
+ * A view builds one of these, adds what it wants to show, and calls run(). Everything
  * that is the same between views lives here, so adding a fourth view means writing only
  * what makes it different.
  *
@@ -33,73 +33,96 @@ namespace vat::visualization {
  */
 class Viewer {
 public:
+    /** @brief Window settings fixed at construction. */
     struct Config {
-        /** Window title. */
+        /** @brief Window title. */
         std::string title;
 
         /**
-         * Order-independent transparency. Needed when the model itself is translucent,
+         * @brief Order-independent transparency. Needed when the model itself is translucent,
          * because without it VTK blends actors in the order they were added rather than
          * by depth, putting far surfaces in front of near ones.
          */
         bool depth_peeling = false;
 
-        /** Whether the triangle-edge overlay starts switched on. */
+        /** @brief Whether the triangle-edge overlay starts switched on. */
         bool show_triangle_edges = true;
     };
 
+    /**
+     * @brief Creates the window, renderer, interactor and orientation marker; nothing is shown
+     * until run().
+     * @param config Window settings.
+     */
     explicit Viewer(Config config);
 
     Viewer(const Viewer&) = delete;
     Viewer& operator=(const Viewer&) = delete;
 
     /**
-     * Adds a mesh in a single flat colour, with its triangle edges drawn over it.
+     * @brief Adds a mesh in a single flat colour, with its triangle edges drawn over it.
      *
      * The edges go on the mesh's own actor rather than on a second wireframe one: VTK
      * offsets edge geometry in depth itself, so it sits on the surface instead of
      * z-fighting with it, which a separately overlaid actor would do.
+     *
+     * @param polydata Mesh to show.
+     * @param color RGB colour, components in [0, 1].
+     * @param opacity Opacity in [0, 1]; below 1 consider Config::depth_peeling.
      */
-    void AddMesh(vtkPolyData* polydata, const glm::vec3& color, double opacity = 1.0);
+    void add_mesh(vtkPolyData* polydata, const glm::vec3& color, double opacity = 1.0);
 
     /**
-     * Adds a mesh coloured from its own per-cell scalars.
+     * @brief Adds a mesh coloured from its own per-cell scalars.
      *
-     * @param edge_fade_target - What the triangle edges fade into as they shrink. A
+     * @param polydata Mesh to show, with per-cell colour scalars.
+     * @param edge_fade_target What the triangle edges fade into as they shrink. A
      *        scalar-coloured surface has no single colour of its own, so the caller has
      *        to name the closest stand-in.
      */
-    void AddScalarColoredMesh(vtkPolyData* polydata, const glm::vec3& edge_fade_target);
+    void add_scalar_colored_mesh(vtkPolyData* polydata, const glm::vec3& edge_fade_target);
 
-    /** Adds anything that is not a mesh: arrows, hinge markers, and so on. */
-    void AddActor(vtkSmartPointer<vtkActor> actor);
-
-    /** Typical triangle size, which sets where the edge overlay starts to fade. */
-    void SetMeanTriangleExtent(float extent__m);
-
-    void AddBodyAxes(float bounding_sphere_radius);
+    /** @brief Adds anything that is not a mesh: arrows, hinge markers, and so on. */
+    void add_actor(vtkSmartPointer<vtkActor> actor);
 
     /**
-     * Legend in the top-left corner: one row per entry, drawn in that entry's colour so
-     * the colour itself is the key and no separate swatch is needed.
+     * @brief Sets the typical triangle size, which sets where the edge overlay starts to fade.
+     * @param extent__m Typical triangle extent [m], e.g. from actors::mean_triangle_extent().
      */
-    void AddLegend(const std::vector<std::string>& labels, const std::vector<glm::vec3>& colors);
+    void set_mean_triangle_extent__m(float extent__m);
 
-    /** For the few things that add several actors of their own, such as the arc arrows. */
+    /**
+     * @brief Adds the body-frame axis arrows; see actors::add_body_axes().
+     * @param bounding_sphere_radius Radius the arrows are scaled to [m].
+     */
+    void add_body_axes(float bounding_sphere_radius);
+
+    /**
+     * @brief Legend in the top-left corner: one row per entry, drawn in that entry's colour so
+     * the colour itself is the key and no separate swatch is needed.
+     *
+     * At most 14 rows are shown; with more labels the last row reads "... and N more".
+     *
+     * @param labels Row texts.
+     * @param colors Row colours; must have at least as many entries as labels.
+     */
+    void add_legend(const std::vector<std::string>& labels, const std::vector<glm::vec3>& colors);
+
+    /** @brief The renderer, for the few things that add several actors of their own, such as the arc arrows. */
     vtkRenderer* renderer() { return m_renderer; }
 
-    /** Shows the window and blocks until the user closes it. */
-    void Run();
+    /** @brief Shows the window and blocks until the user closes it. */
+    void run();
 
 private:
-    void InstallObservers();
-    void AddEdgeHint();
-    void PlaceCamera();
+    void install_observers();
+    void add_edge_hint();
+    void place_camera();
 
     // vtkCallbackCommand hands the client data back as void*; both of these take the
     // Viewer and forward to the members below.
-    static void OnKeyPress(vtkObject* caller, unsigned long event_id, void* client_data, void* data);
-    static void OnStartRender(vtkObject* caller, unsigned long event_id, void* client_data, void* data);
+    static void on_key_press(vtkObject* caller, unsigned long event_id, void* client_data, void* data);
+    static void on_start_render(vtkObject* caller, unsigned long event_id, void* client_data, void* data);
 
     Config m_config;
 

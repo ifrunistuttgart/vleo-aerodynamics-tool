@@ -32,9 +32,7 @@ namespace {
 constexpr float SURFACE_TEMP__K = 300.0f;
 constexpr float SPEED__M_PER_S = 7800.0f;
 
-AeroConditions leo_conditions() {
-    return AeroConditions{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f};
-}
+AeroConditions leo_conditions() { return AeroConditions{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f}; }
 
 struct Loads {
     glm::dvec3 force__N;
@@ -97,7 +95,9 @@ PlateReference two_plates_reference(double tan_alpha) {
     const double cos2 = 1.0 / (1.0 + tan_alpha * tan_alpha);
     const double pressure = aero.density__kg_per_m3 * double(SPEED__M_PER_S) * SPEED__M_PER_S * cos2;
     // dF = -p dA x_hat, so r x dF = p dA (0, -z, y).
-    return {{glm::dvec3(-pressure * area, 0.0, 0.0), glm::dvec3(0.0, -pressure * first_moment_z, pressure * first_moment_y)}, area};
+    return {{glm::dvec3(-pressure * area, 0.0, 0.0),
+             glm::dvec3(0.0, -pressure * first_moment_z, pressure * first_moment_y)},
+            area};
 }
 
 // Pixels along an edge of total length L are each partly covered, so the covered area
@@ -144,8 +144,8 @@ TEST(PixelAccuracyTest, ConvexBodiesAgreeWithHybrid) {
                 const glm::vec3 v = direction * SPEED__M_PER_S;
                 const Loads reference = evaluate(hybrid, v);
                 const Errors e = relative_errors(evaluate(pixel, v), reference, radius);
-                std::printf("[          ] %-20s N=%4u dir=(%5.2f %5.2f %5.2f) force %.2e torque %.2e\n",
-                    name, num_pixel, direction.x, direction.y, direction.z, e.force, e.torque);
+                std::printf("[          ] %-20s N=%4u dir=(%5.2f %5.2f %5.2f) force %.2e torque %.2e\n", name,
+                            num_pixel, direction.x, direction.y, direction.z, e.force, e.torque);
                 // Edges that line up with the pixel grid (the box seen along +y) do not
                 // average out their partly covered pixels, so the error there sits near
                 // the worst case, about 2.7/N. Smooth outlines stay far below this.
@@ -167,8 +167,8 @@ TEST(PixelAccuracyTest, ConvexBodiesAgreeWithHybridForEveryModel) {
     Storch storch(500.0f, 0.9f, 0.9f);
     Sentman sentman(1, 0.9f);
     const std::vector<std::pair<const char*, IGSIModel*>> models{
-        {"Newton", &newton}, {"Cook", &cook}, {"Maxwell", &maxwell},
-        {"SchaafChambre", &schaaf_chambre}, {"Storch", &storch}, {"Sentman", &sentman}};
+        {"Newton", &newton}, {"Cook", &cook},      {"Maxwell", &maxwell}, {"SchaafChambre", &schaaf_chambre},
+        {"Storch", &storch}, {"Sentman", &sentman}};
 
     InMemoryGeometry box;
     box.add_box({-0.3f, -0.2f, -0.1f}, {0.5f, 0.4f, 0.3f});
@@ -207,8 +207,8 @@ TEST(PixelAccuracyTest, TwoSidedPlateAgreesWithHybridForEitherFaceOrder) {
     front_first.add_quad(p0, p3, p2, p1);
     back_first.add_quad(p0, p3, p2, p1);
     back_first.add_quad(p0, p1, p2, p3);
-    const std::vector<std::pair<const char*, IGeometryShadingData*>> bodies{
-        {"front first", &front_first}, {"back first", &back_first}};
+    const std::vector<std::pair<const char*, IGeometryShadingData*>> bodies{{"front first", &front_first},
+                                                                            {"back first", &back_first}};
 
     const glm::vec3 v(7000.0f, 1500.0f, -2500.0f);
     constexpr unsigned int N = 1024;
@@ -221,8 +221,8 @@ TEST(PixelAccuracyTest, TwoSidedPlateAgreesWithHybridForEitherFaceOrder) {
             for (float side : {1.0f, -1.0f}) {
                 const Loads reference = evaluate(hybrid, side * v);
                 const Errors e = relative_errors(evaluate(pixel, side * v), reference, radius);
-                std::printf("[          ] %-11s %-7s side %+.0f force %.2e torque %.2e\n",
-                    body_name, model_name, side, e.force, e.torque);
+                std::printf("[          ] %-11s %-7s side %+.0f force %.2e torque %.2e\n", body_name, model_name, side,
+                            e.force, e.torque);
                 ASSERT_GT(glm::length(reference.force__N), 0.0) << body_name << " " << model_name;
                 EXPECT_LT(e.force, 4.0 / N) << body_name << " " << model_name << " side " << side;
                 EXPECT_LT(e.torque, 4.0 / N) << body_name << " " << model_name << " side " << side;
@@ -251,8 +251,8 @@ TEST(PixelAccuracyTest, ShadowedPlatesMatchAnalyticAreaAndMoment) {
         const double bound = edge_bound(EDGES, radius, N, reference.wetted_area * cos_alpha);
         const Errors e = relative_errors(loads, reference.loads, radius);
         const double area_error = std::abs(pixel.last_wetted_area() - reference.wetted_area) / reference.wetted_area;
-        std::printf("[          ] tan(alpha)=%.2f area %.2e force %.2e torque %.2e (bound %.2e)\n",
-            tan_alpha, area_error, e.force, e.torque, bound);
+        std::printf("[          ] tan(alpha)=%.2f area %.2e force %.2e torque %.2e (bound %.2e)\n", tan_alpha,
+                    area_error, e.force, e.torque, bound);
 
         EXPECT_LT(area_error, bound);
         EXPECT_LT(e.force, bound);
@@ -267,8 +267,8 @@ TEST(PixelAccuracyTest, FlatPlateResultIsIndependentOfMeshing) {
     // A tilted parallelogram, so its outline is not aligned with the pixel grid.
     const glm::vec3 origin(0.1f, -0.4f, -0.3f), e1(0.1f, 0.8f, 0.1f), e2(-0.2f, 0.1f, 0.7f);
     InMemoryGeometry coarse, fine;
-    coarse.add_quad(origin, origin + e1, origin + e1 + e2, origin + e2, 1);   // 2 triangles
-    fine.add_quad(origin, origin + e1, origin + e1 + e2, origin + e2, 71);    // 10082 triangles
+    coarse.add_quad(origin, origin + e1, origin + e1 + e2, origin + e2, 1); // 2 triangles
+    fine.add_quad(origin, origin + e1, origin + e1 + e2, origin + e2, 71);  // 10082 triangles
     ASSERT_EQ(coarse.get_num_triangles(), 2u);
     ASSERT_EQ(fine.get_num_triangles(), 10082u);
     ASSERT_EQ(coarse.get_bounding_sphere_radius(), fine.get_bounding_sphere_radius());
@@ -291,7 +291,8 @@ TEST(PixelAccuracyTest, FlatPlateResultIsIndependentOfMeshing) {
     const double area = glm::length(cross);
     const glm::dvec3 n = cross / area;
     const double cos_d = glm::dot(n, glm::dvec3(v)) / glm::length(glm::dvec3(v));
-    const glm::dvec3 force = -leo_conditions().density__kg_per_m3 * glm::dot(glm::dvec3(v), glm::dvec3(v)) * cos_d * cos_d * area * n;
+    const glm::dvec3 force =
+        -leo_conditions().density__kg_per_m3 * glm::dot(glm::dvec3(v), glm::dvec3(v)) * cos_d * cos_d * area * n;
     const glm::dvec3 centroid = glm::dvec3(origin) + 0.5 * glm::dvec3(e1 + e2);
     const Loads analytic{force, glm::cross(centroid, force)};
     const double perimeter = 2.0 * (glm::length(e1) + glm::length(e2));
@@ -325,7 +326,8 @@ TEST(PixelAccuracyTest, ShadowedPlatesResultIsIndependentOfMeshing) {
     HybridForceTorqueCalculator hybrid_coarse(coarse, pipeline_coarse, newton);
     HybridForceTorqueCalculator hybrid_fine(fine, pipeline_fine, newton);
     const Errors eh = relative_errors(evaluate(hybrid_fine, v), evaluate(hybrid_coarse, v), radius);
-    std::printf("[          ] hybrid, coarse vs fine back plate: force %.2e torque %.2e (for comparison)\n", eh.force, eh.torque);
+    std::printf("[          ] hybrid, coarse vs fine back plate: force %.2e torque %.2e (for comparison)\n", eh.force,
+                eh.torque);
 }
 
 // (e) The error against the analytic result shrinks as num_pixel grows.
@@ -371,7 +373,8 @@ struct ParallelogramCase {
         area = glm::length(cross);
         const glm::dvec3 n = cross / area;
         cos_delta = glm::dot(n, glm::dvec3(v)) / glm::length(glm::dvec3(v));
-        const glm::dvec3 force = -leo_conditions().density__kg_per_m3 * glm::dot(glm::dvec3(v), glm::dvec3(v)) * cos_delta * cos_delta * area * n;
+        const glm::dvec3 force = -leo_conditions().density__kg_per_m3 * glm::dot(glm::dvec3(v), glm::dvec3(v)) *
+                                 cos_delta * cos_delta * area * n;
         const glm::dvec3 centroid = glm::dvec3(origin) + 0.5 * glm::dvec3(e1 + e2);
         analytic = Loads{force, glm::cross(centroid, force)};
         perimeter = 2.0 * (glm::length(e1) + glm::length(e2));
@@ -420,13 +423,15 @@ TEST(PixelAccuracyTest, MsaaReducesTheEdgeErrorOfTheShadowedPlates) {
         const Errors e_msaa = relative_errors(evaluate(msaa, plate_flow(tan_alpha)), reference.loads, radius);
         const double area_plain = std::abs(plain.last_wetted_area() - reference.wetted_area) / reference.wetted_area;
         const double area_msaa = std::abs(msaa.last_wetted_area() - reference.wetted_area) / reference.wetted_area;
-        std::printf("[          ] tan(alpha)=%.2f force %.2e -> %.2e, torque %.2e -> %.2e, wetted area %.2e -> %.2e (1 -> %u samples)\n",
-            tan_alpha, e_plain.force, e_msaa.force, e_plain.torque, e_msaa.torque, area_plain, area_msaa, msaa.num_msaa_samples());
+        std::printf("[          ] tan(alpha)=%.2f force %.2e -> %.2e, torque %.2e -> %.2e, wetted area %.2e -> %.2e (1 "
+                    "-> %u samples)\n",
+                    tan_alpha, e_plain.force, e_msaa.force, e_plain.torque, e_msaa.torque, area_plain, area_msaa,
+                    msaa.num_msaa_samples());
         worst_plain = std::max({worst_plain, e_plain.force, e_plain.torque, area_plain});
         worst_msaa = std::max({worst_msaa, e_msaa.force, e_msaa.torque, area_msaa});
         const double projected = reference.wetted_area * cos_alpha;
         EXPECT_NEAR(msaa.last_projected_area(), projected,
-            edge_bound(16.0, radius, N, projected) * projected / static_cast<double>(msaa.num_msaa_samples()));
+                    edge_bound(16.0, radius, N, projected) * projected / static_cast<double>(msaa.num_msaa_samples()));
     }
     EXPECT_LT(worst_msaa, worst_plain / 2.0);
 }
@@ -452,7 +457,7 @@ TEST(PixelAccuracyTest, MsaaFlatPlateFollowsTheAnalyticResult) {
     const double bound = edge_bound(reference.perimeter, radius, N, projected);
     const double msaa_bound = 2.0 * bound / static_cast<double>(msaa.num_msaa_samples());
     std::printf("[          ] N=%u: force %.2e -> %.2e, torque %.2e -> %.2e (one-sample bound %.2e, msaa bound %.2e)\n",
-        N, e_plain.force, e_msaa.force, e_plain.torque, e_msaa.torque, bound, msaa_bound);
+                N, e_plain.force, e_msaa.force, e_plain.torque, e_msaa.torque, bound, msaa_bound);
     EXPECT_LT(e_msaa.force, msaa_bound);
     EXPECT_LT(e_msaa.torque, msaa_bound);
     EXPECT_NEAR(msaa.last_projected_area(), projected, projected * msaa_bound);
@@ -499,8 +504,8 @@ TEST(PixelAccuracyTest, MsaaConvexBodiesAgreeWithHybrid) {
         for (const glm::vec3& direction : directions) {
             const glm::vec3 v = direction * SPEED__M_PER_S;
             const Errors e = relative_errors(evaluate(pixel, v), evaluate(hybrid, v), radius);
-            std::printf("[          ] msaa %-6s dir=(%5.2f %5.2f %5.2f) force %.2e torque %.2e\n",
-                name, direction.x, direction.y, direction.z, e.force, e.torque);
+            std::printf("[          ] msaa %-6s dir=(%5.2f %5.2f %5.2f) force %.2e torque %.2e\n", name, direction.x,
+                        direction.y, direction.z, e.force, e.torque);
             EXPECT_LT(e.force, 4.0 / N) << name;
             EXPECT_LT(e.torque, 4.0 / N) << name;
         }
@@ -546,8 +551,8 @@ TEST(PixelAccuracyTest, MsaaBeatsOneSampleAtCreasesForNewtonAndSentman) {
                 worst_plain = std::max(worst_plain, relative_errors(evaluate(plain, v), reference, radius).force);
                 worst_msaa = std::max(worst_msaa, relative_errors(evaluate(msaa, v), reference, radius).force);
             }
-            std::printf("[          ] %-6s %-7s worst force error %.2e -> %.2e (1 -> %u samples)\n",
-                body_name, model_name, worst_plain, worst_msaa, msaa.num_msaa_samples());
+            std::printf("[          ] %-6s %-7s worst force error %.2e -> %.2e (1 -> %u samples)\n", body_name,
+                        model_name, worst_plain, worst_msaa, msaa.num_msaa_samples());
             EXPECT_LT(worst_msaa, worst_plain / 2.0) << body_name << " " << model_name;
         }
     }

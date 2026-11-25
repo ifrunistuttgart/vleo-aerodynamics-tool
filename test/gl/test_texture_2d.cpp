@@ -88,8 +88,8 @@ TEST_F(Texture2DTest, FrameBufferClearClearsAttachedTextures) {
     const std::array<std::shared_ptr<Texture2D>, 1> attachments{texture};
     FrameBuffer frame_buffer(4, 4);
     frame_buffer.attach_color_textures(attachments);
-    frame_buffer.Clear();
-    frame_buffer.UnBind();
+    frame_buffer.clear();
+    frame_buffer.unbind();
     EXPECT_EQ(texture->read_back_float(), std::vector<float>(16, 0.0f));
 }
 
@@ -138,7 +138,7 @@ TEST_F(Texture2DTest, FrameBufferTakesSamplesFromTextures) {
     const std::array<std::shared_ptr<Texture2D>, 2> attachments{a, b};
     FrameBuffer frame_buffer(16, 16, samples);
     frame_buffer.attach_color_textures(attachments);
-    frame_buffer.UnBind();
+    frame_buffer.unbind();
     EXPECT_TRUE(frame_buffer.is_complete());
 }
 
@@ -164,8 +164,8 @@ TEST_F(Texture2DTest, FrameBufferKeepsAttachedTexturesAlive) {
         const std::array<std::shared_ptr<Texture2D>, 1> attachments{texture};
         frame_buffer.attach_color_textures(attachments);
     } // the caller's reference is gone, the framebuffer's is not
-    frame_buffer.Clear();
-    frame_buffer.UnBind();
+    frame_buffer.clear();
+    frame_buffer.unbind();
     EXPECT_TRUE(frame_buffer.is_complete());
 }
 
@@ -213,10 +213,10 @@ void main() { values[gl_GlobalInvocationID.x] = gl_GlobalInvocationID.x + 1u; }
 )GLSL");
     const ShaderStorageBuffer buffer(8 * sizeof(std::uint32_t));
     buffer.bind_base(0);
-    shader.Bind();
+    shader.bind();
     shader.dispatch(2);
     memory_barrier(Barrier::ShaderStorage | Barrier::BufferUpdate);
-    shader.Unbind();
+    shader.unbind();
 
     std::vector<std::uint32_t> read(8);
     buffer.read_back(std::span<std::uint32_t>(read));

@@ -16,9 +16,9 @@
 namespace vat::remeshing {
 // Found by argument-dependent lookup, so gtest can print stats in failure messages.
 std::ostream& operator<<(std::ostream& os, const RepairStats& s) {
-    return os << "merged " << s.merged_vertices << ", unused " << s.removed_unused_vertices
-              << ", duplicate " << s.removed_duplicate_triangles << ", degenerate "
-              << s.removed_degenerate_triangles << ", split " << s.split_vertices;
+    return os << "merged " << s.merged_vertices << ", unused " << s.removed_unused_vertices << ", duplicate "
+              << s.removed_duplicate_triangles << ", degenerate " << s.removed_degenerate_triangles << ", split "
+              << s.split_vertices;
 }
 } // namespace vat::remeshing
 
@@ -34,7 +34,7 @@ using Triangle = std::array<Corner, 3>;
 // Each triangle with its corners rotated so the smallest comes first. Rotation keeps the
 // winding, so two lists compare equal exactly when they hold the same triangles, wound
 // the same way, in the same order.
-std::vector<Triangle> CanonicalTriangles(const MeshData& mesh) {
+std::vector<Triangle> canonical_triangles(const MeshData& mesh) {
     std::vector<Triangle> out;
     for (std::size_t t = 0; t < mesh.indices.size(); t += 3) {
         Triangle tri;
@@ -48,19 +48,17 @@ std::vector<Triangle> CanonicalTriangles(const MeshData& mesh) {
     return out;
 }
 
-MeshData Flatten(const SurfaceMesh& mesh, std::string name = "m") {
+MeshData flatten(const SurfaceMesh& mesh, std::string name = "m") {
     MeshData out{std::move(name), {}, {}};
     from_surface_mesh(mesh, out.positions, out.indices);
     return out;
 }
 
 // A unit square in z = 0, split along its diagonal, wound towards +z.
-MeshData Square() {
-    return MeshData{"square", {0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0}, {0, 1, 2, 0, 2, 3}};
-}
+MeshData unit_square() { return MeshData{"square", {0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0}, {0, 1, 2, 0, 2, 3}}; }
 
 std::vector<MeshData> Load(const char* relative_path) {
-    return vat::geometry::load_mesh_data(GetTestDataPath(__FILE__, relative_path));
+    return vat::geometry::load_mesh_data(get_test_data_path(__FILE__, relative_path));
 }
 
 } // namespace
@@ -69,7 +67,7 @@ TEST(RepairTest, CleanMeshIsLeftAlone) {
     for (const MeshData& mesh : Load("../../matlab/examples/geometries/shuttlecock_960.obj")) {
         const RepairedMesh repaired = repair(mesh);
         EXPECT_FALSE(repaired.stats.changed()) << mesh.name;
-        EXPECT_EQ(CanonicalTriangles(Flatten(repaired.mesh)), CanonicalTriangles(mesh)) << mesh.name;
+        EXPECT_EQ(canonical_triangles(flatten(repaired.mesh)), canonical_triangles(mesh)) << mesh.name;
     }
 }
 
@@ -88,8 +86,8 @@ TEST(RepairTest, OpenMeshKeepsItsSurface) {
         EXPECT_EQ(repaired.stats.merged_vertices, 0u) << mesh.name << ": " << repaired.stats;
         EXPECT_EQ(repaired.stats.removed_duplicate_triangles, 0u) << mesh.name << ": " << repaired.stats;
         EXPECT_EQ(repaired.stats.removed_degenerate_triangles, 0u) << mesh.name << ": " << repaired.stats;
-        repaired_meshes.push_back(Flatten(repaired.mesh, mesh.name));
-        EXPECT_EQ(CanonicalTriangles(repaired_meshes.back()), CanonicalTriangles(mesh)) << mesh.name;
+        repaired_meshes.push_back(flatten(repaired.mesh, mesh.name));
+        EXPECT_EQ(canonical_triangles(repaired_meshes.back()), canonical_triangles(mesh)) << mesh.name;
     }
 
     EXPECT_GT(split, 0u);
@@ -112,17 +110,17 @@ TEST(RepairTest, CornersStoredPerFaceAreWelded) {
 TEST(RepairTest, BothSidesOfAZeroThicknessPanelAreKept) {
     // Front and back of the same square: same corners, opposite winding. CGAL's default
     // duplicate removal would delete one side.
-    MeshData panel = Square();
+    MeshData panel = unit_square();
     panel.indices.insert(panel.indices.end(), {0, 2, 1, 0, 3, 2});
     const RepairedMesh repaired = repair(panel);
 
     EXPECT_EQ(repaired.stats.removed_duplicate_triangles, 0u);
     EXPECT_EQ(repaired.mesh.number_of_faces(), 4u);
-    EXPECT_EQ(CanonicalTriangles(Flatten(repaired.mesh)), CanonicalTriangles(panel));
+    EXPECT_EQ(canonical_triangles(flatten(repaired.mesh)), canonical_triangles(panel));
 }
 
 TEST(RepairTest, ExactDuplicateTriangleIsRemoved) {
-    MeshData mesh = Square();
+    MeshData mesh = unit_square();
     mesh.indices.insert(mesh.indices.end(), {0, 1, 2});
     const RepairedMesh repaired = repair(mesh);
 
@@ -131,7 +129,7 @@ TEST(RepairTest, ExactDuplicateTriangleIsRemoved) {
 }
 
 TEST(RepairTest, UnusedVerticesAreDropped) {
-    MeshData mesh = Square();
+    MeshData mesh = unit_square();
     mesh.positions.insert(mesh.positions.end(), {5, 5, 5});
     const RepairedMesh repaired = repair(mesh);
 
@@ -140,7 +138,7 @@ TEST(RepairTest, UnusedVerticesAreDropped) {
 }
 
 TEST(RepairTest, DegenerateTrianglesAreRemoved) {
-    MeshData mesh = Square();
+    MeshData mesh = unit_square();
     // A repeated corner, and three collinear corners along the square's bottom edge.
     mesh.positions.insert(mesh.positions.end(), {0.5f, 0, 0});
     mesh.indices.insert(mesh.indices.end(), {1, 1, 2, 0, 4, 1});
@@ -153,19 +151,17 @@ TEST(RepairTest, DegenerateTrianglesAreRemoved) {
 TEST(RepairTest, FinOnAPlateIsSplitNotFlipped) {
     // Two plate triangles and a fin standing on their shared edge: three triangles on one
     // edge. The fin's winding is arbitrary relative to the plate and must be kept as is.
-    const MeshData mesh{"fin",
-        {0, 0, 0, 1, 0, 0, 0.5f, 1, 0, 0.5f, -1, 0, 0.5f, 0, 1},
-        {0, 1, 2, 1, 0, 3, 0, 1, 4}};
+    const MeshData mesh{"fin", {0, 0, 0, 1, 0, 0, 0.5f, 1, 0, 0.5f, -1, 0, 0.5f, 0, 1}, {0, 1, 2, 1, 0, 3, 0, 1, 4}};
     const RepairedMesh repaired = repair(mesh);
 
     EXPECT_GT(repaired.stats.split_vertices, 0u);
     EXPECT_EQ(repaired.mesh.number_of_faces(), 3u);
-    EXPECT_EQ(CanonicalTriangles(Flatten(repaired.mesh)), CanonicalTriangles(mesh));
+    EXPECT_EQ(canonical_triangles(flatten(repaired.mesh)), canonical_triangles(mesh));
 }
 
 TEST(RepairTest, InconsistentWindingIsRefused) {
     // The square with its second triangle flipped: both traverse the diagonal 2 -> 0.
-    MeshData mesh = Square();
+    MeshData mesh = unit_square();
     mesh.indices = {0, 1, 2, 0, 3, 2};
 
     EXPECT_THROW(repair(mesh), std::invalid_argument);

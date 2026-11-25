@@ -57,7 +57,7 @@ for axis_index = 1:3
     ylabel('\beta [deg]');
     zlabel([names{axis_index} ' [\muNm]']);
     title(sprintf('%s, max |%s| = %.2f \\muNm', names{axis_index}, names{axis_index}, ...
-        max(abs(torque__uNm(:, :, axis_index)), [], 'all')));
+                  max(abs(torque__uNm(:, :, axis_index)), [], 'all')));
 end
 
 %% Local functions

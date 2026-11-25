@@ -40,10 +40,10 @@ void append_plate(Plate& plate, float x, float side, unsigned int k, float rot__
     for (unsigned int i = 0; i < k; ++i) {
         for (unsigned int j = 0; j < k; ++j) {
             const glm::vec3 a = point(i, j), b = point(i + 1, j), cc = point(i + 1, j + 1), d = point(i, j + 1);
-            const glm::vec3 triangles[2][3] = { { a, b, cc }, { a, cc, d } };
+            const glm::vec3 triangles[2][3] = {{a, b, cc}, {a, cc, d}};
             for (const auto& tri : triangles) {
                 for (const auto& p : tri) {
-                    plate.vertices.insert(plate.vertices.end(), { p.x, p.y, p.z });
+                    plate.vertices.insert(plate.vertices.end(), {p.x, p.y, p.z});
                     plate.ids.push_back(id);
                 }
                 ++id;
@@ -55,14 +55,15 @@ void append_plate(Plate& plate, float x, float side, unsigned int k, float rot__
 
 std::vector<float> shade(IShadingAlgorithm& shader, const Plate& plate, glm::vec3 flow) {
     EXPECT_EQ(shader.set_vertices(plate.vertices, plate.ids), 0);
-    const std::vector<unsigned int> num_triangles_per_mesh{ plate.count };
-    const std::vector<glm::mat4> model_matrices{ glm::mat4(1.0f) };
+    const std::vector<unsigned int> num_triangles_per_mesh{plate.count};
+    const std::vector<glm::mat4> model_matrices{glm::mat4(1.0f)};
     return shader.shade_geometry(glm::normalize(flow), 1.0f, num_triangles_per_mesh, model_matrices);
 }
 
 unsigned int count_visible(std::span<const float> visible, size_t begin, size_t end) {
     return static_cast<unsigned int>(std::count_if(visible.begin() + static_cast<std::ptrdiff_t>(begin),
-        visible.begin() + static_cast<std::ptrdiff_t>(end), [](float v) { return v > 0.5f; }));
+                                                   visible.begin() + static_cast<std::ptrdiff_t>(end),
+                                                   [](float v) { return v > 0.5f; }));
 }
 
 } // namespace
@@ -83,7 +84,8 @@ protected:
         ASSERT_EQ(glewInit(), GLEW_OK);
 
         const auto* gl_version = reinterpret_cast<const char*>(glGetString(GL_VERSION));
-        SPDLOG_INFO("OpenGL context initialized successfully with version: {}", gl_version != nullptr ? gl_version : "unknown");
+        SPDLOG_INFO("OpenGL context initialized successfully with version: {}",
+                    gl_version != nullptr ? gl_version : "unknown");
     }
 
     void TearDown() override {
@@ -97,13 +99,13 @@ protected:
     static void expect_tetrahedron(unsigned int num_msaa_samples) {
         SCOPED_TRACE(::testing::Message() << "num_msaa_samples = " << num_msaa_samples);
         BinaryShader shader(800, num_msaa_samples);
-        ASSERT_EQ(shader.set_vertices(vertices, triangleIDs), 0);
+        ASSERT_EQ(shader.set_vertices(vertices, triangle_ids), 0);
 
-        const std::vector<unsigned int> num_triangles_per_mesh{ numFaces };
-        const std::vector<glm::mat4> model_matrices{ glm::mat4(1.0f) };
+        const std::vector<unsigned int> num_triangles_per_mesh{num_faces};
+        const std::vector<glm::mat4> model_matrices{glm::mat4(1.0f)};
 
-        std::vector<float> visible = shader.shade_geometry(glm::vec3(1.0f, 0.0f, 0.0f), 1.0f,
-            num_triangles_per_mesh, model_matrices);
+        std::vector<float> visible =
+            shader.shade_geometry(glm::vec3(1.0f, 0.0f, 0.0f), 1.0f, num_triangles_per_mesh, model_matrices);
         EXPECT_NEAR(visible[0], 0.0f, 1e-5);
         EXPECT_NEAR(visible[1], 0.0f, 1e-5);
         EXPECT_NEAR(visible[2], 0.0f, 1e-5);
@@ -117,13 +119,9 @@ protected:
     }
 };
 
-TEST_F(BinaryShaderTest, ShadeTetrahedron) {
-    expect_tetrahedron(1);
-}
+TEST_F(BinaryShaderTest, ShadeTetrahedron) { expect_tetrahedron(1); }
 
-TEST_F(BinaryShaderTest, ShadeTetrahedronMsaa) {
-    expect_tetrahedron(8);
-}
+TEST_F(BinaryShaderTest, ShadeTetrahedronMsaa) { expect_tetrahedron(8); }
 
 // 40 x 40 cells on a unit plate at 800 px across 2 m: each cell is 10 px wide. The flow
 // grazes the plate at sin(a) = 0.03, so each triangle projects to about 10 x 0.3 px.
@@ -154,7 +152,7 @@ TEST_F(BinaryShaderTest, GrazingPlateAllWindwardVisibleWithMsaa) {
 // A large plate right in front of a smaller one: nothing of the rear plate may leak
 // through the GL_LEQUAL marking pass, and the front plate must be fully visible.
 TEST_F(BinaryShaderTest, OccludedPlateStaysHidden) {
-    for (unsigned int num_msaa_samples : { 1u, 8u }) {
+    for (unsigned int num_msaa_samples : {1u, 8u}) {
         SCOPED_TRACE(::testing::Message() << "num_msaa_samples = " << num_msaa_samples);
         Plate plates;
         append_plate(plates, 0.1f, 1.0f, 10, 0.0f, 1);

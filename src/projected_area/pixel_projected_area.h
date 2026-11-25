@@ -12,8 +12,9 @@ class PixelForceTorqueCalculator;
 namespace vat::projected_area {
 
 /**
- * Projected area on the GPU: PixelForceTorqueCalculator run with the ProjectedArea GSI model,
- * whose force per projected area is (1, 0, 0), so the x component of the total force is the
+ * @brief Projected area on the GPU: PixelForceTorqueCalculator run with the ProjectedArea GSI model.
+ *
+ * The model's force per projected area is (1, 0, 0), so the x component of the total force is the
  * area the geometry shows along the direction.
  *
  * The direction follows the convention of v_rel in the load calculators: surfaces whose normal
@@ -25,10 +26,13 @@ namespace vat::projected_area {
 class PixelProjectedArea : public IProjectedArea {
 public:
     /**
-     * @param geometry Geometry to measure.
+     * @brief Creates the underlying PixelForceTorqueCalculator (in FlowRegime::Hyperthermal).
+     *
+     * @param geometry Geometry to measure; referenced, must outlive this object.
      * @param num_pixel Edge length of the square render target; the accuracy/runtime knob.
      * @param num_msaa_samples Samples per pixel; 1 = no anti-aliasing.
      * @throws std::invalid_argument if num_pixel or num_msaa_samples is 0.
+     * @throws std::runtime_error if the OpenGL context or the G-buffer cannot be created.
      */
     PixelProjectedArea(IGeometryShadingData& geometry, unsigned int num_pixel, unsigned int num_msaa_samples = 1);
     ~PixelProjectedArea() override;
@@ -37,6 +41,9 @@ public:
     PixelProjectedArea& operator=(const PixelProjectedArea&) = delete;
 
     /**
+     * @brief Renders the geometry along direction and returns the area the flow would reach.
+     *
+     * @param direction Direction in the body frame, as v_rel; normalised internally.
      * @return Projected area along direction [m^2].
      * @throws std::invalid_argument if direction is zero or not finite.
      * @throws std::runtime_error if the GPU evaluation fails.

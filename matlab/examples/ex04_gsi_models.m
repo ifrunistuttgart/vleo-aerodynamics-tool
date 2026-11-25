@@ -23,13 +23,13 @@ geometry = vat.geometry.RotatableMeshGeometry(obj_file);
 % sigma_n, sigma_t: normal and tangential momentum accommodation, 0..1
 % V_w: mean normal velocity of the re-emitted particles [m/s]
 models = {
-    'Newton',         vat.gsi_models.Newton()
-    'Cook',           vat.gsi_models.Cook(0.9)
-    'Maxwell',        vat.gsi_models.Maxwell(0.9)
-    'Schaaf-Chambre', vat.gsi_models.SchaafChambre(0.9, 0.9)
-    'Storch',         vat.gsi_models.Storch(500, 0.9, 0.9)
-    'Sentman',        vat.gsi_models.Sentman(1, 0.9)   % 1: exact temperature ratio
-};
+          'Newton',         vat.gsi_models.Newton()
+          'Cook',           vat.gsi_models.Cook(0.9)
+          'Maxwell',        vat.gsi_models.Maxwell(0.9)
+          'Schaaf-Chambre', vat.gsi_models.SchaafChambre(0.9, 0.9)
+          'Storch',         vat.gsi_models.Storch(500, 0.9, 0.9)
+          'Sentman',        vat.gsi_models.Sentman(1, 0.9)   % 1: exact temperature ratio
+         };
 
 %% 2. Drag and lift at 20 deg angle of attack
 aoa   = 20;   % [deg]

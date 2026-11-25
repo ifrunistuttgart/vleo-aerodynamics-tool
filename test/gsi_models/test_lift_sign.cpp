@@ -42,16 +42,14 @@ const glm::vec3 centroid__m(0.0f, 0.0f, 0.0f);
 // Same basis the models build internally. For this geometry it evaluates to (0,-1,0),
 // and it is orthogonal to drag_dir = -v_hat = (-1,0,0), so projecting the total force
 // onto it isolates the lift contribution exactly.
-glm::vec3 lift_direction() {
-    return -glm::normalize(glm::cross(glm::cross(v_rel__m_per_s, normal), v_rel__m_per_s));
-}
+glm::vec3 lift_direction() { return -glm::normalize(glm::cross(glm::cross(v_rel__m_per_s, normal), v_rel__m_per_s)); }
 
 float lift_component(IGSIModel& model) {
     AeroConditions cond = leo_conditions();
     glm::vec3 force__N(0.0f);
     glm::vec3 torque__Nm(0.0f);
-    model.calc_aero_force_and_torque(AREA__M2, normal, centroid__m, v_rel__m_per_s,
-                                     SURF_TEMP__K, cond, force__N, torque__Nm);
+    model.calc_aero_force_and_torque(AREA__M2, normal, centroid__m, v_rel__m_per_s, SURF_TEMP__K, cond, force__N,
+                                     torque__Nm);
     return glm::dot(force__N, lift_direction());
 }
 

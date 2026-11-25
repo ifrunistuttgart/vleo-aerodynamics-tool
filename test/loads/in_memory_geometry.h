@@ -66,8 +66,7 @@ public:
     void add_sphere(float radius, int levels) {
         const glm::vec3 x(1, 0, 0), y(0, 1, 0), z(0, 0, 1);
         const glm::vec3 faces[8][3] = {
-            {x, y, z}, {y, -x, z}, {-x, -y, z}, {-y, x, z},
-            {y, x, -z}, {-x, y, -z}, {-y, -x, -z}, {x, -y, -z},
+            {x, y, z}, {y, -x, z}, {-x, -y, z}, {-y, x, z}, {y, x, -z}, {-x, y, -z}, {-y, -x, -z}, {x, -y, -z},
         };
         for (const auto& f : faces) {
             add_sphere_face(f[0], f[1], f[2], radius, levels);

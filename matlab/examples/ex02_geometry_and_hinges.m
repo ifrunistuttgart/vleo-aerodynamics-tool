@@ -43,7 +43,7 @@ vat.visualization.show_hinges(geometry, hinges);
 angles__deg = [10, 20, 50, -5];
 for i = 1:numel(hinges)
     geometry.turn_mesh_around_axis(hinges(i).mesh_id, deg2rad(angles__deg(i)), ...
-        hinges(i).origin, hinges(i).axis);
+                                   hinges(i).origin, hinges(i).axis);
 end
 vat.visualization.show_meshes(geometry);
 

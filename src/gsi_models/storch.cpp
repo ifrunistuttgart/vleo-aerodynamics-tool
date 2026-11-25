@@ -11,28 +11,29 @@ Storch::Storch(const float V_w, const float sigma_n, const float sigma_t) {
     set_sigma_t(sigma_t);
 }
 
-
-int Storch::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, const glm::vec3 &centroid__m,
-                                     const glm::vec3 &v_rel__m_per_s, float surf_temp__K, AeroConditions &aero, glm::vec3 &aero_force__N,
-                                     glm::vec3 &aero_torque__Nm) {
+int Storch::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal, const glm::vec3& centroid__m,
+                                       const glm::vec3& v_rel__m_per_s, float surf_temp__K, AeroConditions& aero,
+                                       glm::vec3& aero_force__N, glm::vec3& aero_torque__Nm) {
     aero_force__N = force_per_area(normal, v_rel__m_per_s, surf_temp__K, aero) * area__m2;
     aero_torque__Nm = glm::cross(centroid__m, aero_force__N);
     return 0;
 }
 
-glm::vec3 Storch::force_per_area(const glm::vec3 &normal, const glm::vec3 &v_rel__m_per_s, float surf_temp__K,
-                                 const AeroConditions &aero) const {
-    if(glm::dot(v_rel__m_per_s, normal)< 0.0f) {
+glm::vec3 Storch::force_per_area(const glm::vec3& normal, const glm::vec3& v_rel__m_per_s, float surf_temp__K,
+                                 const AeroConditions& aero) const {
+    if (glm::dot(v_rel__m_per_s, normal) < 0.0f) {
         return glm::vec3(0.0f); // No aerodynamic force if the surface is facing away from the flow
     }
 
     // Extract aerodynamic conditions
     const float density__kg_per_m3 = aero.density__kg_per_m3;
-    glm::vec3 v_rel_inv__m_per_s = -v_rel__m_per_s; // Invert velocity to match GSIMs convention (velocity of gas relative to surface)
+    glm::vec3 v_rel_inv__m_per_s =
+        -v_rel__m_per_s; // Invert velocity to match GSIMs convention (velocity of gas relative to surface)
 
     const float v_rel_magnitude__m_per_s = glm::length(v_rel_inv__m_per_s);
     if (v_rel_magnitude__m_per_s < 1e-10f) {
-        SPDLOG_WARN("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.", v_rel_magnitude__m_per_s);
+        SPDLOG_WARN("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.",
+                    v_rel_magnitude__m_per_s);
         return glm::vec3(0.0f); // No relative velocity, no force
     }
 
@@ -49,10 +50,10 @@ glm::vec3 Storch::force_per_area(const glm::vec3 &normal, const glm::vec3 &v_rel
     const float sin_d = std::sqrt(std::max(0.0f, 1.0f - cos_d * cos_d));
 
     // --- Cp Calculation ---
-    const float cp = 2 * cos_d * ( m_sigma_n * m_V_w / v_rel_magnitude__m_per_s + (2 - m_sigma_n)*cos_d);
+    const float cp = 2 * cos_d * (m_sigma_n * m_V_w / v_rel_magnitude__m_per_s + (2 - m_sigma_n) * cos_d);
 
     // --- Ctau Calculation ---
-    const float ctau = 2*m_sigma_t*sin_d*cos_d;
+    const float ctau = 2 * m_sigma_t * sin_d * cos_d;
 
     const float cd = cp * cos_d + ctau * sin_d;
     // Shear acts downstream of the surface, so the tangential term subtracts from
@@ -68,7 +69,7 @@ std::string Storch::glsl_force_per_projected_area() const {
     return std::string(common_glsl::helpers) + storch_glsl::force_per_projected_area;
 }
 
-std::vector<GlslUniform> Storch::glsl_uniforms(const AeroConditions &aero) const {
+std::vector<GlslUniform> Storch::glsl_uniforms(const AeroConditions& aero) const {
     return {
         {"u_gsi_density", aero.density__kg_per_m3},
         {"u_gsi_V_w", m_V_w},
@@ -107,8 +108,7 @@ void Storch::set_V_w(const float V_w) {
     if (V_w < 0.0f) {
         SPDLOG_WARN("V_m must be positive, setting to 0.0");
         m_V_w = 0.0f;
-    }
-    else {
+    } else {
         m_V_w = V_w;
     }
 }
@@ -117,12 +117,10 @@ void Storch::set_sigma_n(const float sigma_n) {
     if (sigma_n < 0.0f) {
         SPDLOG_WARN("sigma_n must be positive, setting to 0.0");
         m_sigma_n = 0.0f;
-    }
-    else if (sigma_n > 1.0f) {
+    } else if (sigma_n > 1.0f) {
         SPDLOG_WARN("sigma_n must be less than 1.0, setting to 1.0");
         m_sigma_n = 1.0f;
-    }
-    else {
+    } else {
         m_sigma_n = sigma_n;
     }
 }
@@ -131,12 +129,10 @@ void Storch::set_sigma_t(const float sigma_t) {
     if (sigma_t < 0.0f) {
         SPDLOG_WARN("sigma_t must be positive, setting to 0.0");
         m_sigma_t = 0.0f;
-    }
-    else if (sigma_t > 1.0f) {
+    } else if (sigma_t > 1.0f) {
         SPDLOG_WARN("sigma_t must be less than 1.0, setting to 1.0");
         m_sigma_t = 1.0f;
-    }
-    else {
+    } else {
         m_sigma_t = sigma_t;
     }
 }

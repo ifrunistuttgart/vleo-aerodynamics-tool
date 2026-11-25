@@ -30,15 +30,15 @@ sigma_t      = single(0.9);
 V_w__m_per_s = single(100.0);
 
 conditions = vat.AeroConditions( ...
-    rho__kg_per_m3, T_atmospheric__K, particle_mass__kg);
+                                rho__kg_per_m3, T_atmospheric__K, particle_mass__kg);
 
 model_names = {'Newton', 'Maxwell', 'Cook', 'Schaaf-Chambre', ...
-    'Storch', 'Sentman'};
+               'Storch', 'Sentman'};
 num_models = numel(model_names);
 models = cell(num_models, 1);
 for model_index = 1:num_models
     models{model_index} = make_model(model_names{model_index}, ...
-        alpha_e, sigma_n, sigma_t, V_w__m_per_s);
+                                     alpha_e, sigma_n, sigma_t, V_w__m_per_s);
 end
 
 %% Angle sweep and aerodynamic loads
@@ -56,8 +56,8 @@ for model_index = 1:num_models
         normal = [sin(alpha__rad), 0, cos(alpha__rad)];
 
         [force__N, ~] = models{model_index}.calc_aero_force_torque( ...
-            area__m2, normal, centroid__m, v_rel__m_per_s, ...
-            surface_temp__K, conditions);
+                                                                   area__m2, normal, centroid__m, v_rel__m_per_s, ...
+                                                                   surface_temp__K, conditions);
 
         drag__N(angle_index, model_index) = -force__N(1);
         lift__N(angle_index, model_index) = -force__N(3);
