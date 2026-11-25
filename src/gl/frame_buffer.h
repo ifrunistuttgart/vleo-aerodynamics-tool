@@ -14,9 +14,9 @@ namespace vat::gl {
  */
 class FrameBuffer {
 private:
-    unsigned int m_FrameBufferID = 0;
-    unsigned int m_DepthBufferID = 0;
-    unsigned int m_NumColorAttachments = 0;
+    unsigned int m_frame_buffer_id = 0;
+    unsigned int m_depth_buffer_id = 0;
+    unsigned int m_num_color_attachments = 0;
     // Shared with the caller, so an attached texture lives at least as long as the framebuffer.
     std::vector<std::shared_ptr<Texture2D>> m_color_textures;
     unsigned int m_width;
@@ -51,11 +51,11 @@ public:
      * Replaces earlier attachments. The framebuffer keeps the textures alive. Leaves the
      * framebuffer bound; is_complete() is updated.
      *
-     * @param colorTextures Textures to attach; each must be non-null, valid and have the
+     * @param color_textures Textures to attach; each must be non-null, valid and have the
      *        framebuffer's size and sample count.
      * @throws std::invalid_argument if a texture violates that; nothing changes then.
      */
-    void attach_color_textures(std::span<const std::shared_ptr<Texture2D>> colorTextures);
+    void attach_color_textures(std::span<const std::shared_ptr<Texture2D>> color_textures);
 
     /**
      * @brief False if the depth buffer could not be allocated (e.g. out of memory) or the
@@ -64,18 +64,18 @@ public:
     bool is_complete() const { return m_complete; }
 
     /** @brief Binds the framebuffer as GL_FRAMEBUFFER. */
-    void Bind() const;
+    void bind() const;
     /** @brief Binds the default framebuffer. */
-    void UnBind() const;
+    void unbind() const;
     /**
      * @brief Clears every attached colour texture to zero, then the depth buffer.
      *
      * Each texture goes through Texture2D::clear(), so integer and float formats are both
      * handled. The framebuffer must be bound.
      */
-    void Clear() const;
+    void clear() const;
     /** @brief Clears the depth buffer only. */
-    void ClearDepth() const;
+    void clear_depth() const;
     /**
      * @brief Resolves every colour attachment of this (multisampled) framebuffer into the same
      * attachment of `target` with glBlitFramebuffer.

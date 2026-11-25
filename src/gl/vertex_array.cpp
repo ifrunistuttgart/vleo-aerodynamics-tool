@@ -8,38 +8,38 @@ namespace vat::gl {
 
 VertexArray::VertexArray() : m_attrib_index(0) { GLCall(glGenVertexArrays(1, &m_vertex_array_id)); }
 
-VertexArray::~VertexArray() { Unbind(); }
+VertexArray::~VertexArray() { unbind(); }
 
-void VertexArray::AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout) {
-    Bind();
-    vb.Bind();
-    const auto& elements = layout.GetElements();
+void VertexArray::add_buffer(const VertexBuffer& vb, const VertexBufferLayout& layout) {
+    bind();
+    vb.bind();
+    const auto& elements = layout.get_elements();
     if (elements.empty()) {
-        SPDLOG_WARN("VertexArray::AddBuffer called with empty layout");
+        SPDLOG_WARN("VertexArray::add_buffer called with empty layout");
     }
     unsigned int offset = 0;
     for (unsigned int i = 0; i < elements.size(); i++) {
         const auto& element = elements[i];
-        unsigned int attribIndex = m_attrib_index + i;
-        GLCall(glEnableVertexAttribArray(attribIndex));
+        unsigned int attrib_index = m_attrib_index + i;
+        GLCall(glEnableVertexAttribArray(attrib_index));
 
         if (element.type == GL_UNSIGNED_INT || element.type == GL_INT) {
-            GLCall(glVertexAttribIPointer(attribIndex, element.count, element.type, layout.GetStride(),
+            GLCall(glVertexAttribIPointer(attrib_index, element.count, element.type, layout.get_stride(),
                                           (const void*)offset));
         } else {
-            GLCall(glVertexAttribPointer(attribIndex, element.count, element.type, element.normalized,
-                                         layout.GetStride(), (const void*)offset));
+            GLCall(glVertexAttribPointer(attrib_index, element.count, element.type, element.normalized,
+                                         layout.get_stride(), (const void*)offset));
         }
 
-        offset += element.count * VertexBufferElement::GetSizeOfType(element.type);
+        offset += element.count * VertexBufferElement::get_size_of_type(element.type);
     }
     m_attrib_index += elements.size();
-    vb.Unbind();
-    Unbind();
+    vb.unbind();
+    unbind();
 }
 
-void VertexArray::Bind() const { GLCall(glBindVertexArray(m_vertex_array_id)); }
+void VertexArray::bind() const { GLCall(glBindVertexArray(m_vertex_array_id)); }
 
-void VertexArray::Unbind() const { GLCall(glBindVertexArray(0)); }
+void VertexArray::unbind() const { GLCall(glBindVertexArray(0)); }
 
 } // namespace vat::gl

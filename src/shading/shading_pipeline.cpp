@@ -18,7 +18,7 @@ using namespace gl;
 namespace {
 
 // Checked before the context exists: a 0 x 0 window would fail with a less helpful error.
-unsigned int RequirePositive(unsigned int num_pixel) {
+unsigned int require_positive(unsigned int num_pixel) {
     if (num_pixel == 0) {
         throw std::invalid_argument("num_pixel must be at least 1");
     }
@@ -35,7 +35,8 @@ ShadingPipeline::ShadingPipeline(IGeometryShadingData& geometry, ShadingAlgorith
 
 ShadingPipeline::ShadingPipeline(IGeometryShadingData& geometry, ShadingAlgorithmType algorithm_type,
                                  unsigned int num_pixel, unsigned int num_msaa_samples, ResolvedTag)
-    : m_context(std::make_unique<GlfwOpenGLContext>(RequirePositive(num_pixel), num_pixel, "Triangle Renderer", false)),
+    : m_context(
+          std::make_unique<GlfwOpenGLContext>(require_positive(num_pixel), num_pixel, "Triangle Renderer", false)),
       m_geometry(geometry), m_num_pixel(num_pixel), m_initial_radius__m(geometry.get_bounding_sphere_radius()) {
     m_context->make_current();
 
@@ -55,14 +56,14 @@ ShadingPipeline::ShadingPipeline(IGeometryShadingData& geometry, ShadingAlgorith
     m_algorithm = create_shading_algorithm(algorithm_type, num_pixel, num_msaa_samples);
 
     std::span<const float> vertices = m_geometry.get_untransformed_vertices();
-    std::span<const std::uint32_t> triangleIDs = m_geometry.get_triangle_ids();
-    const int set_vertices_result = m_algorithm->set_vertices(vertices, triangleIDs);
+    std::span<const std::uint32_t> triangle_ids = m_geometry.get_triangle_ids();
+    const int set_vertices_result = m_algorithm->set_vertices(vertices, triangle_ids);
     if (set_vertices_result != 0) {
         // A half-initialised algorithm would crash in shade(), so fail here instead.
         m_algorithm.reset();
         throw std::runtime_error("ShadingPipeline initialization failed in set_vertices (code=" +
                                  std::to_string(set_vertices_result) + ", vertices=" + std::to_string(vertices.size()) +
-                                 ", ids=" + std::to_string(triangleIDs.size()) + "); see the log for the cause");
+                                 ", ids=" + std::to_string(triangle_ids.size()) + "); see the log for the cause");
     }
 }
 

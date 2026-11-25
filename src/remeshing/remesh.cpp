@@ -29,7 +29,7 @@ constexpr double EQUILATERAL_AREA_PER_EDGE2 = 0.43301270189221935;
 // indexed MeshData kept alongside (12 B of indices plus ~6 B of shared positions).
 constexpr std::size_t BYTES_PER_TRIANGLE = 154;
 
-void ValidateOptions(const RemeshOptions& options) {
+void validate_options(const RemeshOptions& options) {
     const bool by_count = options.target_triangle_count > 0;
     const bool by_length = options.target_edge_length__m > 0.0f;
     if (by_count == by_length) {
@@ -47,7 +47,7 @@ void ValidateOptions(const RemeshOptions& options) {
     }
 }
 
-std::vector<unsigned int> TrianglesPerMesh(geometry::StaticMeshGeometry& geometry) {
+std::vector<unsigned int> triangles_per_mesh(geometry::StaticMeshGeometry& geometry) {
     const auto counts = geometry.get_num_triangles_per_mesh();
     return std::vector<unsigned int>(counts.begin(), counts.end());
 }
@@ -62,8 +62,8 @@ struct Prepared {
     double predicted_triangles = 0.0;
 };
 
-Prepared Prepare(geometry::StaticMeshGeometry& geometry, const RemeshOptions& options) {
-    ValidateOptions(options);
+Prepared prepare(geometry::StaticMeshGeometry& geometry, const RemeshOptions& options) {
+    validate_options(options);
     if (geometry.get_num_triangles() == 0) {
         throw std::invalid_argument("cannot remesh a geometry without triangles");
     }
@@ -90,7 +90,7 @@ Prepared Prepare(geometry::StaticMeshGeometry& geometry, const RemeshOptions& op
     return prepared;
 }
 
-RemeshPrediction ToPrediction(const Prepared& prepared) {
+RemeshPrediction to_prediction(const Prepared& prepared) {
     RemeshPrediction prediction{};
     prediction.target_edge_length__m = static_cast<float>(prepared.edge_length__m);
     // Saturate rather than overflow: an absurdly small edge length must still read as huge.
@@ -105,12 +105,12 @@ RemeshPrediction ToPrediction(const Prepared& prepared) {
 } // namespace
 
 RemeshPrediction predict_remesh(geometry::StaticMeshGeometry& geometry, const RemeshOptions& options) {
-    return ToPrediction(Prepare(geometry, options));
+    return to_prediction(prepare(geometry, options));
 }
 
 RemeshResult remesh(geometry::StaticMeshGeometry& geometry, const RemeshOptions& options) {
-    Prepared prepared = Prepare(geometry, options);
-    const RemeshPrediction prediction = ToPrediction(prepared);
+    Prepared prepared = prepare(geometry, options);
+    const RemeshPrediction prediction = to_prediction(prepared);
 
     if (prepared.predicted_triangles > REMESH_MAX_TRIANGLES) {
         throw std::invalid_argument("remeshing with edge length " + std::to_string(prediction.target_edge_length__m) +
@@ -137,7 +137,7 @@ RemeshResult remesh(geometry::StaticMeshGeometry& geometry, const RemeshOptions&
 
     RemeshReport report{};
     report.before = geometry::compute_mesh_quality(geometry);
-    report.triangles_per_mesh_before = TrianglesPerMesh(geometry);
+    report.triangles_per_mesh_before = triangles_per_mesh(geometry);
     report.repair = prepared.repair;
     report.target_edge_length__m = prediction.target_edge_length__m;
     if (report.repair.changed()) {
@@ -193,7 +193,7 @@ RemeshResult remesh(geometry::StaticMeshGeometry& geometry, const RemeshOptions&
     RemeshResult result;
     result.geometry = std::make_unique<geometry::RotatableMeshGeometry>(std::move(remeshed));
     report.after = geometry::compute_mesh_quality(*result.geometry);
-    report.triangles_per_mesh_after = TrianglesPerMesh(*result.geometry);
+    report.triangles_per_mesh_after = triangles_per_mesh(*result.geometry);
     report.area_change__percent =
         100.0f * (report.after.total_area__m2 - report.before.total_area__m2) / report.before.total_area__m2;
 

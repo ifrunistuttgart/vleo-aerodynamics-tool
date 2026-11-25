@@ -58,9 +58,9 @@ using vat::remeshing::RemeshOptions;
 using vat::shading::ShadingAlgorithmType;
 using vat::shading::ShadingPipeline;
 using vat::visualization::Hinge;
-using vat::visualization::ShowHinges;
-using vat::visualization::ShowMeshes;
-using vat::visualization::ShowShading;
+using vat::visualization::show_hinges;
+using vat::visualization::show_meshes;
+using vat::visualization::show_shading;
 
 /**
  * @brief The mex entry point. MATLAB calls operator() for every `vat.*` call.
@@ -834,7 +834,7 @@ public:
                     std::vector<float> triangle_visibility(typed_array.begin(), typed_array.end());
                     glm::vec3 velocity__m_per_s(inputs[3][0], inputs[3][1], inputs[3][2]);
 
-                    ShowShading(geometry, triangle_visibility, velocity__m_per_s, view_options(inputs, 4));
+                    show_shading(geometry, triangle_visibility, velocity__m_per_s, view_options(inputs, 4));
                     return;
                 }
                 if (cmd == "show_meshes") {
@@ -846,7 +846,7 @@ public:
                     const int geometry_id = inputs[1][0];
                     RotatableMeshGeometry& geometry = *geometry_map.at(geometry_id);
 
-                    ShowMeshes(geometry, view_options(inputs, 2));
+                    show_meshes(geometry, view_options(inputs, 2));
                     return;
                 }
                 if (cmd == "show_hinges") {
@@ -886,7 +886,7 @@ public:
                         hinges.push_back(hinge);
                     }
 
-                    ShowHinges(geometry, hinges, view_options(inputs, 5));
+                    show_hinges(geometry, hinges, view_options(inputs, 5));
                     return;
                 }
             }

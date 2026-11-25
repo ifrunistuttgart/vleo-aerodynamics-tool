@@ -23,10 +23,12 @@ using vat::geometry::StaticMeshGeometry;
 
 namespace {
 
-std::string Shuttlecock() { return GetTestDataPath(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj"); }
+std::string shuttlecock() {
+    return get_test_data_path(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj");
+}
 
 // A square panel of side 1 m in z = 0, cut into just two triangles.
-StaticMeshGeometry SquarePanel() {
+StaticMeshGeometry square_panel() {
     return StaticMeshGeometry(
         std::vector<MeshData>{MeshData{"panel", {0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0}, {0, 1, 2, 0, 2, 3}}});
 }
@@ -40,7 +42,7 @@ struct Load {
 // are linear in its area (torque through area times centroid), so on a flat facet the
 // sums do not depend on how the facet is cut into triangles. Any flipped triangle, lost
 // area or moved rim shows up here.
-Load UnshadedSentmanLoad(StaticMeshGeometry& geometry, const glm::vec3& v_rel__m_per_s) {
+Load unshaded_sentman_load(StaticMeshGeometry& geometry, const glm::vec3& v_rel__m_per_s) {
     vat::gsi_models::Sentman sentman(1, 0.9f);
     vat::AeroConditions aero{1.2482e-11f, 934.0f, 16 * 1.6605390689252e-27f};
     const auto areas = geometry.get_areas();
@@ -60,7 +62,7 @@ Load UnshadedSentmanLoad(StaticMeshGeometry& geometry, const glm::vec3& v_rel__m
     return Load{glm::vec3(force), glm::vec3(torque)};
 }
 
-void ExpectNearVec(const glm::vec3& actual, const glm::vec3& expected, float tolerance, const char* what) {
+void expect_near_vec(const glm::vec3& actual, const glm::vec3& expected, float tolerance, const char* what) {
     EXPECT_LE(glm::length(actual - expected), tolerance)
         << what << ": (" << actual.x << ", " << actual.y << ", " << actual.z << ") vs (" << expected.x << ", "
         << expected.y << ", " << expected.z << ")";
@@ -69,7 +71,7 @@ void ExpectNearVec(const glm::vec3& actual, const glm::vec3& expected, float tol
 } // namespace
 
 TEST(RemeshTest, FlatPanelBecomesNearlyEquilateral) {
-    StaticMeshGeometry panel = SquarePanel();
+    StaticMeshGeometry panel = square_panel();
     RemeshOptions options;
     options.target_edge_length__m = 0.05f;
     const RemeshResult result = remesh(panel, options);
@@ -89,7 +91,7 @@ TEST(RemeshTest, FlatPanelBecomesNearlyEquilateral) {
 }
 
 TEST(RemeshTest, TriangleCountTargetLandsNearIt) {
-    StaticMeshGeometry geometry(Shuttlecock());
+    StaticMeshGeometry geometry(shuttlecock());
     RemeshOptions options;
     options.target_triangle_count = 20000;
     const RemeshResult result = remesh(geometry, options);
@@ -100,7 +102,7 @@ TEST(RemeshTest, TriangleCountTargetLandsNearIt) {
 }
 
 TEST(RemeshTest, ShuttlecockKeepsItsPartsAndLosesItsSlivers) {
-    StaticMeshGeometry geometry(Shuttlecock());
+    StaticMeshGeometry geometry(shuttlecock());
     RemeshOptions options;
     options.target_triangle_count = 20000;
     const RemeshResult result = remesh(geometry, options);
@@ -108,7 +110,7 @@ TEST(RemeshTest, ShuttlecockKeepsItsPartsAndLosesItsSlivers) {
     const RemeshReport& r = result.report;
 
     // Same parts under the same mesh_ids.
-    EXPECT_EQ(ToVector(remeshed.get_mesh_names()), ToVector(geometry.get_mesh_names()));
+    EXPECT_EQ(to_vector(remeshed.get_mesh_names()), to_vector(geometry.get_mesh_names()));
     ASSERT_EQ(r.triangles_per_mesh_after.size(), r.triangles_per_mesh_before.size());
     for (unsigned int count : r.triangles_per_mesh_after) {
         EXPECT_GT(count, 0u);
@@ -125,7 +127,7 @@ TEST(RemeshTest, ShuttlecockKeepsItsPartsAndLosesItsSlivers) {
 }
 
 TEST(RemeshTest, UnshadedLoadsAreUnchangedOnFlatGeometry) {
-    StaticMeshGeometry geometry(Shuttlecock());
+    StaticMeshGeometry geometry(shuttlecock());
     RemeshOptions options;
     options.target_triangle_count = 20000;
     RemeshResult result = remesh(geometry, options);
@@ -137,21 +139,21 @@ TEST(RemeshTest, UnshadedLoadsAreUnchangedOnFlatGeometry) {
         glm::vec3(0.0f, -7500.0f, 2000.0f),
     };
     for (const glm::vec3& v_rel : flows) {
-        const Load before = UnshadedSentmanLoad(geometry, v_rel);
-        const Load after = UnshadedSentmanLoad(*result.geometry, v_rel);
-        ExpectNearVec(after.force__N, before.force__N, 1e-4f * glm::length(before.force__N), "force");
-        ExpectNearVec(after.torque__Nm, before.torque__Nm, 1e-4f * glm::length(before.force__N) * 0.36f, "torque");
+        const Load before = unshaded_sentman_load(geometry, v_rel);
+        const Load after = unshaded_sentman_load(*result.geometry, v_rel);
+        expect_near_vec(after.force__N, before.force__N, 1e-4f * glm::length(before.force__N), "force");
+        expect_near_vec(after.torque__Nm, before.torque__Nm, 1e-4f * glm::length(before.force__N) * 0.36f, "torque");
     }
 }
 
 TEST(RemeshTest, OpenPanelsKeepTheirRims) {
-    StaticMeshGeometry geometry(GetTestDataPath(__FILE__, "../../matlab/examples/geometries/soar_satellite.obj"));
+    StaticMeshGeometry geometry(get_test_data_path(__FILE__, "../../matlab/examples/geometries/soar_satellite.obj"));
     RemeshOptions options;
     options.target_triangle_count = 8000;
     RemeshResult result = remesh(geometry, options);
     const RemeshReport& r = result.report;
 
-    EXPECT_EQ(ToVector(result.geometry->get_mesh_names()), ToVector(geometry.get_mesh_names()));
+    EXPECT_EQ(to_vector(result.geometry->get_mesh_names()), to_vector(geometry.get_mesh_names()));
     EXPECT_GT(r.repair.split_vertices, 0u);
     EXPECT_NEAR(r.area_change__percent, 0.0f, 0.5f);
     EXPECT_FLOAT_EQ(r.after.bounding_sphere_radius__m, r.before.bounding_sphere_radius__m);
@@ -159,20 +161,20 @@ TEST(RemeshTest, OpenPanelsKeepTheirRims) {
 }
 
 TEST(RemeshTest, InputIsLeftUntouched) {
-    StaticMeshGeometry geometry(Shuttlecock());
-    StaticMeshGeometry reference(Shuttlecock());
+    StaticMeshGeometry geometry(shuttlecock());
+    StaticMeshGeometry reference(shuttlecock());
     RemeshOptions options;
     options.target_triangle_count = 5000;
     remesh(geometry, options);
 
-    ExpectSameGeometry(geometry, reference);
+    expect_same_geometry(geometry, reference);
 }
 
 TEST(RemeshTest, TurnedInputIsRemeshedUnturned) {
-    RotatableMeshGeometry turned(Shuttlecock());
+    RotatableMeshGeometry turned(shuttlecock());
     turned.turn_mesh_around_axis(1, 0.8f, std::array<float, 3>{-0.15f, 0.1f, 0.05f},
                                  std::array<float, 3>{0.0f, 1.0f, 0.0f});
-    StaticMeshGeometry unturned(Shuttlecock());
+    StaticMeshGeometry unturned(shuttlecock());
     RemeshOptions options;
     options.target_triangle_count = 5000;
 
@@ -182,11 +184,11 @@ TEST(RemeshTest, TurnedInputIsRemeshedUnturned) {
     for (const glm::mat4& m : from_turned.geometry->get_model_matrices()) {
         EXPECT_EQ(m, glm::mat4(1.0f));
     }
-    ExpectSameGeometry(*from_turned.geometry, *from_unturned.geometry);
+    expect_same_geometry(*from_turned.geometry, *from_unturned.geometry);
 }
 
 TEST(RemeshTest, SizeMustBeGivenExactlyOnce) {
-    StaticMeshGeometry panel = SquarePanel();
+    StaticMeshGeometry panel = square_panel();
     RemeshOptions neither;
     EXPECT_THROW(remesh(panel, neither), std::invalid_argument);
 
@@ -222,7 +224,7 @@ TEST(RemeshTest, UnrepairableMeshIsRejected) {
 }
 
 TEST(RemeshPredictionTest, EdgeLengthGivesTheIdealTilingCount) {
-    StaticMeshGeometry panel = SquarePanel();
+    StaticMeshGeometry panel = square_panel();
     RemeshOptions options;
     options.target_edge_length__m = 0.05f;
     const RemeshPrediction p = predict_remesh(panel, options);
@@ -235,7 +237,7 @@ TEST(RemeshPredictionTest, EdgeLengthGivesTheIdealTilingCount) {
 }
 
 TEST(RemeshPredictionTest, TriangleCountIsPredictedAsGiven) {
-    StaticMeshGeometry geometry(Shuttlecock());
+    StaticMeshGeometry geometry(shuttlecock());
     RemeshOptions options;
     options.target_triangle_count = 20000;
     const RemeshPrediction p = predict_remesh(geometry, options);
@@ -245,7 +247,7 @@ TEST(RemeshPredictionTest, TriangleCountIsPredictedAsGiven) {
 }
 
 TEST(RemeshPredictionTest, PredictionUsesTheSameEdgeLengthAsRemesh) {
-    StaticMeshGeometry geometry(Shuttlecock());
+    StaticMeshGeometry geometry(shuttlecock());
     RemeshOptions options;
     options.target_triangle_count = 3000;
 
@@ -254,7 +256,7 @@ TEST(RemeshPredictionTest, PredictionUsesTheSameEdgeLengthAsRemesh) {
 }
 
 TEST(RemeshPredictionTest, OversizedRequestIsReportedByPredictionAndRefusedByRemesh) {
-    StaticMeshGeometry geometry(Shuttlecock());
+    StaticMeshGeometry geometry(shuttlecock());
 
     RemeshOptions too_many;
     too_many.target_triangle_count = REMESH_MAX_TRIANGLES + 1;
@@ -269,7 +271,7 @@ TEST(RemeshPredictionTest, OversizedRequestIsReportedByPredictionAndRefusedByRem
 }
 
 TEST(RemeshPredictionTest, AbsurdlySmallEdgeSaturatesInsteadOfOverflowing) {
-    StaticMeshGeometry geometry(Shuttlecock());
+    StaticMeshGeometry geometry(shuttlecock());
     RemeshOptions options;
     options.target_edge_length__m = 1e-9f;
 

@@ -33,7 +33,7 @@ public:
      *        Fading towards the surface rather than towards nothing is what keeps the
      *        transition from popping.
      */
-    void Register(vtkSmartPointer<vtkActor> actor, const glm::vec3& surface_color);
+    void register_actor(vtkSmartPointer<vtkActor> actor, const glm::vec3& surface_color);
 
     /**
      * @brief Sets the typical triangle size the fade is measured against, as the side of a
@@ -41,16 +41,16 @@ public:
      *
      * Costs one pass over the geometry's areas rather than a measurement per frame.
      *
-     * @param extent__m Typical triangle extent [m], e.g. from actors::MeanTriangleExtent().
+     * @param extent__m Typical triangle extent [m], e.g. from actors::mean_triangle_extent().
      */
     void set_mean_triangle_extent__m(float extent__m) { m_mean_triangle_extent__m = extent__m; }
 
-    /** @brief Switches the overlay on or off; takes effect at the next ApplyForCamera(). */
+    /** @brief Switches the overlay on or off; takes effect at the next apply_for_camera(). */
     void set_enabled(bool enabled) { m_enabled = enabled; }
     /** @brief Whether the overlay is switched on. */
     bool enabled() const { return m_enabled; }
     /** @brief Flips enabled(). */
-    void Toggle() { m_enabled = !m_enabled; }
+    void toggle() { m_enabled = !m_enabled; }
 
     /** @brief True while no mesh has been registered yet. */
     bool empty() const { return m_meshes.empty(); }
@@ -62,7 +62,7 @@ public:
      *
      * @param renderer Renderer whose camera and viewport are measured.
      */
-    void ApplyForCamera(vtkRenderer* renderer);
+    void apply_for_camera(vtkRenderer* renderer);
 
     /**
      * @brief How many pixels a triangle of the given world-space extent spans, for this
@@ -74,7 +74,7 @@ public:
      * @param extent__m Triangle extent in world space [m].
      * @return The extent in pixels; 0 if the camera or viewport is unusable.
      */
-    static float TrianglePixelExtent(vtkRenderer* renderer, float extent__m);
+    static float triangle_pixel_extent(vtkRenderer* renderer, float extent__m);
 
     /**
      * @brief Weight the edges should carry at that pixel size.
@@ -84,7 +84,7 @@ public:
      * @param extent__px Typical triangle extent on screen [px].
      * @return The edge weight, in [0, 1].
      */
-    static float FadeAlpha(float extent__px);
+    static float fade_alpha(float extent__px);
 
 private:
     struct Mesh {

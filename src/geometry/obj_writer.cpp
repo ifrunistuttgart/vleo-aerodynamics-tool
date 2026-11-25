@@ -16,7 +16,7 @@ namespace {
 // rounded, so no spelling reads back bit-exact for every float; measured over 2e5 values,
 // this one misses least and never by more than one ulp. to_chars rather than printf so a
 // comma-decimal locale (e.g. a MATLAB session) cannot change the output.
-void AppendFloat(std::string& line, float value) {
+void append_float(std::string& line, float value) {
     char buffer[32];
     const auto [end, error] = std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::general, 9);
     if (error != std::errc()) {
@@ -26,7 +26,7 @@ void AppendFloat(std::string& line, float value) {
 }
 
 // An `o` name ends at the first whitespace when the file is read back.
-std::string ObjName(const std::string& name) {
+std::string obj_name(const std::string& name) {
     std::string sanitized = name;
     for (char& c : sanitized) {
         if (std::isspace(static_cast<unsigned char>(c))) {
@@ -64,7 +64,7 @@ void write_obj(StaticMeshGeometry& geometry, const std::string& file) {
     std::size_t vertex_offset = 1;
     std::string line;
     for (const MeshData& mesh : meshes) {
-        const std::string name = ObjName(mesh.name);
+        const std::string name = obj_name(mesh.name);
         if (name != mesh.name) {
             SPDLOG_WARN("Mesh \"{}\" is written as \"{}\": .obj object names cannot contain whitespace", mesh.name,
                         name);
@@ -72,11 +72,11 @@ void write_obj(StaticMeshGeometry& geometry, const std::string& file) {
         out << "o " << name << '\n';
         for (std::size_t v = 0; v < mesh.positions.size(); v += 3) {
             line = "v ";
-            AppendFloat(line, mesh.positions[v]);
+            append_float(line, mesh.positions[v]);
             line += ' ';
-            AppendFloat(line, mesh.positions[v + 1]);
+            append_float(line, mesh.positions[v + 1]);
             line += ' ';
-            AppendFloat(line, mesh.positions[v + 2]);
+            append_float(line, mesh.positions[v + 2]);
             line += '\n';
             out << line;
         }

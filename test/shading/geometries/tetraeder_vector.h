@@ -22,19 +22,19 @@ static const std::vector<float> vertices = {// Face 1: bottom (v0, v3, v1)
                                             // Face 4: front (v0, v1, v2)
                                             v0[0], v0[1], v0[2], v1[0], v1[1], v1[2], v2[0], v2[1], v2[2]};
 
-static const std::vector<std::uint32_t> triangleIDs = {// Face 1 bottom: Red
-                                                       1, 1, 1,
+static const std::vector<std::uint32_t> triangle_ids = {// Face 1 bottom: Red
+                                                        1, 1, 1,
 
-                                                       // Face 2: Green
-                                                       2, 2, 2,
+                                                        // Face 2: Green
+                                                        2, 2, 2,
 
-                                                       // Face 3: Blue
-                                                       3, 3, 3,
+                                                        // Face 3: Blue
+                                                        3, 3, 3,
 
-                                                       // Face 4: Yellow
-                                                       4, 4, 4};
+                                                        // Face 4: Yellow
+                                                        4, 4, 4};
 
 // Number of triangle ID entries (= number of vertices = 3 per face)
-static const unsigned int numTriangles = static_cast<unsigned int>(triangleIDs.size());
+static const unsigned int num_triangles = static_cast<unsigned int>(triangle_ids.size());
 // Number of actual triangular faces
-static const unsigned int numFaces = numTriangles / 3;
+static const unsigned int num_faces = num_triangles / 3;

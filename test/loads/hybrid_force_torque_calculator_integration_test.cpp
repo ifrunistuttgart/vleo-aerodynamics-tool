@@ -20,7 +20,7 @@ using namespace vat::shading;
 using namespace vat::loads;
 
 // Get path relative to this source file
-std::string GetTestDataPath(const std::string& filename) {
+std::string get_test_data_path(const std::string& filename) {
     std::filesystem::path source_file(__FILE__);
     std::filesystem::path data_file = source_file.parent_path() / filename;
     return data_file.string();
@@ -44,8 +44,8 @@ protected:
     }
 
     void SetUp() override {
-        std::string obj_path = GetTestDataPath("../geometries/tetraeder.obj");
-        // std::string obj_path = GetTestDataPath("International Space Station.obj");
+        std::string obj_path = get_test_data_path("../geometries/tetraeder.obj");
+        // std::string obj_path = get_test_data_path("International Space Station.obj");
         SPDLOG_INFO("[TEST] loading Test data from: {}", obj_path);
         geometry = std::make_unique<StaticMeshGeometry>(obj_path);
         SPDLOG_INFO("[TEST] Loaded {} triangles", geometry->get_num_triangles());

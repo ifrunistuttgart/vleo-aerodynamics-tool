@@ -17,7 +17,7 @@ struct VertexBufferElement {
      * @param type GL_FLOAT or GL_UNSIGNED_INT; any other type triggers ASSERT and returns 0.
      * @return 4 for the supported types.
      */
-    static unsigned int GetSizeOfType(unsigned int type) {
+    static unsigned int get_size_of_type(unsigned int type) {
         switch (type) {
         case GL_FLOAT:
             return 4;
@@ -29,37 +29,37 @@ struct VertexBufferElement {
     }
 };
 
-/** @brief Interleaved attribute layout of one vertex buffer, in Push() order. */
+/** @brief Interleaved attribute layout of one vertex buffer, in push() order. */
 class VertexBufferLayout {
 private:
-    std::vector<VertexBufferElement> m_Elements;
-    unsigned int m_Stride;
+    std::vector<VertexBufferElement> m_elements;
+    unsigned int m_stride;
 
 public:
     /** @brief Creates an empty layout. */
-    VertexBufferLayout() : m_Stride(0) {}
+    VertexBufferLayout() : m_stride(0) {}
 
     /**
      * @brief Appends an attribute of `count` components of type T.
      * @tparam T float or unsigned int; any other type fails to compile.
      * @param count Components per vertex.
      */
-    template <typename T> void Push(unsigned int count) {
+    template <typename T> void push(unsigned int count) {
         if constexpr (std::is_same_v<T, float>) {
-            m_Elements.push_back(VertexBufferElement{GL_FLOAT, count, GL_FALSE});
-            m_Stride += count * VertexBufferElement::GetSizeOfType(GL_FLOAT);
+            m_elements.push_back(VertexBufferElement{GL_FLOAT, count, GL_FALSE});
+            m_stride += count * VertexBufferElement::get_size_of_type(GL_FLOAT);
         } else if constexpr (std::is_same_v<T, unsigned int>) {
-            m_Elements.push_back(VertexBufferElement{GL_UNSIGNED_INT, count, GL_FALSE});
-            m_Stride += count * VertexBufferElement::GetSizeOfType(GL_UNSIGNED_INT);
+            m_elements.push_back(VertexBufferElement{GL_UNSIGNED_INT, count, GL_FALSE});
+            m_stride += count * VertexBufferElement::get_size_of_type(GL_UNSIGNED_INT);
         } else {
-            static_assert(sizeof(T) == 0, "Unsupported type for VertexBufferLayout::Push");
+            static_assert(sizeof(T) == 0, "Unsupported type for VertexBufferLayout::push");
         }
     }
 
-    /** @brief The attributes in Push() order. */
-    inline const std::vector<VertexBufferElement> GetElements() const& { return m_Elements; };
+    /** @brief The attributes in push() order. */
+    inline const std::vector<VertexBufferElement> get_elements() const& { return m_elements; };
     /** @brief Bytes per vertex over all attributes. */
-    inline unsigned int GetStride() const { return m_Stride; }
+    inline unsigned int get_stride() const { return m_stride; }
 };
 
 } // namespace vat::gl

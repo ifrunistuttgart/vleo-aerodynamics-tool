@@ -88,7 +88,7 @@ bool create_g_buffer(std::vector<std::shared_ptr<Texture2D>>& g_buffer_textures,
     if (allocated) {
         g_buffer = std::make_unique<FrameBuffer>(num_pixel, num_pixel, num_samples);
         g_buffer->attach_color_textures(g_buffer_textures);
-        g_buffer->UnBind();
+        g_buffer->unbind();
         if (g_buffer->is_complete()) {
             return true;
         }
@@ -172,17 +172,17 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(IGeometryShadingData& geo
     if (m_num_msaa_samples > 1) {
         // The sample positions of the G-buffer, constant for its lifetime.
         std::vector<glm::vec2> offsets(m_num_msaa_samples);
-        m_gpu->g_buffer->Bind();
+        m_gpu->g_buffer->bind();
         for (unsigned int s = 0; s < m_num_msaa_samples; ++s) {
             GLfloat position[2] = {0.5f, 0.5f};
             GLCall(glGetMultisamplefv(GL_SAMPLE_POSITION, s, position));
             offsets[s] = glm::vec2(position[0], position[1]) - 0.5f;
         }
-        m_gpu->g_buffer->UnBind();
-        m_gpu->g_buffer_shader->Bind();
-        m_gpu->g_buffer_shader->SetUniform2fv("u_sample_offsets", offsets);
+        m_gpu->g_buffer->unbind();
+        m_gpu->g_buffer_shader->bind();
+        m_gpu->g_buffer_shader->set_uniform_2fv("u_sample_offsets", offsets);
     }
-    m_gpu->g_buffer_shader->Unbind();
+    m_gpu->g_buffer_shader->unbind();
 
     m_gpu->integrator = std::make_unique<PixelLoadIntegrator>(num_pixel, m_keep_pressure_image);
 
@@ -201,15 +201,15 @@ PixelForceTorqueCalculator::PixelForceTorqueCalculator(IGeometryShadingData& geo
 
     m_gpu->vao = std::make_unique<VertexArray>();
     VertexBufferLayout layout_vertices;
-    layout_vertices.Push<float>(3); // vec3 position
+    layout_vertices.push<float>(3); // vec3 position
     VertexBuffer vb(vertices.data(), static_cast<unsigned int>(sizeof(float) * vertices.size()));
-    m_gpu->vao->AddBuffer(vb, layout_vertices);
+    m_gpu->vao->add_buffer(vb, layout_vertices);
 
     VertexBufferLayout layout_normals;
-    layout_normals.Push<float>(3); // vec3 normal
+    layout_normals.push<float>(3); // vec3 normal
     VertexBuffer vb_normals(vertex_normals.data(), static_cast<unsigned int>(sizeof(float) * vertex_normals.size()));
-    m_gpu->vao->AddBuffer(vb_normals, layout_normals);
-    m_gpu->vao->Unbind();
+    m_gpu->vao->add_buffer(vb_normals, layout_normals);
+    m_gpu->vao->unbind();
 
     SPDLOG_DEBUG("PixelForceTorqueCalculator ready ({} triangles, {}x{} pixels)", m_geometry.get_num_triangles(),
                  num_pixel, num_pixel);
@@ -246,7 +246,7 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     const FlowCamera camera = make_flow_camera(glm::normalize(v_rel__m_per_s), bounding_sphere_radius);
     const glm::mat4 view_projection = camera.projection * camera.view;
 
-    m_gpu->g_buffer->Bind();
+    m_gpu->g_buffer->bind();
     GLCall(glViewport(0, 0, static_cast<GLsizei>(m_num_pixel), static_cast<GLsizei>(m_num_pixel)));
     // Leeward faces are culled, as in the Binary and CoP shaders. On a two-sided plate
     // the leeward face lies exactly on the windward one; drawn, it could win the depth
@@ -258,28 +258,28 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
     GLCall(glDepthFunc(GL_LESS));
     GLCall(glDepthMask(GL_TRUE));
     GLCall(glEnable(GL_MULTISAMPLE)); // no effect on a single-sample framebuffer
-    m_gpu->g_buffer->Clear();
+    m_gpu->g_buffer->clear();
 
-    m_gpu->g_buffer_shader->Bind();
+    m_gpu->g_buffer_shader->bind();
     // The model is evaluated in this pass, see g_buffer_fragment_shader.
     Shader& shader = *m_gpu->g_buffer_shader;
-    shader.setUniformMat4f("u_view_projection", view_projection);
-    shader.SetUniform3f("u_v_rel", v_rel__m_per_s);
-    shader.SetUniform1f("u_surface_temp", surface_temp__K);
-    shader.SetUniform1f("u_min_cos_delta", m_min_cos_delta);
-    shader.SetUniform1f("u_edge_on_threshold", edge_on_threshold(rel_speed));
+    shader.set_uniform_mat4f("u_view_projection", view_projection);
+    shader.set_uniform_3f("u_v_rel", v_rel__m_per_s);
+    shader.set_uniform_1f("u_surface_temp", surface_temp__K);
+    shader.set_uniform_1f("u_min_cos_delta", m_min_cos_delta);
+    shader.set_uniform_1f("u_edge_on_threshold", edge_on_threshold(rel_speed));
     for (const GlslUniform& uniform : m_gsi_model.glsl_uniforms(aero)) {
         std::visit(
             [&](auto value) {
                 if constexpr (std::is_same_v<decltype(value), int>) {
-                    shader.SetUniform1i(uniform.name, value);
+                    shader.set_uniform_1i(uniform.name, value);
                 } else {
-                    shader.SetUniform1f(uniform.name, value);
+                    shader.set_uniform_1f(uniform.name, value);
                 }
             },
             uniform.value);
     }
-    m_gpu->vao->Bind();
+    m_gpu->vao->bind();
     std::span<const glm::mat4> model_matrices = m_geometry.get_model_matrices();
     std::span<const unsigned int> num_triangles_per_mesh = m_geometry.get_num_triangles_per_mesh();
     unsigned int offset = 0;
@@ -287,14 +287,14 @@ int PixelForceTorqueCalculator::calc_aero_torque_force(const glm::vec3& v_rel__m
         const glm::mat4& model = model_matrices[i];
         // Same normal transform as RotatableMeshGeometry applies on the CPU.
         const glm::mat3 normal_matrix = glm::transpose(glm::inverse(glm::mat3(model)));
-        m_gpu->g_buffer_shader->setUniformMat4f("u_model", model);
-        m_gpu->g_buffer_shader->setUniformMat3f("u_normal_matrix", normal_matrix);
+        m_gpu->g_buffer_shader->set_uniform_mat4f("u_model", model);
+        m_gpu->g_buffer_shader->set_uniform_mat3f("u_normal_matrix", normal_matrix);
         GLCall(glDrawArrays(GL_TRIANGLES, offset, static_cast<GLsizei>(num_triangles_per_mesh[i] * 3)));
         offset += num_triangles_per_mesh[i] * 3;
     }
-    m_gpu->vao->Unbind();
-    m_gpu->g_buffer_shader->Unbind();
-    m_gpu->g_buffer->UnBind();
+    m_gpu->vao->unbind();
+    m_gpu->g_buffer_shader->unbind();
+    m_gpu->g_buffer->unbind();
     memory_barrier(Barrier::TextureFetch);
 
     // MSAA: average the samples of each pixel in hardware. Uncovered samples hold the clear

@@ -17,12 +17,12 @@ using vat::geometry::StaticMeshGeometry;
 
 namespace {
 
-std::string DataPath(const std::string& relative) {
+std::string data_path(const std::string& relative) {
     return (std::filesystem::path(__FILE__).parent_path() / relative).string();
 }
 
 // One triangle of the given narrowest width, with a far vertex fixing R = 1 m.
-StaticMeshGeometry ThinTriangle(float width__m) {
+StaticMeshGeometry thin_triangle(float width__m) {
     return StaticMeshGeometry(std::vector<MeshData>{
         MeshData{"thin", {-0.5f, 0, 0, 0.5f, 0, 0, 0, width__m, 0, 0, 0, 1.0f}, {0, 1, 2, 0, 3, 1}}});
 }
@@ -51,26 +51,26 @@ TEST(PixelSizingTest, InvalidLengthsAreRejected) {
 
 TEST(PixelSizingTest, SliverMeshIsSizedForItsNarrowSide) {
     // shuttlecock_960: R = 0.3582 m, 5th-percentile width 0.749 mm -> 2*0.3582*k/0.000749.
-    StaticMeshGeometry geometry(DataPath("../../matlab/examples/geometries/shuttlecock_960.obj"));
+    StaticMeshGeometry geometry(data_path("../../matlab/examples/geometries/shuttlecock_960.obj"));
     EXPECT_EQ(suggest_num_pixel(geometry, ShadingAlgorithmType::Binary), 2869u);
     EXPECT_EQ(suggest_num_pixel(geometry, ShadingAlgorithmType::CoP), 6694u);
 }
 
 TEST(PixelSizingTest, CoarseMeshGetsTheMinimum) {
-    StaticMeshGeometry tetra(DataPath("../geometries/tetraeder.obj"));
+    StaticMeshGeometry tetra(data_path("../geometries/tetraeder.obj"));
     EXPECT_EQ(suggest_num_pixel(tetra, ShadingAlgorithmType::CoP), MIN_AUTO_NUM_PIXEL);
 }
 
 TEST(PixelSizingTest, HopelesslyThinMeshIsCapped) {
-    StaticMeshGeometry thin = ThinTriangle(1e-6f);
+    StaticMeshGeometry thin = thin_triangle(1e-6f);
     EXPECT_EQ(suggest_num_pixel(thin, ShadingAlgorithmType::Binary), MAX_AUTO_NUM_PIXEL);
 
-    StaticMeshGeometry degenerate = ThinTriangle(0.0f);
+    StaticMeshGeometry degenerate = thin_triangle(0.0f);
     EXPECT_EQ(suggest_num_pixel(degenerate, ShadingAlgorithmType::Binary), MAX_AUTO_NUM_PIXEL);
 }
 
 TEST(PixelSizingTest, PipelineWithoutNumPixelUsesTheSuggestion) {
-    StaticMeshGeometry geometry(DataPath("../../matlab/examples/geometries/shuttlecock_960.obj"));
+    StaticMeshGeometry geometry(data_path("../../matlab/examples/geometries/shuttlecock_960.obj"));
     ShadingPipeline pipeline(geometry, ShadingAlgorithmType::CoP);
 
     EXPECT_EQ(pipeline.get_num_pixel(), suggest_num_pixel(geometry, ShadingAlgorithmType::CoP));
@@ -114,6 +114,6 @@ TEST(PixelSizingTest, PipelineRendersAtTheRequestedResolutionBeyondTheScreen) {
 }
 
 TEST(PixelSizingTest, PipelineRejectsZeroPixels) {
-    StaticMeshGeometry tetra(DataPath("../geometries/tetraeder.obj"));
+    StaticMeshGeometry tetra(data_path("../geometries/tetraeder.obj"));
     EXPECT_THROW(ShadingPipeline(tetra, ShadingAlgorithmType::Binary, 0), std::invalid_argument);
 }

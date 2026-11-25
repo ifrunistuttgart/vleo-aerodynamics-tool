@@ -9,7 +9,7 @@ namespace vat::gl {
  */
 class VertexBuffer {
 private:
-    unsigned int m_VertexBufferID;
+    unsigned int m_vertex_buffer_id;
 
 public:
     /**
@@ -21,9 +21,9 @@ public:
     ~VertexBuffer();
 
     /** @brief Binds the buffer to GL_ARRAY_BUFFER. */
-    void Bind() const;
+    void bind() const;
     /** @brief Binds no buffer to GL_ARRAY_BUFFER. */
-    void Unbind() const;
+    void unbind() const;
 };
 
 } // namespace vat::gl

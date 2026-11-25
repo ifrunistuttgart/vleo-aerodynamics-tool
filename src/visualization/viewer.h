@@ -24,7 +24,7 @@ namespace vat::visualization {
  * nadir-pointing initial camera, a legend, and the triangle-edge overlay with its
  * keyboard toggle.
  *
- * A view builds one of these, adds what it wants to show, and calls Run(). Everything
+ * A view builds one of these, adds what it wants to show, and calls run(). Everything
  * that is the same between views lives here, so adding a fourth view means writing only
  * what makes it different.
  *
@@ -51,7 +51,7 @@ public:
 
     /**
      * @brief Creates the window, renderer, interactor and orientation marker; nothing is shown
-     * until Run().
+     * until run().
      * @param config Window settings.
      */
     explicit Viewer(Config config);
@@ -70,7 +70,7 @@ public:
      * @param color RGB colour, components in [0, 1].
      * @param opacity Opacity in [0, 1]; below 1 consider Config::depth_peeling.
      */
-    void AddMesh(vtkPolyData* polydata, const glm::vec3& color, double opacity = 1.0);
+    void add_mesh(vtkPolyData* polydata, const glm::vec3& color, double opacity = 1.0);
 
     /**
      * @brief Adds a mesh coloured from its own per-cell scalars.
@@ -80,22 +80,22 @@ public:
      *        scalar-coloured surface has no single colour of its own, so the caller has
      *        to name the closest stand-in.
      */
-    void AddScalarColoredMesh(vtkPolyData* polydata, const glm::vec3& edge_fade_target);
+    void add_scalar_colored_mesh(vtkPolyData* polydata, const glm::vec3& edge_fade_target);
 
     /** @brief Adds anything that is not a mesh: arrows, hinge markers, and so on. */
-    void AddActor(vtkSmartPointer<vtkActor> actor);
+    void add_actor(vtkSmartPointer<vtkActor> actor);
 
     /**
      * @brief Sets the typical triangle size, which sets where the edge overlay starts to fade.
-     * @param extent__m Typical triangle extent [m], e.g. from actors::MeanTriangleExtent().
+     * @param extent__m Typical triangle extent [m], e.g. from actors::mean_triangle_extent().
      */
-    void SetMeanTriangleExtent(float extent__m);
+    void set_mean_triangle_extent__m(float extent__m);
 
     /**
-     * @brief Adds the body-frame axis arrows; see actors::AddBodyAxes().
+     * @brief Adds the body-frame axis arrows; see actors::add_body_axes().
      * @param bounding_sphere_radius Radius the arrows are scaled to [m].
      */
-    void AddBodyAxes(float bounding_sphere_radius);
+    void add_body_axes(float bounding_sphere_radius);
 
     /**
      * @brief Legend in the top-left corner: one row per entry, drawn in that entry's colour so
@@ -106,23 +106,23 @@ public:
      * @param labels Row texts.
      * @param colors Row colours; must have at least as many entries as labels.
      */
-    void AddLegend(const std::vector<std::string>& labels, const std::vector<glm::vec3>& colors);
+    void add_legend(const std::vector<std::string>& labels, const std::vector<glm::vec3>& colors);
 
     /** @brief The renderer, for the few things that add several actors of their own, such as the arc arrows. */
     vtkRenderer* renderer() { return m_renderer; }
 
     /** @brief Shows the window and blocks until the user closes it. */
-    void Run();
+    void run();
 
 private:
-    void InstallObservers();
-    void AddEdgeHint();
-    void PlaceCamera();
+    void install_observers();
+    void add_edge_hint();
+    void place_camera();
 
     // vtkCallbackCommand hands the client data back as void*; both of these take the
     // Viewer and forward to the members below.
-    static void OnKeyPress(vtkObject* caller, unsigned long event_id, void* client_data, void* data);
-    static void OnStartRender(vtkObject* caller, unsigned long event_id, void* client_data, void* data);
+    static void on_key_press(vtkObject* caller, unsigned long event_id, void* client_data, void* data);
+    static void on_start_render(vtkObject* caller, unsigned long event_id, void* client_data, void* data);
 
     Config m_config;
 

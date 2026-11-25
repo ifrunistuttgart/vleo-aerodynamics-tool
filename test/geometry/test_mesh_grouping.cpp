@@ -48,7 +48,7 @@ private:
     spdlog::level::level_enum m_previous_level;
 };
 
-unsigned int SumTriangles(IGeometryShadingData& geometry) {
+unsigned int sum_triangles(IGeometryShadingData& geometry) {
     const std::span<const unsigned int> per_mesh = geometry.get_num_triangles_per_mesh();
     return std::accumulate(per_mesh.begin(), per_mesh.end(), 0u);
 }
@@ -66,7 +66,7 @@ unsigned int SumTriangles(IGeometryShadingData& geometry) {
 
 // The example model separates its parts with `o`, which is the supported way.
 TEST(MeshGroupingTest, ObjWithObjectsGivesOneMeshPerObject) {
-    const std::string obj_path = GetTestDataPath(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
+    const std::string obj_path = get_test_data_path(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
     StaticMeshGeometry geometry(obj_path);
 
     const std::span<const std::string> names = geometry.get_mesh_names();
@@ -82,12 +82,12 @@ TEST(MeshGroupingTest, ObjWithObjectsGivesOneMeshPerObject) {
     EXPECT_EQ(geometry.get_num_triangles_per_mesh().size(), 5);
 
     // The split must not lose or duplicate triangles.
-    EXPECT_EQ(SumTriangles(geometry), geometry.get_num_triangles());
+    EXPECT_EQ(sum_triangles(geometry), geometry.get_num_triangles());
 }
 
 // A well-formed file must not nag the user.
 TEST(MeshGroupingTest, ObjWithObjectsDoesNotWarn) {
-    const std::string obj_path = GetTestDataPath(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
+    const std::string obj_path = get_test_data_path(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
 
     LogCapture log;
     StaticMeshGeometry geometry(obj_path);
@@ -97,18 +97,18 @@ TEST(MeshGroupingTest, ObjWithObjectsDoesNotWarn) {
 
 // soar_satellite.obj also uses `o` only, with five panels.
 TEST(MeshGroupingTest, SecondObjWithObjectsGivesOneMeshPerObject) {
-    const std::string obj_path = GetTestDataPath(__FILE__, "../../matlab/examples/geometries/soar_satellite.obj");
+    const std::string obj_path = get_test_data_path(__FILE__, "../../matlab/examples/geometries/soar_satellite.obj");
     StaticMeshGeometry geometry(obj_path);
 
     EXPECT_EQ(geometry.get_mesh_names().size(), 5);
     EXPECT_EQ(geometry.get_model_matrices().size(), 5);
-    EXPECT_EQ(SumTriangles(geometry), geometry.get_num_triangles());
+    EXPECT_EQ(sum_triangles(geometry), geometry.get_num_triangles());
 }
 
 // An .stl carries no structure at all: one unnamed mesh, which has to fall back to an
 // index-based name rather than an empty legend entry.
 TEST(MeshGroupingTest, StlBecomesASingleNamedMesh) {
-    const std::string stl_path = GetTestDataPath(__FILE__, "geometries/Assembled_ISS.stl");
+    const std::string stl_path = get_test_data_path(__FILE__, "geometries/Assembled_ISS.stl");
     StaticMeshGeometry geometry(stl_path);
 
     const std::span<const std::string> names = geometry.get_mesh_names();
@@ -121,7 +121,7 @@ TEST(MeshGroupingTest, StlBecomesASingleNamedMesh) {
 // holding the six `o` faces of a box. It still loads, but as thirty single-face meshes,
 // so the user has to be told.
 TEST(MeshGroupingTest, ObjWithGroupsWarns) {
-    const std::string obj_path = GetTestDataPath(__FILE__, "geometries/grouped_box.obj");
+    const std::string obj_path = get_test_data_path(__FILE__, "geometries/grouped_box.obj");
 
     LogCapture log;
     StaticMeshGeometry geometry(obj_path);
@@ -140,7 +140,7 @@ TEST(MeshGroupingTest, ObjWithGroupsWarns) {
 // get_mesh_names() has to stay aligned with the other per-mesh arrays, because the
 // visualization pairs them by index to label each mesh.
 TEST(MeshGroupingTest, PerMeshArraysAreAllTheSameLength) {
-    const std::string obj_path = GetTestDataPath(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
+    const std::string obj_path = get_test_data_path(__FILE__, "../../examples/geometry_files/shuttlecock_15k.obj");
     StaticMeshGeometry geometry(obj_path);
 
     const std::size_t num_meshes = geometry.get_mesh_names().size();

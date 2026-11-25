@@ -32,13 +32,14 @@ namespace vat::visualization::actors {
  * @param relative_tip_length Tip length as a fraction of length.
  * @return The arrow actor.
  */
-vtkSmartPointer<vtkActor> Arrow(const glm::vec3& dir, float length, const glm::vec3& color,
-                                double relative_shaft_radius, double relative_tip_radius, double relative_tip_length);
+vtkSmartPointer<vtkActor> arrow_actor(const glm::vec3& dir, float length, const glm::vec3& color,
+                                      double relative_shaft_radius, double relative_tip_radius,
+                                      double relative_tip_length);
 
 /**
  * @brief Arrow whose tail sits at tail__m rather than at the body-frame origin.
  * @param tail__m Tail position in the body frame [m].
- * @param dir Direction; see Arrow() for this and the remaining parameters.
+ * @param dir Direction; see arrow_actor() for this and the remaining parameters.
  * @param length Arrow length [m].
  * @param color RGB colour, components in [0, 1].
  * @param relative_shaft_radius Shaft radius as a fraction of length.
@@ -46,8 +47,9 @@ vtkSmartPointer<vtkActor> Arrow(const glm::vec3& dir, float length, const glm::v
  * @param relative_tip_length Tip length as a fraction of length.
  * @return The arrow actor.
  */
-vtkSmartPointer<vtkActor> ArrowAt(const glm::vec3& tail__m, const glm::vec3& dir, float length, const glm::vec3& color,
-                                  double relative_shaft_radius, double relative_tip_radius, double relative_tip_length);
+vtkSmartPointer<vtkActor> arrow_actor_at(const glm::vec3& tail__m, const glm::vec3& dir, float length,
+                                         const glm::vec3& color, double relative_shaft_radius,
+                                         double relative_tip_radius, double relative_tip_length);
 
 /**
  * @brief Sphere actor.
@@ -56,7 +58,7 @@ vtkSmartPointer<vtkActor> ArrowAt(const glm::vec3& tail__m, const glm::vec3& dir
  * @param color RGB colour, components in [0, 1].
  * @return The sphere actor.
  */
-vtkSmartPointer<vtkActor> Sphere(const glm::vec3& center__m, float radius, const glm::vec3& color);
+vtkSmartPointer<vtkActor> sphere_actor(const glm::vec3& center__m, float radius, const glm::vec3& color);
 
 /**
  * @brief Curved arrow wrapping axis_hat, sweeping the way a positive angle turns the mesh.
@@ -70,8 +72,8 @@ vtkSmartPointer<vtkActor> Sphere(const glm::vec3& center__m, float radius, const
  * @param tube_radius Radius of the arc's tube [m].
  * @param color RGB colour, components in [0, 1].
  */
-void AddArcArrow(vtkRenderer* renderer, const glm::vec3& center__m, const glm::vec3& axis_hat, float radius,
-                 float tube_radius, const glm::vec3& color);
+void add_arc_arrow(vtkRenderer* renderer, const glm::vec3& center__m, const glm::vec3& axis_hat, float radius,
+                   float tube_radius, const glm::vec3& color);
 
 /**
  * @brief Adds the three body-frame axis arrows, scaled to the geometry.
@@ -79,7 +81,7 @@ void AddArcArrow(vtkRenderer* renderer, const glm::vec3& center__m, const glm::v
  * @param bounding_sphere_radius Radius the arrows are scaled to [m]; 1.5 times it is the arrow
  *        length (1.5 if the radius is not positive).
  */
-void AddBodyAxes(vtkRenderer* renderer, float bounding_sphere_radius);
+void add_body_axes(vtkRenderer* renderer, float bounding_sphere_radius);
 
 /**
  * @brief One vtkPolyData per mesh, in mesh order, from the transformed vertices.
@@ -90,7 +92,7 @@ void AddBodyAxes(vtkRenderer* renderer, float bounding_sphere_radius);
  * @param geometry Geometry to convert, in its current pose.
  * @return One polydata per mesh.
  */
-std::vector<vtkSmartPointer<vtkPolyData>> PerMeshPolyData(IGeometryShadingData& geometry);
+std::vector<vtkSmartPointer<vtkPolyData>> per_mesh_poly_data(IGeometryShadingData& geometry);
 
 /**
  * @brief The whole geometry as one vtkPolyData, with a per-triangle colour interpolated between
@@ -103,9 +105,10 @@ std::vector<vtkSmartPointer<vtkPolyData>> PerMeshPolyData(IGeometryShadingData& 
  * @return The coloured polydata, colours as per-cell scalars.
  * @throws std::invalid_argument if triangle_visibility does not have one entry per triangle.
  */
-vtkSmartPointer<vtkPolyData> VisibilityColoredPolyData(IGeometryShadingData& geometry,
-                                                       const std::vector<float>& triangle_visibility,
-                                                       const glm::vec3& visible_color, const glm::vec3& hidden_color);
+vtkSmartPointer<vtkPolyData> visibility_colored_poly_data(IGeometryShadingData& geometry,
+                                                          const std::vector<float>& triangle_visibility,
+                                                          const glm::vec3& visible_color,
+                                                          const glm::vec3& hidden_color);
 
 /**
  * @brief Mesh actor in a single flat colour.
@@ -114,14 +117,14 @@ vtkSmartPointer<vtkPolyData> VisibilityColoredPolyData(IGeometryShadingData& geo
  * @param opacity Opacity in [0, 1].
  * @return The actor.
  */
-vtkSmartPointer<vtkActor> MeshActor(vtkPolyData* polydata, const glm::vec3& color, double opacity);
+vtkSmartPointer<vtkActor> mesh_actor(vtkPolyData* polydata, const glm::vec3& color, double opacity);
 
 /**
  * @brief Mesh actor that takes its colours from the polydata's per-cell scalars.
  * @param polydata Mesh to show.
  * @return The actor.
  */
-vtkSmartPointer<vtkActor> ScalarColoredMeshActor(vtkPolyData* polydata);
+vtkSmartPointer<vtkActor> scalar_colored_mesh_actor(vtkPolyData* polydata);
 
 /**
  * @brief The side of a square with the mean triangle area -- a good enough stand-in for "how
@@ -130,6 +133,6 @@ vtkSmartPointer<vtkActor> ScalarColoredMeshActor(vtkPolyData* polydata);
  * @param geometry Geometry to measure.
  * @return sqrt(mean triangle area) [m]; 0 for a geometry without triangles.
  */
-float MeanTriangleExtent(IGeometryShadingData& geometry);
+float mean_triangle_extent(IGeometryShadingData& geometry);
 
 } // namespace vat::visualization::actors

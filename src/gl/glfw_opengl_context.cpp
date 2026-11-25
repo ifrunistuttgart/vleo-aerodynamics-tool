@@ -24,8 +24,8 @@ GlfwOpenGLContext::GlfwOpenGLContext(int width, int height, const char* title, b
     m_window.reset(glfwCreateWindow(width, height, title, nullptr, nullptr));
     if (!m_window) {
         const char* description;
-        int errorCode = glfwGetError(&description);
-        SPDLOG_ERROR("glfwCreateWindow failed! Error Code: {} | Description: {}", errorCode,
+        int error_code = glfwGetError(&description);
+        SPDLOG_ERROR("glfwCreateWindow failed! Error Code: {} | Description: {}", error_code,
                      description ? description : "Unknown");
         SPDLOG_ERROR("glfwCreateWindow failed (size={}x{}, title='{}', visible={})", width, height, title, visible);
         if (s_liveContexts == 0) {

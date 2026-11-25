@@ -63,12 +63,12 @@ PixelLoadIntegrator::Sums PixelLoadIntegrator::integrate(std::span<const std::sh
         }
     }
 
-    m_shader->Bind();
+    m_shader->bind();
     static constexpr std::array<const char*, 3> samplers{"u_g_force", "u_g_torque", "u_g_pressure"};
     for (size_t unit = 0; unit < g_buffer.size(); ++unit) {
-        m_shader->SetUniform1i(samplers[unit], static_cast<int>(unit));
+        m_shader->set_uniform_1i(samplers[unit], static_cast<int>(unit));
     }
-    m_shader->SetUniform1f("u_pixel_area", pixel_area__m2);
+    m_shader->set_uniform_1f("u_pixel_area", pixel_area__m2);
 
     for (size_t unit = 0; unit < g_buffer.size(); ++unit) {
         g_buffer[unit]->bind(static_cast<unsigned int>(unit));
@@ -89,7 +89,7 @@ PixelLoadIntegrator::Sums PixelLoadIntegrator::integrate(std::span<const std::sh
     for (size_t unit = g_buffer.size(); unit-- > 0;) {
         g_buffer[unit]->unbind(static_cast<unsigned int>(unit));
     }
-    m_shader->Unbind();
+    m_shader->unbind();
 
     // Summed in workgroup order, which the dispatch fixes, so the total is reproducible.
     Sums sums;

@@ -43,7 +43,7 @@ private:
     std::unique_ptr<gl::VertexArray> m_vao;
     std::unique_ptr<VisibilityReducer> m_visibility;
     const unsigned int MAX_TRIANGLES = (2u << 28) - 1; // keeps the per-triangle visibility buffer to a sane size
-    unsigned int m_numTriangles = 0;
+    unsigned int m_num_triangles = 0;
     unsigned int m_num_msaa_samples = 0;
     const unsigned int REQUESTED_MSAA_SAMPLES;
     const unsigned int NUM_PIXEL = 800;
@@ -61,7 +61,7 @@ public:
      */
     explicit BinaryShader(unsigned int num_pixel, unsigned int num_msaa_samples = 1);
     ~BinaryShader() override;
-    int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) override;
+    int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangle_ids) override;
     std::vector<float> shade_geometry(glm::vec3 v_rel_hat, float bounding_sphere_radius,
                                       std::span<const unsigned int> num_triangles_per_mesh,
                                       std::span<const glm::mat4> model_matrices) override;

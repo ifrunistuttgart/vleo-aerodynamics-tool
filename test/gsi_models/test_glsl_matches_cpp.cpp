@@ -105,15 +105,15 @@ std::vector<glm::vec4> run_glsl(const IGSIModel& model, const AeroConditions& ae
     input.bind_base(0);
     output.bind_base(1);
 
-    shader.Bind();
-    shader.SetUniform1f("u_min_cos_delta", MIN_COS_DELTA);
+    shader.bind();
+    shader.set_uniform_1f("u_min_cos_delta", MIN_COS_DELTA);
     for (const GlslUniform& uniform : model.glsl_uniforms(aero)) {
         std::visit(
             [&](auto value) {
                 if constexpr (std::is_same_v<decltype(value), int>) {
-                    shader.SetUniform1i(uniform.name, value);
+                    shader.set_uniform_1i(uniform.name, value);
                 } else {
-                    shader.SetUniform1f(uniform.name, value);
+                    shader.set_uniform_1f(uniform.name, value);
                 }
             },
             uniform.value);
@@ -123,7 +123,7 @@ std::vector<glm::vec4> run_glsl(const IGSIModel& model, const AeroConditions& ae
 
     std::vector<glm::vec4> results(samples.size());
     output.read_back(std::span<glm::vec4>(results));
-    shader.Unbind();
+    shader.unbind();
     return results;
 }
 
@@ -214,11 +214,11 @@ void main()
 
     const gl::ShaderStorageBuffer buffer(std::as_bytes(std::span<const float>(result)), gl::BufferUsage::DynamicRead);
     buffer.bind_base(0);
-    shader.Bind();
+    shader.bind();
     shader.dispatch(static_cast<unsigned int>((result.size() + 63) / 64));
     gl::memory_barrier(gl::Barrier::BufferUpdate);
     buffer.read_back(std::span<float>(result));
-    shader.Unbind();
+    shader.unbind();
 
     double max_absolute = 0.0, max_relative_negative = 0.0;
     for (size_t i = 0; i < x.size(); ++i) {

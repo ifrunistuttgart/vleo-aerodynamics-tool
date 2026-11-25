@@ -162,22 +162,22 @@ void run_timings(RotatableMeshGeometry& sat, const std::vector<unsigned int>& re
     const glm::vec3 vhat = glm::normalize(v);
 
     std::printf("[A] CPU geometry re-transform, per getter call\n");
-    const double tN = time_ms(20, [&] {
+    const double normals__ms = time_ms(20, [&] {
         auto s = sat.get_transformed_normals();
         (void)s.size();
     });
-    const double tC = time_ms(20, [&] {
+    const double centroids__ms = time_ms(20, [&] {
         auto s = sat.get_transformed_centroids();
         (void)s.size();
     });
-    const double tB = time_ms(20, [&] {
+    const double radius__ms = time_ms(20, [&] {
         volatile float r = sat.get_bounding_sphere_radius();
         (void)r;
     });
-    std::printf("    get_transformed_normals()    %8.3f ms\n", tN);
-    std::printf("    get_transformed_centroids()  %8.3f ms\n", tC);
-    std::printf("    get_bounding_sphere_radius() %8.3f ms\n", tB);
-    std::printf("    -> per force/torque call     %8.3f ms\n\n", tN + tC + tB);
+    std::printf("    get_transformed_normals()    %8.3f ms\n", normals__ms);
+    std::printf("    get_transformed_centroids()  %8.3f ms\n", centroids__ms);
+    std::printf("    get_bounding_sphere_radius() %8.3f ms\n", radius__ms);
+    std::printf("    -> per force/torque call     %8.3f ms\n\n", normals__ms + centroids__ms + radius__ms);
 
     auto areas = sat.get_areas();
     auto normals = sat.get_transformed_normals();
@@ -260,11 +260,11 @@ void run_pixel_comparison(RotatableMeshGeometry& sat, const std::vector<unsigned
     auto worst = [](double a, double b) { return std::isnan(a) || std::isnan(b) ? std::nan("") : std::max(a, b); };
     auto report = [&](unsigned int P, const char* method, IAeroLoadCalculator& calc) {
         const std::vector<Loads> loads = evaluate_all(calc);
-        double dF = 0.0, dT = 0.0;
+        double force_error = 0.0, torque_error = 0.0;
         for (std::size_t d = 0; d < dirs.size(); ++d) {
             const double scale = glm::length(reference[d].force);
-            dF = worst(dF, glm::length(loads[d].force - reference[d].force) / scale);
-            dT = worst(dT, glm::length(loads[d].torque - reference[d].torque) / (scale * radius));
+            force_error = worst(force_error, glm::length(loads[d].force - reference[d].force) / scale);
+            torque_error = worst(torque_error, glm::length(loads[d].torque - reference[d].torque) / (scale * radius));
         }
         const int reps = P >= 4000 ? 3 : 5;
         const glm::vec3 v = dirs[0] * SPEED__M_PER_S;
@@ -272,7 +272,7 @@ void run_pixel_comparison(RotatableMeshGeometry& sat, const std::vector<unsigned
             glm::vec3 f, tq;
             calc.calc_aero_torque_force(v, SURFACE_TEMP__K, aero, tq, f);
         });
-        std::printf("    %6u %-12s %11.3f %11.3e %11.3e\n", P, method, t, dF, dT);
+        std::printf("    %6u %-12s %11.3f %11.3e %11.3e\n", P, method, t, force_error, torque_error);
     };
 
     std::printf("[D] Pixel vs Hybrid, Sentman, %zu flow directions, reference: pixel at P=%u\n", dirs.size(), P_ref);

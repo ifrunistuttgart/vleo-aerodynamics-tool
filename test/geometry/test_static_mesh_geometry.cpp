@@ -15,7 +15,7 @@ protected:
     StaticMeshGeometry* geometry = nullptr;
 
     void SetUp() override {
-        std::string obj_path = GetTestDataPath(__FILE__, "../geometries/tetraeder.obj");
+        std::string obj_path = get_test_data_path(__FILE__, "../geometries/tetraeder.obj");
         SPDLOG_INFO("[TEST] Loading OBJ from: {}", obj_path);
         geometry = new StaticMeshGeometry(obj_path);
         SPDLOG_INFO("[TEST] Loaded {} triangles", geometry->get_num_triangles());

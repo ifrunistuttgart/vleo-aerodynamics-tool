@@ -20,7 +20,7 @@ using Point = Kernel::Point_3;
 using Polygon = std::vector<std::size_t>;
 
 // Positions of a triangle's corners, in order.
-std::array<Point, 3> Corners(const std::vector<Point>& points, const Polygon& polygon) {
+std::array<Point, 3> corners(const std::vector<Point>& points, const Polygon& polygon) {
     return {points[polygon[0]], points[polygon[1]], points[polygon[2]]};
 }
 
@@ -75,7 +75,7 @@ RepairedMesh repair(const geometry::MeshData& mesh) {
         std::vector<std::array<Point, 3>> before;
         before.reserve(polygons.size());
         for (const Polygon& p : polygons) {
-            before.push_back(Corners(points, p));
+            before.push_back(corners(points, p));
         }
         const std::size_t points_before = points.size();
 
@@ -83,7 +83,7 @@ RepairedMesh repair(const geometry::MeshData& mesh) {
 
         std::size_t reversed = 0;
         for (std::size_t i = 0; i < polygons.size(); ++i) {
-            if (IsReversed(before[i], Corners(points, polygons[i]))) {
+            if (IsReversed(before[i], corners(points, polygons[i]))) {
                 ++reversed;
             }
         }

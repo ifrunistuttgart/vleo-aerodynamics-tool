@@ -7,8 +7,8 @@ namespace vat::gl {
 FlowCamera make_flow_camera(const glm::vec3& v_rel_hat, float bounding_sphere_radius) {
     glm::vec3 camera_position = v_rel_hat * bounding_sphere_radius;
 
-    glm::mat4 orthoProj = glm::ortho(-bounding_sphere_radius, bounding_sphere_radius, -bounding_sphere_radius,
-                                     bounding_sphere_radius, 0.0f, 2 * bounding_sphere_radius);
+    glm::mat4 ortho_proj = glm::ortho(-bounding_sphere_radius, bounding_sphere_radius, -bounding_sphere_radius,
+                                      bounding_sphere_radius, 0.0f, 2 * bounding_sphere_radius);
 
     glm::vec3 target = glm::vec3(0.0f);
     glm::vec3 forward = glm::normalize(target - camera_position);
@@ -21,7 +21,7 @@ FlowCamera make_flow_camera(const glm::vec3& v_rel_hat, float bounding_sphere_ra
 
     glm::mat4 view = glm::lookAt(camera_position, target, up);
 
-    return FlowCamera{view, orthoProj};
+    return FlowCamera{view, ortho_proj};
 }
 
 } // namespace vat::gl

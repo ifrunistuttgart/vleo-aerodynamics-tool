@@ -57,7 +57,7 @@ VisibilityReducer::VisibilityReducer(unsigned int num_triangles)
     : m_shader(std::make_unique<gl::ComputeShader>(VISIBILITY_REDUCTION_SHADER)),
       m_visibility_buffer((static_cast<size_t>(num_triangles) + 1) * sizeof(std::uint32_t), BufferUsage::DynamicRead),
       m_num_triangles(num_triangles), m_flags(static_cast<size_t>(num_triangles) + 1, 0) {
-    m_shader->Unbind();
+    m_shader->unbind();
 
     SPDLOG_DEBUG("VisibilityReducer ready for {} triangles ({} bytes read back per shade)", num_triangles,
                  m_flags.size() * sizeof(std::uint32_t));
@@ -68,8 +68,8 @@ VisibilityReducer::~VisibilityReducer() = default;
 std::vector<float> VisibilityReducer::reduce(unsigned int id_texture, unsigned int num_pixel) {
     begin(0);
 
-    m_shader->Bind();
-    m_shader->SetUniform1i("u_triangle_ids", 0);
+    m_shader->bind();
+    m_shader->set_uniform_1i("u_triangle_ids", 0);
     GLCall(glActiveTexture(GL_TEXTURE0));
     GLCall(glBindTexture(GL_TEXTURE_2D, id_texture));
 
@@ -77,7 +77,7 @@ std::vector<float> VisibilityReducer::reduce(unsigned int id_texture, unsigned i
     m_shader->dispatch(num_groups, num_groups);
 
     GLCall(glBindTexture(GL_TEXTURE_2D, 0));
-    m_shader->Unbind();
+    m_shader->unbind();
 
     return read_back();
 }

@@ -33,12 +33,12 @@ namespace {
 
 // Some unit vector perpendicular to n. Which one does not matter: it only fixes where
 // the curved arrow starts, not which way round it sweeps.
-glm::vec3 AnyPerpendicular(const glm::vec3& n) {
+glm::vec3 any_perpendicular(const glm::vec3& n) {
     const glm::vec3 reference = std::abs(n.x) < 0.9f ? glm::vec3(1.0f, 0.0f, 0.0f) : glm::vec3(0.0f, 1.0f, 0.0f);
     return glm::normalize(glm::cross(n, reference));
 }
 
-vtkSmartPointer<vtkActor> ActorFor(vtkAlgorithmOutput* port, const glm::vec3& color) {
+vtkSmartPointer<vtkActor> actor_for(vtkAlgorithmOutput* port, const glm::vec3& color) {
     auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
     mapper->SetInputConnection(port);
 
@@ -50,8 +50,9 @@ vtkSmartPointer<vtkActor> ActorFor(vtkAlgorithmOutput* port, const glm::vec3& co
 
 } // namespace
 
-vtkSmartPointer<vtkActor> Arrow(const glm::vec3& dir, float length, const glm::vec3& color,
-                                double relative_shaft_radius, double relative_tip_radius, double relative_tip_length) {
+vtkSmartPointer<vtkActor> arrow_actor(const glm::vec3& dir, float length, const glm::vec3& color,
+                                      double relative_shaft_radius, double relative_tip_radius,
+                                      double relative_tip_length) {
     const glm::vec3 x_axis(1.0f, 0.0f, 0.0f);
     const glm::vec3 unit_dir = glm::length(dir) > 0.0f ? glm::normalize(dir) : x_axis;
 
@@ -79,25 +80,25 @@ vtkSmartPointer<vtkActor> Arrow(const glm::vec3& dir, float length, const glm::v
     transform_filter->SetTransform(transform);
     transform_filter->SetInputConnection(arrow_source->GetOutputPort());
 
-    return ActorFor(transform_filter->GetOutputPort(), color);
+    return actor_for(transform_filter->GetOutputPort(), color);
 }
 
-vtkSmartPointer<vtkActor> ArrowAt(const glm::vec3& tail__m, const glm::vec3& dir, float length, const glm::vec3& color,
-                                  double relative_shaft_radius, double relative_tip_radius,
-                                  double relative_tip_length) {
-    auto actor = Arrow(dir, length, color, relative_shaft_radius, relative_tip_radius, relative_tip_length);
+vtkSmartPointer<vtkActor> arrow_actor_at(const glm::vec3& tail__m, const glm::vec3& dir, float length,
+                                         const glm::vec3& color, double relative_shaft_radius,
+                                         double relative_tip_radius, double relative_tip_length) {
+    auto actor = arrow_actor(dir, length, color, relative_shaft_radius, relative_tip_radius, relative_tip_length);
     actor->SetPosition(tail__m.x, tail__m.y, tail__m.z);
     return actor;
 }
 
-vtkSmartPointer<vtkActor> Sphere(const glm::vec3& center__m, float radius, const glm::vec3& color) {
+vtkSmartPointer<vtkActor> sphere_actor(const glm::vec3& center__m, float radius, const glm::vec3& color) {
     auto sphere = vtkSmartPointer<vtkSphereSource>::New();
     sphere->SetCenter(center__m.x, center__m.y, center__m.z);
     sphere->SetRadius(radius);
     sphere->SetThetaResolution(24);
     sphere->SetPhiResolution(24);
 
-    return ActorFor(sphere->GetOutputPort(), color);
+    return actor_for(sphere->GetOutputPort(), color);
 }
 
 /*
@@ -105,19 +106,19 @@ vtkSmartPointer<vtkActor> Sphere(const glm::vec3& center__m, float radius, const
  * u perpendicular to axis_hat), so increasing t traces the right-hand-rule direction and
  * the arrow head ends up on the positive end.
  */
-void AddArcArrow(vtkRenderer* renderer, const glm::vec3& center__m, const glm::vec3& axis_hat, float radius,
-                 float tube_radius, const glm::vec3& color) {
-    constexpr int kArcSamples = 64;
-    constexpr float kSweep__rad = 1.5f * std::numbers::pi_v<float>; // 270 degrees
+void add_arc_arrow(vtkRenderer* renderer, const glm::vec3& center__m, const glm::vec3& axis_hat, float radius,
+                   float tube_radius, const glm::vec3& color) {
+    constexpr int ARC_SAMPLES = 64;
+    constexpr float SWEEP__RAD = 1.5f * std::numbers::pi_v<float>; // 270 degrees
 
-    const glm::vec3 u = AnyPerpendicular(axis_hat);
+    const glm::vec3 u = any_perpendicular(axis_hat);
     const glm::vec3 v = glm::cross(axis_hat, u);
 
     auto points = vtkSmartPointer<vtkPoints>::New();
     auto poly_line = vtkSmartPointer<vtkPolyLine>::New();
-    poly_line->GetPointIds()->SetNumberOfIds(kArcSamples);
-    for (int i = 0; i < kArcSamples; ++i) {
-        const float t = kSweep__rad * static_cast<float>(i) / static_cast<float>(kArcSamples - 1);
+    poly_line->GetPointIds()->SetNumberOfIds(ARC_SAMPLES);
+    for (int i = 0; i < ARC_SAMPLES; ++i) {
+        const float t = SWEEP__RAD * static_cast<float>(i) / static_cast<float>(ARC_SAMPLES - 1);
         const glm::vec3 p = center__m + radius * (std::cos(t) * u + std::sin(t) * v);
         points->InsertNextPoint(p.x, p.y, p.z);
         poly_line->GetPointIds()->SetId(i, i);
@@ -135,11 +136,11 @@ void AddArcArrow(vtkRenderer* renderer, const glm::vec3& center__m, const glm::v
     tube->SetRadius(tube_radius);
     tube->SetNumberOfSides(16);
     tube->CappingOn();
-    renderer->AddActor(ActorFor(tube->GetOutputPort(), color));
+    renderer->AddActor(actor_for(tube->GetOutputPort(), color));
 
     // Arrow head at the swept end, pointing along the tangent there.
-    const glm::vec3 end_point = center__m + radius * (std::cos(kSweep__rad) * u + std::sin(kSweep__rad) * v);
-    const glm::vec3 tangent = glm::normalize(-std::sin(kSweep__rad) * u + std::cos(kSweep__rad) * v);
+    const glm::vec3 end_point = center__m + radius * (std::cos(SWEEP__RAD) * u + std::sin(SWEEP__RAD) * v);
+    const glm::vec3 tangent = glm::normalize(-std::sin(SWEEP__RAD) * u + std::cos(SWEEP__RAD) * v);
     const float cone_height = tube_radius * 7.0f;
     const glm::vec3 cone_center = end_point + tangent * (cone_height * 0.5f);
 
@@ -149,10 +150,10 @@ void AddArcArrow(vtkRenderer* renderer, const glm::vec3& center__m, const glm::v
     cone->SetResolution(24);
     cone->SetDirection(tangent.x, tangent.y, tangent.z);
     cone->SetCenter(cone_center.x, cone_center.y, cone_center.z);
-    renderer->AddActor(ActorFor(cone->GetOutputPort(), color));
+    renderer->AddActor(actor_for(cone->GetOutputPort(), color));
 }
 
-void AddBodyAxes(vtkRenderer* renderer, float bounding_sphere_radius) {
+void add_body_axes(vtkRenderer* renderer, float bounding_sphere_radius) {
     const float axis_length = bounding_sphere_radius > 0.0f ? bounding_sphere_radius * 1.5f : 1.5f;
     const glm::vec3 directions[] = {
         glm::vec3(1.0f, 0.0f, 0.0f),
@@ -160,11 +161,11 @@ void AddBodyAxes(vtkRenderer* renderer, float bounding_sphere_radius) {
         glm::vec3(0.0f, 0.0f, 1.0f),
     };
     for (int i = 0; i < 3; ++i) {
-        renderer->AddActor(Arrow(directions[i], axis_length, kAxisColors[i], 0.003, 0.008, 0.022));
+        renderer->AddActor(arrow_actor(directions[i], axis_length, AXIS_COLORS[i], 0.003, 0.008, 0.022));
     }
 }
 
-std::vector<vtkSmartPointer<vtkPolyData>> PerMeshPolyData(IGeometryShadingData& geometry) {
+std::vector<vtkSmartPointer<vtkPolyData>> per_mesh_poly_data(IGeometryShadingData& geometry) {
     const std::span<const unsigned int> num_triangles_per_mesh = geometry.get_num_triangles_per_mesh();
     const std::span<const float> vertices = geometry.get_transformed_vertices();
 
@@ -202,9 +203,10 @@ std::vector<vtkSmartPointer<vtkPolyData>> PerMeshPolyData(IGeometryShadingData& 
     return per_mesh;
 }
 
-vtkSmartPointer<vtkPolyData> VisibilityColoredPolyData(IGeometryShadingData& geometry,
-                                                       const std::vector<float>& triangle_visibility,
-                                                       const glm::vec3& visible_color, const glm::vec3& hidden_color) {
+vtkSmartPointer<vtkPolyData> visibility_colored_poly_data(IGeometryShadingData& geometry,
+                                                          const std::vector<float>& triangle_visibility,
+                                                          const glm::vec3& visible_color,
+                                                          const glm::vec3& hidden_color) {
     const unsigned int num_triangles = geometry.get_num_triangles();
     if (triangle_visibility.size() != num_triangles) {
         SPDLOG_ERROR("Visibility size mismatch (visibility={}, triangles={})", triangle_visibility.size(),
@@ -254,7 +256,7 @@ vtkSmartPointer<vtkPolyData> VisibilityColoredPolyData(IGeometryShadingData& geo
     return polydata;
 }
 
-vtkSmartPointer<vtkActor> MeshActor(vtkPolyData* polydata, const glm::vec3& color, double opacity) {
+vtkSmartPointer<vtkActor> mesh_actor(vtkPolyData* polydata, const glm::vec3& color, double opacity) {
     auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
     mapper->SetInputData(polydata);
     mapper->ScalarVisibilityOff();
@@ -266,7 +268,7 @@ vtkSmartPointer<vtkActor> MeshActor(vtkPolyData* polydata, const glm::vec3& colo
     return actor;
 }
 
-vtkSmartPointer<vtkActor> ScalarColoredMeshActor(vtkPolyData* polydata) {
+vtkSmartPointer<vtkActor> scalar_colored_mesh_actor(vtkPolyData* polydata) {
     auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
     mapper->SetInputData(polydata);
     mapper->ScalarVisibilityOn();
@@ -277,7 +279,7 @@ vtkSmartPointer<vtkActor> ScalarColoredMeshActor(vtkPolyData* polydata) {
     return actor;
 }
 
-float MeanTriangleExtent(IGeometryShadingData& geometry) {
+float mean_triangle_extent(IGeometryShadingData& geometry) {
     const std::span<const float> areas = geometry.get_areas();
     if (areas.empty()) {
         return 0.0f;

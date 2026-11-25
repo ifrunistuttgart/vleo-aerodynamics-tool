@@ -99,9 +99,9 @@ protected:
     static void expect_tetrahedron(unsigned int num_msaa_samples) {
         SCOPED_TRACE(::testing::Message() << "num_msaa_samples = " << num_msaa_samples);
         BinaryShader shader(800, num_msaa_samples);
-        ASSERT_EQ(shader.set_vertices(vertices, triangleIDs), 0);
+        ASSERT_EQ(shader.set_vertices(vertices, triangle_ids), 0);
 
-        const std::vector<unsigned int> num_triangles_per_mesh{numFaces};
+        const std::vector<unsigned int> num_triangles_per_mesh{num_faces};
         const std::vector<glm::mat4> model_matrices{glm::mat4(1.0f)};
 
         std::vector<float> visible =

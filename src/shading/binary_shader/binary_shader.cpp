@@ -25,10 +25,10 @@ BinaryShader::BinaryShader(unsigned int num_pixel, unsigned int num_msaa_samples
 
 BinaryShader::~BinaryShader() = default;
 
-int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) {
-    m_numTriangles = static_cast<unsigned int>(triangleIDs.size() / 3); // 3 vertices per triangle
-    if (m_numTriangles > MAX_TRIANGLES) {
-        SPDLOG_ERROR("Number of triangles ({}) exceeds the maximum supported ({}).", m_numTriangles, MAX_TRIANGLES);
+int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangle_ids) {
+    m_num_triangles = static_cast<unsigned int>(triangle_ids.size() / 3); // 3 vertices per triangle
+    if (m_num_triangles > MAX_TRIANGLES) {
+        SPDLOG_ERROR("Number of triangles ({}) exceeds the maximum supported ({}).", m_num_triangles, MAX_TRIANGLES);
         return -1;
     }
 
@@ -51,7 +51,7 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
                      m_num_msaa_samples,
                      static_cast<double>(NUM_PIXEL) * NUM_PIXEL * m_num_msaa_samples * 4.0 / (1024.0 * 1024.0));
         m_frame_buffer = std::make_unique<FrameBuffer>(NUM_PIXEL, NUM_PIXEL, m_num_msaa_samples);
-        m_frame_buffer->UnBind();
+        m_frame_buffer->unbind();
         if (m_frame_buffer->is_complete()) {
             break;
         }
@@ -73,21 +73,21 @@ int BinaryShader::set_vertices(std::span<const float> vertices, std::span<const 
     GLCall(glCullFace(GL_BACK));
     GLCall(glFrontFace(GL_CCW)); // counter-clockwise is front-facing
 
-    m_visibility = std::make_unique<VisibilityReducer>(m_numTriangles);
+    m_visibility = std::make_unique<VisibilityReducer>(m_num_triangles);
 
     m_shader = std::make_unique<Shader>(binary_glsl::vertex_shader, binary_glsl::fragment_shader);
-    m_shader->Unbind();
+    m_shader->unbind();
 
     m_vao = std::make_unique<VertexArray>();
     VertexBufferLayout layout_vertices;
-    layout_vertices.Push<float>(3); // vec3 position
+    layout_vertices.push<float>(3); // vec3 position
     VertexBuffer vb(vertices.data(), static_cast<unsigned int>(sizeof(float) * vertices.size()));
-    m_vao->AddBuffer(vb, layout_vertices);
+    m_vao->add_buffer(vb, layout_vertices);
 
     VertexBufferLayout layout_ids;
-    layout_ids.Push<unsigned int>(1); // triangle ID
-    VertexBuffer vb_ids(triangleIDs.data(), static_cast<unsigned int>(sizeof(std::uint32_t) * triangleIDs.size()));
-    m_vao->AddBuffer(vb_ids, layout_ids);
+    layout_ids.push<unsigned int>(1); // triangle ID
+    VertexBuffer vb_ids(triangle_ids.data(), static_cast<unsigned int>(sizeof(std::uint32_t) * triangle_ids.size()));
+    m_vao->add_buffer(vb_ids, layout_ids);
     return 0;
 }
 
@@ -95,7 +95,7 @@ void BinaryShader::draw_meshes(const glm::mat4& view_projection, std::span<const
                                std::span<const glm::mat4> model_matrices) {
     unsigned int offset = 0;
     for (size_t i = 0; i < num_triangles_per_mesh.size(); ++i) {
-        m_shader->setUniformMat4f("u_MVP", view_projection * model_matrices[i]);
+        m_shader->set_uniform_mat4f("u_MVP", view_projection * model_matrices[i]);
         GLCall(glDrawArrays(GL_TRIANGLES, static_cast<GLint>(offset),
                             static_cast<GLsizei>(num_triangles_per_mesh[i] * 3)));
         offset += num_triangles_per_mesh[i] * 3;
@@ -119,33 +119,33 @@ std::vector<float> BinaryShader::shade_geometry(glm::vec3 v_rel_hat, float bound
         }
     } depth_state_guard;
 
-    m_frame_buffer->Bind();
+    m_frame_buffer->bind();
     // The default viewport is the hidden window's size, which the OS may clamp to
     // the screen; without this, num_pixel above the screen size is silently lost.
     GLCall(glViewport(0, 0, static_cast<GLsizei>(NUM_PIXEL), static_cast<GLsizei>(NUM_PIXEL)));
-    m_frame_buffer->ClearDepth();
+    m_frame_buffer->clear_depth();
     m_visibility->begin(0);
 
-    m_shader->Bind();
-    m_vao->Bind();
+    m_shader->bind();
+    m_vao->bind();
 
     // Pass 1: depth only. The SSBO stays untouched, because a triangle drawn before its
     // occluder would otherwise be marked.
-    m_shader->SetUniform1i("u_mark", 0);
+    m_shader->set_uniform_1i("u_mark", 0);
     GLCall(glDepthFunc(GL_LESS));
     GLCall(glDepthMask(GL_TRUE));
     draw_meshes(view_projection, num_triangles_per_mesh, model_matrices);
 
     // Pass 2: every fragment that matches the final depth of at least one sample marks
     // its triangle. Invariant positions give bit-identical depths, so no bias is needed.
-    m_shader->SetUniform1i("u_mark", 1);
+    m_shader->set_uniform_1i("u_mark", 1);
     GLCall(glDepthFunc(GL_LEQUAL));
     GLCall(glDepthMask(GL_FALSE));
     draw_meshes(view_projection, num_triangles_per_mesh, model_matrices);
 
-    m_vao->Unbind();
-    m_shader->Unbind();
-    m_frame_buffer->UnBind();
+    m_vao->unbind();
+    m_shader->unbind();
+    m_frame_buffer->unbind();
 
     return m_visibility->read_back();
 }

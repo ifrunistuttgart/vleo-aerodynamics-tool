@@ -18,7 +18,7 @@ namespace {
  * Assimp keeps a group only as an empty node -- no meshes, no children -- which is what
  * this counts. Files using `o` alone, and formats without groups, have none.
  */
-void WarnIfFileUsesGroups(const aiScene* scene, const std::string& file) {
+void warn_if_file_uses_groups(const aiScene* scene, const std::string& file) {
     const aiNode* root = scene->mRootNode;
     unsigned int num_group_markers = 0;
     for (unsigned int i = 0; i < root->mNumChildren; ++i) {
@@ -58,7 +58,7 @@ std::vector<MeshData> load_mesh_data(const std::string& file) {
         throw std::runtime_error("Failed to load model '" + file + "': " + reason);
     }
     SPDLOG_DEBUG("Successfully loaded {} meshes", scene->mNumMeshes);
-    WarnIfFileUsesGroups(scene, file);
+    warn_if_file_uses_groups(scene, file);
 
     // One entry of scene->mMeshes is one mesh of the geometry, i.e. one `o` object of an
     // .obj, and is the unit turn_mesh_around_axis() rotates.

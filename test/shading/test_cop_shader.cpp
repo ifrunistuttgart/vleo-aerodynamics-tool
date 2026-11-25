@@ -67,35 +67,35 @@ protected:
 TEST_F(CoPShaderTest, ShadeTetrahedron) {
     CoPShader shader(800);
 
-    shader.set_vertices(std::span<const float>(vertices), std::span<const std::uint32_t>(triangleIDs));
+    shader.set_vertices(std::span<const float>(vertices), std::span<const std::uint32_t>(triangle_ids));
 
-    std::vector<unsigned int> numTrianglesPerMesh{numFaces};
-    std::vector<glm::mat4> modelMatrices{glm::mat4(1.0f)};
+    std::vector<unsigned int> num_triangles_per_mesh{num_faces};
+    std::vector<glm::mat4> model_matrices{glm::mat4(1.0f)};
     // Both flow directions are tilted slightly off the axes: along an axis, some
     // faces are seen exactly edge-on and their centroid falls on another face's
     // edge, so the result would depend on where the pixel centres happen to lie.
-    glm::vec3 windDir = glm::normalize(glm::vec3(1.0f, 0.1f, 0.2f));
+    glm::vec3 wind_dir = glm::normalize(glm::vec3(1.0f, 0.1f, 0.2f));
     float bounding_sphere_radius = 1.0f;
-    std::vector<float> isTriangleVisible =
-        shader.shade_geometry(windDir, bounding_sphere_radius, std::span<const unsigned int>(numTrianglesPerMesh),
-                              std::span<const glm::mat4>(modelMatrices));
+    std::vector<float> is_triangle_visible =
+        shader.shade_geometry(wind_dir, bounding_sphere_radius, std::span<const unsigned int>(num_triangles_per_mesh),
+                              std::span<const glm::mat4>(model_matrices));
 
-    EXPECT_NEAR(isTriangleVisible[0], 0.0f, 1e-5);
-    EXPECT_NEAR(isTriangleVisible[1], 0.0f, 1e-5);
-    EXPECT_NEAR(isTriangleVisible[2], 0.0f, 1e-5);
-    EXPECT_NEAR(isTriangleVisible[3], 1.0f, 1e-5);
+    EXPECT_NEAR(is_triangle_visible[0], 0.0f, 1e-5);
+    EXPECT_NEAR(is_triangle_visible[1], 0.0f, 1e-5);
+    EXPECT_NEAR(is_triangle_visible[2], 0.0f, 1e-5);
+    EXPECT_NEAR(is_triangle_visible[3], 1.0f, 1e-5);
 
-    windDir = glm::normalize(glm::vec3(-0.2f, 0.1f, 1.0f));
-    std::fill(isTriangleVisible.begin(), isTriangleVisible.end(), 0.0f);
+    wind_dir = glm::normalize(glm::vec3(-0.2f, 0.1f, 1.0f));
+    std::fill(is_triangle_visible.begin(), is_triangle_visible.end(), 0.0f);
     bounding_sphere_radius = 1.0f;
-    isTriangleVisible =
-        shader.shade_geometry(windDir, bounding_sphere_radius, std::span<const unsigned int>(numTrianglesPerMesh),
-                              std::span<const glm::mat4>(modelMatrices));
+    is_triangle_visible =
+        shader.shade_geometry(wind_dir, bounding_sphere_radius, std::span<const unsigned int>(num_triangles_per_mesh),
+                              std::span<const glm::mat4>(model_matrices));
 
-    EXPECT_NEAR(isTriangleVisible[0], 0.0f, 1e-5);
-    EXPECT_NEAR(isTriangleVisible[1], 1.0f, 1e-5);
-    EXPECT_NEAR(isTriangleVisible[2], 1.0f, 1e-5);
-    EXPECT_NEAR(isTriangleVisible[3], 0.0f, 1e-5);
+    EXPECT_NEAR(is_triangle_visible[0], 0.0f, 1e-5);
+    EXPECT_NEAR(is_triangle_visible[1], 1.0f, 1e-5);
+    EXPECT_NEAR(is_triangle_visible[2], 1.0f, 1e-5);
+    EXPECT_NEAR(is_triangle_visible[3], 0.0f, 1e-5);
 }
 
 namespace {

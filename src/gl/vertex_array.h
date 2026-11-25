@@ -5,7 +5,7 @@
 namespace vat::gl {
 
 /**
- * @brief Vertex array object; each AddBuffer() call appends the buffer's attributes at the next
+ * @brief Vertex array object; each add_buffer() call appends the buffer's attributes at the next
  * free attribute indices, starting at 0.
  *
  * A context must be current when it is created and used.
@@ -28,12 +28,12 @@ public:
      * @param vb Buffer holding the attribute data.
      * @param layout Attribute layout of vb.
      */
-    void AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout);
+    void add_buffer(const VertexBuffer& vb, const VertexBufferLayout& layout);
 
     /** @brief Binds the vertex array object. */
-    void Bind() const;
+    void bind() const;
     /** @brief Binds no vertex array object. */
-    void Unbind() const;
+    void unbind() const;
 };
 
 } // namespace vat::gl

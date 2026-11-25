@@ -26,12 +26,12 @@ public:
      *
      * @param vertices Untransformed vertex positions (see
      *                 IGeometryShadingData::get_untransformed_vertices()), 9 floats per triangle.
-     * @param triangleIDs 1-based triangle ID of every vertex, each repeated three times (see
+     * @param triangle_ids 1-based triangle ID of every vertex, each repeated three times (see
      *                    IGeometryShadingData::get_triangle_ids()); not an index buffer.
      * @return 0 on success, or a non-zero error code on failure. BinaryShader and CoPShader return
      *         -1 if there are too many triangles or the depth buffer cannot be allocated.
      */
-    virtual int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) = 0;
+    virtual int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangle_ids) = 0;
 
     /**
      * @brief Calculates the visibility of geometry triangles from a specific direction.

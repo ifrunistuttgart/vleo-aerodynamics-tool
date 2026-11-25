@@ -15,7 +15,7 @@ using namespace vat::geometry;
 
 namespace {
 
-MeshQuality QualityOf(std::vector<float> positions, std::vector<std::uint32_t> indices) {
+MeshQuality quality_of(std::vector<float> positions, std::vector<std::uint32_t> indices) {
     StaticMeshGeometry geometry(std::vector<MeshData>{MeshData{"m", std::move(positions), std::move(indices)}});
     return compute_mesh_quality(geometry);
 }
@@ -24,7 +24,7 @@ MeshQuality QualityOf(std::vector<float> positions, std::vector<std::uint32_t> i
 
 TEST(MeshQualityTest, EquilateralTriangleIsIdeal) {
     const float h = std::sqrt(3.0f) / 2.0f;
-    const MeshQuality q = QualityOf({0, 0, 0, 1, 0, 0, 0.5f, h, 0}, {0, 1, 2});
+    const MeshQuality q = quality_of({0, 0, 0, 1, 0, 0, 0.5f, h, 0}, {0, 1, 2});
 
     EXPECT_EQ(q.num_triangles, 1u);
     EXPECT_EQ(q.num_degenerate, 0u);
@@ -36,7 +36,7 @@ TEST(MeshQualityTest, EquilateralTriangleIsIdeal) {
 TEST(MeshQualityTest, TetrahedronHasKnownValues) {
     // Two faces are equilateral with edge sqrt(0.5); two are right isosceles with legs
     // sqrt(0.5) and hypotenuse 1.
-    StaticMeshGeometry geometry(GetTestDataPath(__FILE__, "../geometries/tetraeder.obj"));
+    StaticMeshGeometry geometry(get_test_data_path(__FILE__, "../geometries/tetraeder.obj"));
     const MeshQuality q = compute_mesh_quality(geometry);
 
     const double equilateral_area = std::sqrt(3.0) / 4.0 * 0.5;
@@ -56,7 +56,7 @@ TEST(MeshQualityTest, TetrahedronHasKnownValues) {
 
 TEST(MeshQualityTest, SliverIsNarrowAndHasLargeAspectRatio) {
     // Base 1, apex 0.01 above its midpoint: area 0.005, narrowest width 0.01.
-    const MeshQuality q = QualityOf({0, 0, 0, 1, 0, 0, 0.5f, 0.01f, 0}, {0, 1, 2});
+    const MeshQuality q = quality_of({0, 0, 0, 1, 0, 0, 0.5f, 0.01f, 0}, {0, 1, 2});
 
     EXPECT_NEAR(q.min_altitude__m.median, 0.01f, 1e-7f);
     EXPECT_NEAR(q.area__m2.median, 0.005f, 1e-8f);
@@ -65,7 +65,7 @@ TEST(MeshQualityTest, SliverIsNarrowAndHasLargeAspectRatio) {
 
 TEST(MeshQualityTest, DegenerateTrianglesAreCountedNotRanked) {
     // One proper triangle and one whose corners are collinear.
-    const MeshQuality q = QualityOf({0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0}, {0, 1, 2, 0, 1, 3});
+    const MeshQuality q = quality_of({0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0}, {0, 1, 2, 0, 1, 3});
 
     EXPECT_EQ(q.num_triangles, 2u);
     EXPECT_EQ(q.num_degenerate, 1u);
@@ -79,7 +79,7 @@ TEST(MeshQualityTest, ShuttlecockMatchesAnIndependentComputation) {
     // Reference values computed separately in Python from the .obj, same percentile
     // convention. Median aspect ratio ~14 and mean/median area ~15 are the defects that
     // motivate remeshing in the first place.
-    StaticMeshGeometry geometry(GetTestDataPath(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj"));
+    StaticMeshGeometry geometry(get_test_data_path(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj"));
     const MeshQuality q = compute_mesh_quality(geometry);
 
     EXPECT_EQ(q.num_triangles, 960u);
@@ -95,7 +95,7 @@ TEST(MeshQualityTest, ShuttlecockMatchesAnIndependentComputation) {
 }
 
 TEST(MeshQualityTest, TurningAMeshKeepsTriangleShapes) {
-    const std::string path = GetTestDataPath(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj");
+    const std::string path = get_test_data_path(__FILE__, "../../matlab/examples/geometries/shuttlecock_960.obj");
     RotatableMeshGeometry geometry(path);
     const MeshQuality before = compute_mesh_quality(geometry);
     geometry.turn_mesh_around_axis(1, 1.2f, std::array<float, 3>{-0.15f, 0.1f, 0.05f},

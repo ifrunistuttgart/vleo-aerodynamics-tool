@@ -17,7 +17,7 @@ using namespace vat::geometry;
 using namespace vat::shading;
 
 // Get path relative to this source file
-std::string GetTestDataPath(const std::string& filename) {
+std::string get_test_data_path(const std::string& filename) {
     std::filesystem::path source_file(__FILE__);
     std::filesystem::path data_file = source_file.parent_path() / filename;
     return data_file.string();
@@ -29,7 +29,7 @@ protected:
     std::unique_ptr<StaticMeshGeometry> geometry;
 
     void SetUp() override {
-        std::string obj_path = GetTestDataPath("../geometries/tetraeder.obj");
+        std::string obj_path = get_test_data_path("../geometries/tetraeder.obj");
         SPDLOG_INFO("[TEST] Loading OBJ from: {}", obj_path);
         geometry = std::make_unique<StaticMeshGeometry>(obj_path);
         SPDLOG_INFO("[TEST] Loaded {} triangles", geometry->get_num_triangles());
@@ -39,10 +39,10 @@ protected:
 TEST_F(ShadingPipelineIntegrationTest, TestShading) {
     ShadingPipeline pipeline(*geometry, ShadingAlgorithmType::Binary, 800);
 
-    std::vector<float> isTriangleVisible = pipeline.shade(glm::vec3(1.0f, 0.0f, 0.0f));
+    std::vector<float> is_triangle_visible = pipeline.shade(glm::vec3(1.0f, 0.0f, 0.0f));
 
-    EXPECT_NEAR(isTriangleVisible[0], 0.0f, 1e-5);
-    EXPECT_NEAR(isTriangleVisible[1], 0.0f, 1e-5);
-    EXPECT_NEAR(isTriangleVisible[2], 0.0f, 1e-5);
-    EXPECT_NEAR(isTriangleVisible[3], 1.0f, 1e-5);
+    EXPECT_NEAR(is_triangle_visible[0], 0.0f, 1e-5);
+    EXPECT_NEAR(is_triangle_visible[1], 0.0f, 1e-5);
+    EXPECT_NEAR(is_triangle_visible[2], 0.0f, 1e-5);
+    EXPECT_NEAR(is_triangle_visible[3], 1.0f, 1e-5);
 }
