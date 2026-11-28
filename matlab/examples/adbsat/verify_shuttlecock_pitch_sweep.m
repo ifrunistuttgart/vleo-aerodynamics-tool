@@ -5,19 +5,19 @@
 % difference between them is the shading discretisation of ADBSat, which
 % should shrink as the triangles get smaller (error ~ edge length ~ N^-1/2).
 %
-% This script sweeps the pitch for every mesh in remeshed/ (see
-% remesh_levels.m), compares ADBSat on each mesh against one vat pixel
-% reference, and plots
+% This script sweeps the pitch for every remeshed level L1..L<max_level> in
+% remeshed/ (see remesh_levels.m; the unremeshed source is not used), compares
+% ADBSat on each mesh against one vat pixel reference, and plots
 %   1. the RMS and max relative force/torque error over the sweep against the
 %      triangle count (convergence),
 %   2. Fx, Fz and My against pitch for every ADBSat mesh and the reference,
 %   3. the force error over pitch and mesh as a heatmap.
 %
-% The vat reference runs once, on the coarsest mesh at num_pixel = 2000 with
+% The vat reference is vat on the coarsest level (L1) at num_pixel = 2000 with
 % MSAA 8; its own pixel error (a few 1e-4, see verify_pixel_convergence.m) is
 % the floor ADBSat's error converges to.
-% ADBSat results are cached per mesh in tempdir, so rerunning with a larger
-% max_level only computes the new meshes.
+% ADBSat runs on every mesh in every run; its intermediate files go to a fresh
+% temporary folder that is deleted afterwards.
 %
 % Requires ADBSat on the MATLAB path (run ADBSat_dynpath) and the Aerospace
 % Toolbox. Frames, normalisation and torque reference as in
@@ -25,7 +25,7 @@
 % mesh origin.
 
 clear; close all;
-vat.setLogLevel("warn");
+vat.setLogLevel("debug");
 
 assert(exist('ADBSatFcn', 'file') == 2 && exist('environment', 'file') == 2, ...
        'ADBSat is not on the MATLAB path; run ADBSat_dynpath first.');
@@ -36,7 +36,7 @@ pitch__deg = -30:1:30;      % ADBSat angles of attack [deg]
 sideslip__deg = 0;          % ADBSat angle of sideslip [deg]
 num_pixel = 2000;           % raster resolution of the vat reference
 num_msaa_samples = 8;       % MSAA samples of the vat reference
-max_level = 5;              % highest remesh level L<n> to include (the source is always included)
+max_level = 9;              % highest remesh level L<n> to include
 vat_pixel_floor = 4e-4;     % max force change 1000 -> 2000 px at MSAA 8 (verify_pixel_convergence.m)
 
 % Environment and GSI parameters, as in ADBSat's example_GSI.m
@@ -47,25 +47,21 @@ param_eq.Tw = 300;
 vat_setup = adbsat_to_vat(param_eq, 'coeff_sentman');
 q__Pa = vat_setup.dynamic_pressure__Pa;
 
-%% Meshes: the unremeshed source plus L1..L<max_level>, sorted by triangle count
+%% Meshes: remeshed levels L1..L<max_level>, sorted by triangle count
 folder = fileparts(mfilename('fullpath'));
-files = dir(fullfile(folder, 'remeshed', '*.obj'));
-levels = zeros(numel(files), 1); % 0 = source
+files = dir(fullfile(folder, 'remeshed', '*_L*_*tri.obj'));
+levels = zeros(numel(files), 1);
 for k = 1:numel(files)
-    token = regexp(files(k).name, '_L(\d+)_', 'tokens', 'once');
-    if ~isempty(token)
-        levels(k) = str2double(token{1});
-    end
+    levels(k) = str2double(regexp(files(k).name, '_L(\d+)_', 'tokens', 'once'));
 end
 keep = levels <= max_level;
 files = files(keep);
 levels = levels(keep);
-assert(any(levels == 0), 'Unremeshed source mesh not found in remeshed/.');
+assert(~isempty(files), 'No remeshed levels in remeshed/; run remesh_levels.m first.');
 
-cache_folder = fullfile(tempdir, 'vat_adbsat_verification');
-if ~isfolder(cache_folder)
-    mkdir(cache_folder);
-end
+% ADBSat reads and writes .mat files; give this run its own folder
+work_folder = tempname;
+mkdir(work_folder);
 
 %% Frame matrices per angle, identical to ADBSat's calc_coeff
 num_angles = numel(pitch__deg);
@@ -86,9 +82,7 @@ for a = 1:num_angles
 end
 
 %% vat warm-up: the first OpenGL context and driver start-up must not count against one mesh
-source_index = find(levels == 0, 1);
-warmup_geometry = vat.geometry.RotatableMeshGeometry(fullfile(files(source_index).folder, ...
-                                                              files(source_index).name));
+warmup_geometry = vat.geometry.RotatableMeshGeometry(fullfile(files(1).folder, files(1).name));
 warmup_calculator = vat.loads.PixelForceTorqueCalculator(warmup_geometry, vat_setup.gsi_model, num_pixel, ...
                                                          NumMsaaSamples = num_msaa_samples);
 warmup_calculator.calc_aero_load(v_rel__m_per_s(1, :), vat_setup.T_wall__K, vat_setup.aero_cond);
@@ -107,7 +101,6 @@ torque_vat__Nm = zeros(num_angles, 3, num_meshes);
 for k = 1:num_meshes
     mesh_file = fullfile(files(k).folder, files(k).name);
     [~, mesh_name] = fileparts(mesh_file);
-    cache_file = fullfile(cache_folder, ['sweep_' mesh_name '.mat']);
 
     % vat: setup (geometry load, upload, shaders) and sweep timed separately
     timer = tic;
@@ -123,30 +116,16 @@ for k = 1:num_meshes
     vat_sweep_time__s(k) = toc(timer);
     clear calculator geometry;
 
-    cached = false;
-    if isfile(cache_file)
-        cache = load(cache_file);
-        cached = isequal(cache.pitch__deg, pitch__deg) && cache.sideslip__deg == sideslip__deg;
-    end
-    if ~cached
-        fprintf('ADBSat: %s ...\n', mesh_name);
-        timer = tic;
-        mat_file = ADBSatImport(mesh_file, cache_folder, 0);
-        result_file = ADBSatFcn(mat_file, fullfile(cache_folder, mesh_name), param_eq, ...
-                                pitch__deg, sideslip__deg, 1, 0, 0, 1, 0);
-        cache = struct();
-        cache.aedb = load(result_file, 'aedb').aedb;
-        cache.num_triangles = numel(load(mat_file, 'meshdata').meshdata.Areas);
-        cache.runtime__s = toc(timer);
-        cache.pitch__deg = pitch__deg;
-        cache.sideslip__deg = sideslip__deg;
-        save(cache_file, '-struct', 'cache');
-    end
-    num_triangles(k) = cache.num_triangles;
-    runtime__s(k) = cache.runtime__s;
+    fprintf('ADBSat: %s ...\n', mesh_name);
+    timer = tic;
+    mat_file = ADBSatImport(mesh_file, work_folder, 0);
+    result_file = ADBSatFcn(mat_file, fullfile(work_folder, mesh_name), param_eq, ...
+                            pitch__deg, sideslip__deg, 1, 0, 0, 1, 0);
+    runtime__s(k) = toc(timer);
+    num_triangles(k) = numel(load(mat_file, 'meshdata').meshdata.Areas);
 
     % aedb rows follow the sorted unique angles of attack
-    aedb = cache.aedb;
+    aedb = load(result_file, 'aedb').aedb;
     assert(isequal(round(rad2deg(aedb.aoa(:, 1)'), 6), round(pitch__deg, 6)), 'Unexpected aedb angle order.');
     for a = 1:num_angles
         Cf_w = [aedb.aero.Cf_wX(a, 1); aedb.aero.Cf_wY(a, 1); aedb.aero.Cf_wZ(a, 1)];
@@ -155,6 +134,7 @@ for k = 1:num_meshes
         torque_adb__Nm(a, :, k) = q__Pa * aedb.AreaRef * aedb.LenRef * (L_gb * Cm_B);
     end
 end
+rmdir(work_folder, 's');
 
 [num_triangles, order] = sort(num_triangles);
 levels = levels(order);
@@ -168,7 +148,7 @@ torque_adb__Nm = torque_adb__Nm(:, :, order);
 force_vat__N = force_vat__N(:, :, order);
 torque_vat__Nm = torque_vat__Nm(:, :, order);
 
-%% vat reference: pixel calculator on the coarsest (unremeshed) mesh
+%% vat reference: pixel calculator on the coarsest remeshed level
 force_ref__N = force_vat__N(:, :, 1);
 torque_ref__Nm = torque_vat__Nm(:, :, 1);
 
@@ -209,29 +189,16 @@ end
 %% Figure 1: convergence
 figure('Name', 'ADBSat convergence to vat', 'Position', [100 100 800 550]);
 colors = lines(2);
-loglog(num_triangles, rms_force, 'o-', 'Color', colors(1, :), 'LineWidth', 1.5, ...
+semilogx(num_triangles, rms_force, 'o-', 'Color', colors(1, :), 'LineWidth', 1.5, ...
        'DisplayName', 'force, RMS over sweep');
 hold on;
-loglog(num_triangles, max_force, 'o--', 'Color', colors(1, :), ...
+semilogx(num_triangles, max_force, 'o--', 'Color', colors(1, :), ...
        'DisplayName', 'force, max over sweep');
-loglog(num_triangles, rms_torque, 's-', 'Color', colors(2, :), 'LineWidth', 1.5, ...
+semilogx(num_triangles, rms_torque, 's-', 'Color', colors(2, :), 'LineWidth', 1.5, ...
        'DisplayName', 'torque, RMS over sweep');
-loglog(num_triangles, max_torque, 's--', 'Color', colors(2, :), ...
+semilogx(num_triangles, max_torque, 's--', 'Color', colors(2, :), ...
        'DisplayName', 'torque, max over sweep');
-% vat on the other meshes against the vat reference (the reference itself has zero error)
-% others = 2:num_meshes;
-% vat_colors = lines(4);
-% loglog(num_triangles(others), rms_force_vat(others), 'd-', 'Color', vat_colors(3, :), 'LineWidth', 1.5, ...
-%        'DisplayName', 'vat on mesh, force RMS');
-% loglog(num_triangles(others), max_force_vat(others), 'd--', 'Color', vat_colors(3, :), ...
-%        'DisplayName', 'vat on mesh, force max');
-% loglog(num_triangles(others), rms_torque_vat(others), '^-', 'Color', vat_colors(4, :), 'LineWidth', 1.5, ...
-%        'DisplayName', 'vat on mesh, torque RMS');
-% loglog(num_triangles(others), max_torque_vat(others), '^--', 'Color', vat_colors(4, :), ...
-%        'DisplayName', 'vat on mesh, torque max');
 remeshed_counts = num_triangles();
-% yline(vat_pixel_floor, '-.', sprintf('vat pixel error (~%d px, MSAA %d)', num_pixel, num_msaa_samples), 'Color', [0.5 0.5 0.5], ...
-%       'HandleVisibility', 'off');
 grid on;
 xlabel('Triangle count');
 ylabel('|F_{ADBSat} - F_{vat}| / |F_{vat}|,   |M_{ADBSat} - M_{vat}| / max |M_{vat}|');
@@ -263,20 +230,8 @@ for p = 1:size(quantities, 1)
     end
 end
 
-%% Figure 3: error map
-figure('Name', 'Force error map', 'Position', [140 140 900 450]);
-imagesc(pitch__deg, 1:num_meshes, log10(max(error_force', eps)));
-set(gca, 'YDir', 'normal', 'YTick', 1:num_meshes, 'YTickLabel', ...
-    arrayfun(@(k) sprintf('%s (%d)', level_label(levels(k)), num_triangles(k)), 1:num_meshes, ...
-             'UniformOutput', false));
-color_bar = colorbar;
-color_bar.Label.String = 'log_{10}( |F_{ADBSat} - F_{vat}| / |F_{vat}| )';
-xlabel('Pitch [deg]');
-ylabel('Mesh (triangles)');
-title('Relative force error of ADBSat against vat pixel');
-
 %% Figure 4: runtime comparison
-mesh_labels = arrayfun(@(k) sprintf('%s (%d tri)', level_label(levels(k)), num_triangles(k)), 1:num_meshes, ...
+mesh_labels = arrayfun(@(k) sprintf('%d tri', num_triangles(k)), 1:num_meshes, ...
                        'UniformOutput', false);
 mesh_categories = reordercats(categorical(mesh_labels), mesh_labels);
 figure('Name', 'Runtime', 'Position', [160 160 1000 500]);
@@ -284,17 +239,116 @@ bars = bar(mesh_categories, [vat_total_time__s, runtime__s], 'grouped');
 bars(1).DisplayName = sprintf('vat pixel (%d px, MSAA %d, GPU)', num_pixel, num_msaa_samples);
 bars(2).DisplayName = 'ADBSat (CPU, MATLAB)';
 %set(gca, 'YScale', 'log');
-for k = 1:num_meshes
-    text(bars(2).XEndPoints(k), runtime__s(k) * 1.3, sprintf('%.0fx', speedup(k)), ...
-         'HorizontalAlignment', 'center', 'VerticalAlignment', 'bottom');
-end
+
 ylim([min([vat_total_time__s; runtime__s]) / 2, max(runtime__s) * 1.1]);
 grid on;
 ylabel('Runtime for the whole sweep [s]');
 title(sprintf('Runtime for %d angles (vat: setup + sweep after warm-up; ADBSat: import + sweep)', num_angles));
 legend('Location', 'northwest');
 
+%% Export the figures as TikZ/pgfplots
+% Written straight from the data arrays into tikz/: one tikzpicture per file,
+% to be \input into a document whose preamble has
+%   \usepackage{pgfplots} \usepgfplotslibrary{groupplots} \pgfplotsset{compat=1.18}
+tikz_folder = fullfile(folder, 'tikz');
+if ~isfolder(tikz_folder)
+    mkdir(tikz_folder);
+end
+sweep_title = sprintf('Sentman, pitch $%g\\ldots%g^\\circ$', pitch__deg(1), pitch__deg(end));
+
+% Figure 1: convergence
+lines_tex = [tikz_header(), ...
+             {'\begin{semilogxaxis}[', ...
+              '  width=0.8\textwidth, height=0.55\textwidth, grid=both,', ...
+              ['  xtick={' strjoin(compose('%d', num_triangles'), ',') '}, log ticks with fixed point,'], ...
+              '  xticklabel style={rotate=45, anchor=north east, font=\small},', ...
+              '  xlabel={Triangle count}, ymin=0,', ...
+              '  ylabel={Relative difference ADBSat vs.\ vat [\%]},', ...
+              ['  title={' sweep_title ': ADBSat vs.\ vat pixel},'], ...
+              '  legend pos=north east, legend cell align=left]'}, ...
+             tikz_plot('color=blue, thick, mark=o', num_triangles, 100 * rms_force, ...
+                       'force, RMS over sweep'), ...
+             tikz_plot('color=blue, dashed, mark=o', num_triangles, 100 * max_force, ...
+                       'force, max over sweep'), ...
+             tikz_plot('color=red, thick, mark=square', num_triangles, 100 * rms_torque, ...
+                       'torque, RMS over sweep'), ...
+             tikz_plot('color=red, dashed, mark=square', num_triangles, 100 * max_torque, ...
+                       'torque, max over sweep'), ...
+             {'\end{semilogxaxis}', '\end{tikzpicture}'}];
+writelines(lines_tex, fullfile(tikz_folder, 'pitch_sweep_convergence.tex'));
+
+% Figure 2: sweep curves, one groupplot with three panels
+lines_tex = tikz_header();
+for k = 1:num_meshes
+    lines_tex{end + 1} = sprintf('\\definecolor{mesh%d}{rgb}{%.4f,%.4f,%.4f}', k, mesh_colors(k, :)); %#ok<SAGROW>
+end
+lines_tex = [lines_tex, ...
+             {'\begin{groupplot}[', ...
+              '  group style={group size=3 by 1, horizontal sep=1.6cm},', ...
+              '  width=0.31\textwidth, height=0.3\textwidth, grid=major,', ...
+              '  xlabel={Pitch [$^\circ$]}, legend style={font=\tiny}, legend cell align=left]'}];
+axis_labels = {'$F_x$ [N]', '$F_z$ [N]', '$M_y$ [N\,m]'};
+for p = 1:size(quantities, 1)
+    lines_tex{end + 1} = sprintf('\\nextgroupplot[ylabel={%s}%s]', axis_labels{p}, ...
+                                 repmat(', legend to name=sweeplegend', 1, p == 1)); %#ok<SAGROW>
+    for k = 1:num_meshes
+        lines_tex = [lines_tex, tikz_plot(sprintf('color=mesh%d', k), pitch__deg, ...
+                                          quantities{p, 1}(:, quantities{p, 3}, k), ...
+                                          sprintf('ADBSat %s (%d tri)', level_label(levels(k)), ...
+                                                  num_triangles(k)), p == 1)]; %#ok<AGROW>
+    end
+    lines_tex = [lines_tex, tikz_plot('color=black, very thick', pitch__deg, ...
+                                      quantities{p, 2}(:, quantities{p, 3}), 'vat pixel', p == 1)]; %#ok<AGROW>
+end
+lines_tex = [lines_tex, {'\end{groupplot}', ...
+                         '\node[anchor=north] at ($(group c2r1.south)+(0,-1.2cm)$) {\pgfplotslegendfromname{sweeplegend}};', ...
+                         '\end{tikzpicture}'}];
+writelines(lines_tex, fullfile(tikz_folder, 'pitch_sweep_curves.tex'));
+
+% Figure 4: runtime bars
+level_names = arrayfun(@(k) level_label(levels(k)), 1:num_meshes, 'UniformOutput', false);
+lines_tex = [tikz_header(), ...
+             {'\begin{axis}[', ...
+              '  ybar, bar width=6pt, width=0.8\textwidth, height=0.5\textwidth,', ...
+              ['  symbolic x coords={' strjoin(level_names, ',') '}, xtick=data,'], ...
+              ['  xticklabels={' strjoin(compose('%d', num_triangles'), ',') '},'], ...
+              '  enlarge x limits=0.08, ymin=0, enlarge y limits={upper, value=0.25},', ...
+              '  xlabel={Triangle count}, ylabel={Runtime for the whole sweep [s]}, ymajorgrids,', ...
+              sprintf('  title={Runtime for %d angles}, legend pos=north west, legend cell align=left]', ...
+                      num_angles)}, ...
+             tikz_bars('fill=blue!60', level_names, vat_total_time__s, ...
+                       sprintf('vat pixel (%d px, MSAA %d, GPU)', num_pixel, num_msaa_samples)), ...
+             tikz_bars('fill=orange!80', level_names, runtime__s, 'ADBSat (CPU, MATLAB)'), ...
+             {'\end{axis}', '\end{tikzpicture}'}];
+writelines(lines_tex, fullfile(tikz_folder, 'pitch_sweep_runtime.tex'));
+fprintf('\nTikZ figures written to %s\n', tikz_folder);
+
 %% Local functions
+function lines_tex = tikz_header()
+    lines_tex = {sprintf('%% Generated by verify_shuttlecock_pitch_sweep.m on %s', ...
+                         char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm'))), ...
+                 '% Preamble: \usepackage{pgfplots} \usepgfplotslibrary{groupplots} \usetikzlibrary{calc} \pgfplotsset{compat=1.18}', ...
+                 '\begin{tikzpicture}'};
+end
+
+function lines_tex = tikz_plot(style, x, y, legend_entry, with_legend)
+    % One \addplot with inline coordinates; the legend entry only if requested.
+    if nargin < 5
+        with_legend = true;
+    end
+    points = compose('(%.6g,%.6g)', [x(:), y(:)]);
+    lines_tex = {sprintf('\\addplot[%s] coordinates {%s};', style, strjoin(points', ' '))};
+    if with_legend
+        lines_tex{end + 1} = sprintf('\\addlegendentry{%s}', legend_entry);
+    end
+end
+
+function lines_tex = tikz_bars(style, categories, values, legend_entry)
+    points = cellfun(@(c, v) sprintf('(%s,%.6g)', c, v), categories(:), num2cell(values(:)), ...
+                     'UniformOutput', false);
+    lines_tex = {sprintf('\\addplot[%s] coordinates {%s};', style, strjoin(points', ' ')), ...
+                 sprintf('\\addlegendentry{%s}', legend_entry)};
+end
 function [error_force, error_torque] = relative_errors(force__N, torque__Nm, force_ref__N, torque_ref__Nm)
     % Force normalised per angle, torque by its largest reference magnitude over the sweep.
     error_force = reshape(vecnorm(force__N - force_ref__N, 2, 2) ./ vecnorm(force_ref__N, 2, 2), ...
@@ -304,9 +358,5 @@ function [error_force, error_torque] = relative_errors(force__N, torque__Nm, for
 end
 
 function label = level_label(level)
-    if level == 0
-        label = 'source';
-    else
-        label = sprintf('L%d', level);
-    end
+    label = sprintf('L%d', level);
 end
