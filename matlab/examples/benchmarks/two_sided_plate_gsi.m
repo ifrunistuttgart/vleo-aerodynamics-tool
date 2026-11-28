@@ -25,7 +25,7 @@ mesh_file = fullfile(folder, '..', 'geometries', 'two_sided_plate.obj');
 geometry = vat.geometry.RotatableMeshGeometry(mesh_file);
 
 model_names = {'Newton', 'Maxwell', 'Cook', 'Schaaf-Chambre', 'Storch', 'Sentman'};
-shading_names = {'Binary', 'CoP','pixel', 'pixel 8x MSAA'};%
+shading_names = {'Binary', 'CoP', 'pixel', 'pixel 8x MSAA'}; %
 num_models = numel(model_names);
 num_shading = numel(shading_names);
 num_angles = numel(alphas__deg);
@@ -37,14 +37,16 @@ numerical_lift__N = zeros(num_angles, num_models, num_shading);
 %%
 for model_index = 1:num_models
     gsi_model = make_model(model_names{model_index}, alpha_e, sigma_n, sigma_t, V_w__m_per_s);
+    binary_pipeline = vat.shading.ShadingPipeline(geometry, 0, num_pixel);
+    cop_pipeline = vat.shading.ShadingPipeline(geometry, 1, num_pixel);
     calculators = {
-        vat.loads.HybridForceTorqueCalculator(geometry, ...
-            vat.shading.ShadingPipeline(geometry, 0, num_pixel), gsi_model, Hyperthermal=hyperthermal)
-        vat.loads.HybridForceTorqueCalculator(geometry, ...
-            vat.shading.ShadingPipeline(geometry, 1, num_pixel), gsi_model, Hyperthermal=hyperthermal)
-        vat.loads.PixelForceTorqueCalculator(geometry,gsi_model,500,Hyperthermal=hyperthermal)
-        vat.loads.PixelForceTorqueCalculator(geometry,gsi_model,500,Hyperthermal=hyperthermal,NumMsaaSamples=8)
-    };
+                   vat.loads.HybridForceTorqueCalculator(geometry, binary_pipeline, gsi_model, ...
+                                                         Hyperthermal = hyperthermal)
+                   vat.loads.HybridForceTorqueCalculator(geometry, cop_pipeline, gsi_model, Hyperthermal = hyperthermal)
+                   vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, 500, Hyperthermal = hyperthermal)
+                   vat.loads.PixelForceTorqueCalculator(geometry, gsi_model, 500, ...
+                                                        Hyperthermal = hyperthermal, NumMsaaSamples = 8)
+                  };
 
     for angle_index = 1:num_angles
         alpha__rad = deg2rad(alphas__deg(angle_index));
@@ -52,12 +54,10 @@ for model_index = 1:num_models
         normal_back = -normal_front;
         v_rel_global__m_per_s = [speed__m_per_s, 0, 0];
 
-        [force_front__N, ~] = gsi_model.calc_aero_force_torque( ...
-            area__m2, normal_front, [0, 0, 0], v_rel_global__m_per_s, ...
-            T_wall__K, aero_cond);
-        [force_back__N, ~] = gsi_model.calc_aero_force_torque( ...
-            area__m2, normal_back, [0, 0, 0], v_rel_global__m_per_s, ...
-            T_wall__K, aero_cond);
+        [force_front__N, ~] = gsi_model.calc_aero_force_torque(area__m2, normal_front, [0, 0, 0], ...
+                                                               v_rel_global__m_per_s, T_wall__K, aero_cond);
+        [force_back__N, ~] = gsi_model.calc_aero_force_torque(area__m2, normal_back, [0, 0, 0], ...
+                                                              v_rel_global__m_per_s, T_wall__K, aero_cond);
         if hyperthermal
             force_back__N = [0, 0, 0];
         end
@@ -72,10 +72,10 @@ for model_index = 1:num_models
             [cos(alpha__rad), 0, sin(alpha__rad)];
         rotation_body_to_global = [cos(alpha__rad), 0, sin(alpha__rad); ...
                                    0,                1, 0; ...
-                                  -sin(alpha__rad), 0, cos(alpha__rad)];
+                                   -sin(alpha__rad), 0, cos(alpha__rad)];
         for shading_index = 1:num_shading
             force_body__N = calculators{shading_index}.calc_aero_load( ...
-                v_rel_body__m_per_s, T_wall__K, aero_cond);
+                                                                      v_rel_body__m_per_s, T_wall__K, aero_cond);
             force_global__N = rotation_body_to_global * force_body__N(:);
             numerical_drag__N(angle_index, model_index, shading_index) = -force_global__N(1);
             numerical_lift__N(angle_index, model_index, shading_index) = -force_global__N(3);
@@ -89,9 +89,10 @@ relative_error_lift = abs(numerical_lift__N - reference_lift__N) ./ ...
     max(abs(reference_lift__N), eps);
 
 plot_loads(alphas__deg, model_names, shading_names, reference_drag__N, ...
-    reference_lift__N, numerical_drag__N, numerical_lift__N);
+           reference_lift__N, numerical_drag__N, numerical_lift__N);
 plot_errors(alphas__deg, model_names, shading_names, relative_error_drag, ...
-    relative_error_lift);
+            relative_error_lift);
+
 %%
 %% Local functions
 function model = make_model(name, alpha_e, sigma_n, sigma_t, V_w__m_per_s)
@@ -114,18 +115,18 @@ function model = make_model(name, alpha_e, sigma_n, sigma_t, V_w__m_per_s)
 end
 
 function plot_loads(alphas, model_names, shading_names, reference_drag, ...
-        reference_lift, numerical_drag, numerical_lift)
+                    reference_lift, numerical_drag, numerical_lift)
     figure('Name', 'Two-sided plate: direct GSI and numerical loads', ...
-        'Position', [100 100 1200 800]);
+           'Position', [100 100 1200 800]);
     tiledlayout(3, 4, 'TileSpacing', 'compact');
-    colors = lines(numel(shading_names)+1);
+    colors = lines(numel(shading_names) + 1);
     for i = 1:numel(model_names)
         nexttile(2 * i - 1);
         plot(alphas, reference_drag(:, i), '-', 'Color', colors(1, :), 'LineWidth', 1.5, 'DisplayName', 'Direct GSI');
         hold on;
         for j = 1:numel(shading_names)
-            plot(alphas, numerical_drag(:, i, j), '-', 'Color', colors(j+1, :), ...
-                'DisplayName', shading_names{j});
+            plot(alphas, numerical_drag(:, i, j), '-', 'Color', colors(j + 1, :), ...
+                 'DisplayName', shading_names{j});
         end
         grid on; title([model_names{i} ' drag']); ylabel('drag [N]');
         if i > 4, xlabel('AOA [deg]'); end
@@ -134,8 +135,8 @@ function plot_loads(alphas, model_names, shading_names, reference_drag, ...
         plot(alphas, reference_lift(:, i), '-', 'Color', colors(1, :), 'LineWidth', 1.5, 'DisplayName', 'Direct GSI');
         hold on;
         for j = 1:numel(shading_names)
-            plot(alphas, numerical_lift(:, i, j), '-', 'Color', colors(j+1, :), ...
-                'DisplayName', shading_names{j});
+            plot(alphas, numerical_lift(:, i, j), '-', 'Color', colors(j + 1, :), ...
+                 'DisplayName', shading_names{j});
         end
         grid on; title([model_names{i} ' lift']); ylabel('lift [N]');
         if i > 4, xlabel('AOA [deg]'); end

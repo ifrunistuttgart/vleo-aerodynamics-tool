@@ -4,7 +4,7 @@
 namespace vat::gl {
 
 /**
- * Makes a context current for the lifetime of the guard, then restores whichever
+ * @brief Makes a context current for the lifetime of the guard, then restores whichever
  * context was current before.
  *
  * Every GPU object in this toolbox owns its own hidden context, and a caller such as
@@ -13,14 +13,15 @@ namespace vat::gl {
  */
 class ScopedCurrentContext {
 public:
-    explicit ScopedCurrentContext(const GlfwOpenGLContext& context)
-        : m_previous(glfwGetCurrentContext()) {
+    /**
+     * @brief Remembers the current context and makes `context` current.
+     * @param context Context to make current; must outlive the guard.
+     */
+    explicit ScopedCurrentContext(const GlfwOpenGLContext& context) : m_previous(glfwGetCurrentContext()) {
         context.make_current();
     }
 
-    ~ScopedCurrentContext() {
-        glfwMakeContextCurrent(m_previous);
-    }
+    ~ScopedCurrentContext() { glfwMakeContextCurrent(m_previous); }
 
     ScopedCurrentContext(const ScopedCurrentContext&) = delete;
     ScopedCurrentContext& operator=(const ScopedCurrentContext&) = delete;

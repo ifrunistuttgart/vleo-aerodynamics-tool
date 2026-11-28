@@ -52,7 +52,8 @@ Texture2D::Texture2D(int width, int height, unsigned int internal_format, unsign
     const GLenum alloc_error = glGetError();
 
     if (alloc_error != GL_NO_ERROR) {
-        SPDLOG_WARN("Texture2D allocation {}x{} with {} sample(s) failed (GL error {})", width, height, m_num_samples, alloc_error);
+        SPDLOG_WARN("Texture2D allocation {}x{} with {} sample(s) failed (GL error {})", width, height, m_num_samples,
+                    alloc_error);
         GLCall(glBindTexture(target, 0));
         GLCall(glDeleteTextures(1, &m_texture_id));
         m_texture_id = 0;
@@ -74,12 +75,8 @@ Texture2D::~Texture2D() {
 }
 
 Texture2D::Texture2D(Texture2D&& other) noexcept
-    : m_texture_id(std::exchange(other.m_texture_id, 0u)),
-      m_width(other.m_width),
-      m_height(other.m_height),
-      m_internal_format(other.m_internal_format),
-      m_format(other.m_format),
-      m_dtype(other.m_dtype),
+    : m_texture_id(std::exchange(other.m_texture_id, 0u)), m_width(other.m_width), m_height(other.m_height),
+      m_internal_format(other.m_internal_format), m_format(other.m_format), m_dtype(other.m_dtype),
       m_num_samples(other.m_num_samples) {}
 
 Texture2D& Texture2D::operator=(Texture2D&& other) noexcept {
@@ -98,9 +95,7 @@ Texture2D& Texture2D::operator=(Texture2D&& other) noexcept {
     return *this;
 }
 
-unsigned int Texture2D::get_target() const {
-    return is_multisample() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
-}
+unsigned int Texture2D::get_target() const { return is_multisample() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D; }
 
 void Texture2D::bind(unsigned int unit) const {
     GLCall(glActiveTexture(GL_TEXTURE0 + unit));
@@ -126,8 +121,8 @@ void Texture2D::clear() const {
     }
 
     // The context is only guaranteed to be 4.3: clear through a scratch framebuffer instead.
-    const bool is_integer = m_format == GL_RED_INTEGER || m_format == GL_RG_INTEGER ||
-                            m_format == GL_RGB_INTEGER || m_format == GL_RGBA_INTEGER;
+    const bool is_integer = m_format == GL_RED_INTEGER || m_format == GL_RG_INTEGER || m_format == GL_RGB_INTEGER ||
+                            m_format == GL_RGBA_INTEGER;
     GLint previous_fbo = 0;
     GLCall(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &previous_fbo));
     GLuint fbo = 0;

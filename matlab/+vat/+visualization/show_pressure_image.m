@@ -25,11 +25,11 @@ function show_pressure_image(calculator, geometry, options)
     %   See also vat.loads.PixelForceTorqueCalculator/pressure_image
 
     arguments
-        calculator (1,1) vat.loads.PixelForceTorqueCalculator
-        geometry (1,1) vat.geometry.RotatableMeshGeometry
-        options.Scale (1,1) string {mustBeMember(options.Scale, ["linear", "log"])} = "linear"
-        options.CLim (1,2) double = [NaN NaN]
-        options.Colorbar (1,1) logical = true
+        calculator (1, 1) vat.loads.PixelForceTorqueCalculator
+        geometry (1, 1) vat.geometry.RotatableMeshGeometry
+        options.Scale (1, 1) string {mustBeMember(options.Scale, ["linear", "log"])} = "linear"
+        options.CLim (1, 2) double = [NaN NaN]
+        options.Colorbar (1, 1) logical = true
     end
 
     % pressure_image returns the top row first; flip it so y points up.

@@ -6,7 +6,7 @@
 namespace vat::geometry {
 
 /**
- * One mesh of a geometry as an indexed triangle list, in its own (untransformed) frame.
+ * @brief One mesh of a geometry as an indexed triangle list, in its own (untransformed) frame.
  *
  * This is the connectivity-preserving form a geometry is built from. The geometry itself
  * flattens it into one explicit vertex triple per triangle for rendering, which loses the
@@ -14,16 +14,16 @@ namespace vat::geometry {
  * -- remeshing, export -- works on MeshData instead.
  */
 struct MeshData {
-    /** Name of the mesh, e.g. the `o` name in an .obj. May be empty. */
+    /** @brief Name of the mesh, e.g. the `o` name in an .obj. May be empty. */
     std::string name;
-    /** Vertex positions, x/y/z triplets [m]. */
+    /** @brief Vertex positions, x/y/z triplets [m]. */
     std::vector<float> positions;
-    /** Three indices into positions per triangle, in winding order. */
+    /** @brief Three indices into positions per triangle, in winding order. */
     std::vector<std::uint32_t> indices;
 };
 
 /**
- * Loads every mesh of a model file, one MeshData per mesh, in file order.
+ * @brief Loads every mesh of a model file, one MeshData per mesh, in file order.
  *
  * Faces are triangulated and identical vertices joined on import; faces that are not
  * triangles after that (points, lines) are dropped with a warning.

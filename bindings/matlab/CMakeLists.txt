@@ -6,8 +6,18 @@ message(STATUS "MATLAB root directory found: ${Matlab_ROOT_DIR}.")
 matlab_add_mex(
     NAME MexGateway
     SRC mex_gateway.cpp
-    LINK_TO ${Matlab_MX_LIBRARY} ${Matlab_MEX_LIBRARY} ${Matlab_ENG_LIBRARY}
-            glm::glm gsi_models core geometry shading loads visualization remeshing
+    LINK_TO
+        ${Matlab_MX_LIBRARY}
+        ${Matlab_MEX_LIBRARY}
+        ${Matlab_ENG_LIBRARY}
+        glm::glm
+        gsi_models
+        core
+        geometry
+        shading
+        loads
+        visualization
+        remeshing
 )
 
 set(VAT_MATLAB_BIN_DIR "${PROJECT_SOURCE_DIR}/matlab/bin")
@@ -28,7 +38,7 @@ set(VAT_MATLAB_BIN_DIR "${PROJECT_SOURCE_DIR}/matlab/bin")
 #      mapped, which made the *link* fail with a bare LNK1168. Linking elsewhere
 #      moves that failure into the staging script, which reports which files are
 #      locked and that `clear mex` releases them.
-if (WIN32 AND DEFINED ENV{CONDA_PREFIX})
+if(WIN32 AND DEFINED ENV{CONDA_PREFIX})
     # Driven by a stamp file rather than a POST_BUILD step so the build system
     # actually tracks the staging directory. The stamp lives inside matlab/bin, so
     # deleting that folder re-triggers staging; a POST_BUILD step would not, because
@@ -41,11 +51,11 @@ if (WIN32 AND DEFINED ENV{CONDA_PREFIX})
     set(stage_stamp "${VAT_MATLAB_BIN_DIR}/.vat_staged")
     add_custom_command(
         OUTPUT "${stage_stamp}"
-        COMMAND ${CMAKE_COMMAND}
-            "-DTARGET_FILE=$<TARGET_FILE:MexGateway>"
+        COMMAND
+            ${CMAKE_COMMAND} "-DTARGET_FILE=$<TARGET_FILE:MexGateway>"
             "-DDEST_DIR=${VAT_MATLAB_BIN_DIR}"
-            "-DSEARCH_DIR=$ENV{CONDA_PREFIX}/Library/bin"
-            -P "${PROJECT_SOURCE_DIR}/cmake/stage_matlab_bin.cmake"
+            "-DSEARCH_DIR=$ENV{CONDA_PREFIX}/Library/bin" -P
+            "${PROJECT_SOURCE_DIR}/cmake/stage_matlab_bin.cmake"
         COMMAND ${CMAKE_COMMAND} -E touch "${stage_stamp}"
         DEPENDS MexGateway "${PROJECT_SOURCE_DIR}/pixi.lock"
         COMMENT "Staging MexGateway.mexw64 + runtime DLLs into matlab/bin"
@@ -53,11 +63,13 @@ if (WIN32 AND DEFINED ENV{CONDA_PREFIX})
     )
     add_custom_target(stage_matlab_bin ALL DEPENDS "${stage_stamp}")
     message(STATUS "Mex file will be staged into ${VAT_MATLAB_BIN_DIR}")
-else ()
+else()
     # Without the pixi environment we cannot find the DLLs to vendor, so matlab/bin
     # would hold a mex file MATLAB cannot load. Warn rather than fail silently.
-    message(WARNING
+    message(
+        WARNING
         "Not staging MexGateway's runtime DLLs: this is only supported on Windows "
         "inside a pixi environment (CONDA_PREFIX is unset). The mex file will be "
-        "left in the build tree and will not load from a plain MATLAB session.")
-endif ()
+        "left in the build tree and will not load from a plain MATLAB session."
+    )
+endif()

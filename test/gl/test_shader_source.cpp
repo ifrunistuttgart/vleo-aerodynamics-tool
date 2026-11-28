@@ -63,6 +63,4 @@ TEST(ShaderSourceTest, TemplateWithoutPlaceholdersIsReturnedAsIs) {
     EXPECT_EQ(ShaderSource(text).glsl(), text);
 }
 
-TEST(ShaderSourceTest, NumberedPrefixesEveryLine) {
-    EXPECT_EQ(ShaderSource::numbered("a\nb\n"), "1: a\n2: b\n");
-}
+TEST(ShaderSourceTest, NumberedPrefixesEveryLine) { EXPECT_EQ(ShaderSource::numbered("a\nb\n"), "1: a\n2: b\n"); }

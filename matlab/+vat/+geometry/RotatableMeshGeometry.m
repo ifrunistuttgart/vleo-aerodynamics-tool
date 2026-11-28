@@ -3,7 +3,7 @@ classdef RotatableMeshGeometry < handle
     %
     % This class manages the geometric data of a geometry, including vertices
     % and triangles, and allows for the rotation of specific parts around defined
-    % axes. It is used as the base geometry for shading and aerodynamic load 
+    % axes. It is used as the base geometry for shading and aerodynamic load
     % calculations.
     %
     % RotatableMeshGeometry methods:
@@ -21,22 +21,23 @@ classdef RotatableMeshGeometry < handle
     %   remesh                       - A copy with near-equilateral triangles.
     %   export_obj                   - Writes the geometry to an .obj file.
     %
-    properties %(Access = private, Hidden = true)
+    properties % (Access = private, Hidden = true)
         % store handle as int32 to match MexGateway expectations
         handle_ = int32(-1);
     end
     methods
+
         function this = RotatableMeshGeometry(file_path)
             % ROTATABLEMESHGEOMETRY Constructor for RotatableMeshGeometry.
             %
-            %   obj = RotatableMeshGeometry(file_path) creates a geometry 
+            %   obj = RotatableMeshGeometry(file_path) creates a geometry
             %   object by loading the geometry from the specified file.
             %
             %   Input Arguments:
             %       file_path - Path to the 3D model file (e.g., .obj or .stl).
             %
             arguments
-                file_path (1,1) string = missing
+                file_path (1, 1) string = missing
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             % Without a file the object stays empty, for remesh to attach the C++
@@ -46,15 +47,12 @@ classdef RotatableMeshGeometry < handle
             end
             this.handle_ = int32(MexGateway("geometry.RotatableMeshGeometry.new", string(file_path)));
         end
-      
+
         function delete(this)
             % DELETE Destructor for RotatableMeshGeometry.
             %
             %   Releases the underlying C++ geometry object.
             %
-            arguments
-                this (1,1) vat.geometry.RotatableMeshGeometry
-            end
             if this.handle_ ~= int32(-1)
                 MexGateway("geometry.RotatableMeshGeometry.delete", int32(this.handle_));
                 this.handle_ = int32(-1);
@@ -64,14 +62,14 @@ classdef RotatableMeshGeometry < handle
         function vertices = get_transformed_vertices(this)
             % GET_TRANSFORMED_VERTICES Retrieves the transformed vertex positions of the geometry.
             %
-            %   vertices = get_transformed_vertices(this) returns a flat array of vertex 
+            %   vertices = get_transformed_vertices(this) returns a flat array of vertex
             %   positions (x, y, z triplets).
             %
             %   Output Arguments:
             %       vertices - Array of vertex coordinates [3 x N].
             %
             arguments
-                this (1,1) vat.geometry.RotatableMeshGeometry
+                this (1, 1) vat.geometry.RotatableMeshGeometry
             end
             vertices = MexGateway("geometry.RotatableMeshGeometry.get_transformed_vertices", int32(this.handle_));
         end
@@ -79,14 +77,14 @@ classdef RotatableMeshGeometry < handle
         function vertices = get_untransformed_vertices(this)
             % GET_UNTRANSFORMED_VERTICES Retrieves the untransformed vertex positions of the geometry.
             %
-            %   vertices = get_untransformed_vertices(this) returns a flat array of raw vertex 
+            %   vertices = get_untransformed_vertices(this) returns a flat array of raw vertex
             %   positions (x, y, z triplets).
             %
             %   Output Arguments:
             %       vertices - Array of raw vertex coordinates [3 x N].
             %
             arguments
-                this (1,1) vat.geometry.RotatableMeshGeometry
+                this (1, 1) vat.geometry.RotatableMeshGeometry
             end
             vertices = MexGateway("geometry.RotatableMeshGeometry.get_untransformed_vertices", int32(this.handle_));
         end
@@ -94,14 +92,14 @@ classdef RotatableMeshGeometry < handle
         function normals = get_transformed_normals(this)
             % GET_TRANSFORMED_NORMALS Retrieves the transformed normals of the triangles.
             %
-            %   normals = get_transformed_normals(this) returns a flat array of normal 
+            %   normals = get_transformed_normals(this) returns a flat array of normal
             %   vectors (x, y, z triplets).
             %
             %   Output Arguments:
             %       normals - Array of normal vectors [3 x N].
             %
             arguments
-                this (1,1) vat.geometry.RotatableMeshGeometry
+                this (1, 1) vat.geometry.RotatableMeshGeometry
             end
             normals = MexGateway("geometry.RotatableMeshGeometry.get_transformed_normals", int32(this.handle_));
         end
@@ -109,14 +107,14 @@ classdef RotatableMeshGeometry < handle
         function normals = get_untransformed_normals(this)
             % GET_UNTRANSFORMED_NORMALS Retrieves the untransformed normals of the triangles.
             %
-            %   normals = get_untransformed_normals(this) returns a flat array of raw normal 
+            %   normals = get_untransformed_normals(this) returns a flat array of raw normal
             %   vectors (x, y, z triplets).
             %
             %   Output Arguments:
             %       normals - Array of raw normal vectors [3 x N].
             %
             arguments
-                this (1,1) vat.geometry.RotatableMeshGeometry
+                this (1, 1) vat.geometry.RotatableMeshGeometry
             end
             normals = MexGateway("geometry.RotatableMeshGeometry.get_untransformed_normals", int32(this.handle_));
         end
@@ -124,14 +122,14 @@ classdef RotatableMeshGeometry < handle
         function centroids = get_transformed_centroids(this)
             % GET_TRANSFORMED_CENTROIDS Retrieves the transformed centroids of the triangles.
             %
-            %   centroids = get_transformed_centroids(this) returns a flat array of centroid 
+            %   centroids = get_transformed_centroids(this) returns a flat array of centroid
             %   positions (x, y, z triplets).
             %
             %   Output Arguments:
             %       centroids - Array of centroid positions [3 x N].
             %
             arguments
-                this (1,1) vat.geometry.RotatableMeshGeometry
+                this (1, 1) vat.geometry.RotatableMeshGeometry
             end
             centroids = MexGateway("geometry.RotatableMeshGeometry.get_transformed_centroids", int32(this.handle_));
         end
@@ -139,14 +137,14 @@ classdef RotatableMeshGeometry < handle
         function centroids = get_untransformed_centroids(this)
             % GET_UNTRANSFORMED_CENTROIDS Retrieves the untransformed centroids of the triangles.
             %
-            %   centroids = get_untransformed_centroids(this) returns a flat array of raw centroid 
+            %   centroids = get_untransformed_centroids(this) returns a flat array of raw centroid
             %   positions (x, y, z triplets).
             %
             %   Output Arguments:
             %       centroids - Array of raw centroid positions [3 x N].
             %
             arguments
-                this (1,1) vat.geometry.RotatableMeshGeometry
+                this (1, 1) vat.geometry.RotatableMeshGeometry
             end
             centroids = MexGateway("geometry.RotatableMeshGeometry.get_untransformed_centroids", int32(this.handle_));
         end
@@ -161,12 +159,12 @@ classdef RotatableMeshGeometry < handle
             %       num_triangles - The number of triangles.
             %
             arguments
-                this (1,1) vat.geometry.RotatableMeshGeometry
+                this (1, 1) vat.geometry.RotatableMeshGeometry
             end
             num_triangles = MexGateway("geometry.RotatableMeshGeometry.get_num_triangles", int32(this.handle_));
         end
 
-        function turn_mesh_around_axis(this,mesh_id, angle__rad, origin, axis)
+        function turn_mesh_around_axis(this, mesh_id, angle__rad, origin, axis)
             % TURN_MESH_AROUND_AXIS Rotates a specific mesh of the geometry.
             %
             %   turn_mesh_around_axis(this, mesh_id, angle, origin, axis)
@@ -179,13 +177,14 @@ classdef RotatableMeshGeometry < handle
             %       axis       - The 3D vector [x, y, z] defining the axis of rotation.
             %
             arguments
-                this (1,1) vat.geometry.RotatableMeshGeometry
-                mesh_id (1,1) {mustBeInteger, mustBeNonnegative}
-                angle__rad (1,1) double
-                origin (1,3) double
-                axis (1,3) double
+                this (1, 1) vat.geometry.RotatableMeshGeometry
+                mesh_id (1, 1) {mustBeInteger, mustBeNonnegative}
+                angle__rad (1, 1) double
+                origin (1, 3) double
+                axis (1, 3) double
             end
-            MexGateway("geometry.RotatableMeshGeometry.turn_mesh_around_axis", int32(this.handle_), int32(mesh_id), angle__rad, origin, axis)
+            MexGateway("geometry.RotatableMeshGeometry.turn_mesh_around_axis", ...
+                       int32(this.handle_), int32(mesh_id), angle__rad, origin, axis)
         end
 
         function quality = get_mesh_quality(this)
@@ -198,7 +197,7 @@ classdef RotatableMeshGeometry < handle
             %   the shading raster resolves a triangle.
             %
             arguments
-                this (1,1) vat.geometry.RotatableMeshGeometry
+                this (1, 1) vat.geometry.RotatableMeshGeometry
             end
             quality = MexGateway("geometry.RotatableMeshGeometry.get_mesh_quality", int32(this.handle_));
         end
@@ -217,15 +216,16 @@ classdef RotatableMeshGeometry < handle
             %   many small parts with sharp edges.
             %
             arguments
-                this (1,1) vat.geometry.RotatableMeshGeometry
-                options.TriangleCount (1,1) double {mustBeInteger, mustBeNonnegative} = 0
-                options.EdgeLength (1,1) double {mustBeNonnegative} = 0
-                options.FeatureAngle (1,1) double {mustBeInRange(options.FeatureAngle, 0, 180)} = 30
-                options.Iterations (1,1) double {mustBeInteger, mustBePositive} = 3
+                this (1, 1) vat.geometry.RotatableMeshGeometry
+                options.TriangleCount (1, 1) double {mustBeInteger, mustBeNonnegative} = 0
+                options.EdgeLength (1, 1) double {mustBeNonnegative} = 0
+                options.FeatureAngle (1, 1) double {mustBeInRange(options.FeatureAngle, 0, 180)} = 30
+                options.Iterations (1, 1) double {mustBeInteger, mustBePositive} = 3
             end
             vat.geometry.RotatableMeshGeometry.require_one_size(options);
             prediction = MexGateway("geometry.RotatableMeshGeometry.predict_remesh", int32(this.handle_), ...
-                int32(options.TriangleCount), options.EdgeLength, options.FeatureAngle, int32(options.Iterations));
+                                    int32(options.TriangleCount), options.EdgeLength, ...
+                                    options.FeatureAngle, int32(options.Iterations));
         end
 
         function [remeshed, report] = remesh(this, options)
@@ -253,15 +253,16 @@ classdef RotatableMeshGeometry < handle
             %       Iterations    - Remeshing passes. Default 3.
             %
             arguments
-                this (1,1) vat.geometry.RotatableMeshGeometry
-                options.TriangleCount (1,1) double {mustBeInteger, mustBeNonnegative} = 0
-                options.EdgeLength (1,1) double {mustBeNonnegative} = 0
-                options.FeatureAngle (1,1) double {mustBeInRange(options.FeatureAngle, 0, 180)} = 30
-                options.Iterations (1,1) double {mustBeInteger, mustBePositive} = 3
+                this (1, 1) vat.geometry.RotatableMeshGeometry
+                options.TriangleCount (1, 1) double {mustBeInteger, mustBeNonnegative} = 0
+                options.EdgeLength (1, 1) double {mustBeNonnegative} = 0
+                options.FeatureAngle (1, 1) double {mustBeInRange(options.FeatureAngle, 0, 180)} = 30
+                options.Iterations (1, 1) double {mustBeInteger, mustBePositive} = 3
             end
             vat.geometry.RotatableMeshGeometry.require_one_size(options);
             [id, report] = MexGateway("geometry.RotatableMeshGeometry.remesh", int32(this.handle_), ...
-                int32(options.TriangleCount), options.EdgeLength, options.FeatureAngle, int32(options.Iterations));
+                                      int32(options.TriangleCount), options.EdgeLength, ...
+                                      options.FeatureAngle, int32(options.Iterations));
             remeshed = vat.geometry.RotatableMeshGeometry();
             remeshed.handle_ = int32(id);
         end
@@ -277,18 +278,21 @@ classdef RotatableMeshGeometry < handle
             %   geometry that hinge angles are applied to.
             %
             arguments
-                this (1,1) vat.geometry.RotatableMeshGeometry
-                file_path (1,1) string
+                this (1, 1) vat.geometry.RotatableMeshGeometry
+                file_path (1, 1) string
             end
             MexGateway("geometry.RotatableMeshGeometry.export_obj", int32(this.handle_), file_path);
         end
+
     end
 
     methods (Static, Access = private)
+
         function require_one_size(options)
             if (options.TriangleCount > 0) == (options.EdgeLength > 0)
                 error("vat:remesh:size", "Give exactly one of TriangleCount and EdgeLength.");
             end
         end
+
     end
 end

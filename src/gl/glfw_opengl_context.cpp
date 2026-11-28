@@ -24,13 +24,16 @@ GlfwOpenGLContext::GlfwOpenGLContext(int width, int height, const char* title, b
     m_window.reset(glfwCreateWindow(width, height, title, nullptr, nullptr));
     if (!m_window) {
         const char* description;
-        int errorCode = glfwGetError(&description);
-        SPDLOG_ERROR("glfwCreateWindow failed! Error Code: {} | Description: {}", errorCode, description ? description : "Unknown");
+        int error_code = glfwGetError(&description);
+        SPDLOG_ERROR("glfwCreateWindow failed! Error Code: {} | Description: {}", error_code,
+                     description ? description : "Unknown");
         SPDLOG_ERROR("glfwCreateWindow failed (size={}x{}, title='{}', visible={})", width, height, title, visible);
         if (s_liveContexts == 0) {
             glfwTerminate();
         }
-        throw std::runtime_error(std::format("glfwCreateWindow failed (size={}x{}, title='{}', visible={}): {}", width, height, title, visible, std::string(description ? description : "Unknown")));
+        throw std::runtime_error(std::format("glfwCreateWindow failed (size={}x{}, title='{}', visible={}): {}", width,
+                                             height, title, visible,
+                                             std::string(description ? description : "Unknown")));
     }
 
     glfwMakeContextCurrent(m_window.get());
@@ -63,8 +66,6 @@ GlfwOpenGLContext::~GlfwOpenGLContext() {
     }
 }
 
-void GlfwOpenGLContext::make_current() const {
-    glfwMakeContextCurrent(m_window.get());
-}
+void GlfwOpenGLContext::make_current() const { glfwMakeContextCurrent(m_window.get()); }
 
 } // namespace vat::gl

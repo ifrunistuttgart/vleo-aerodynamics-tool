@@ -7,7 +7,7 @@
 namespace vat::gl {
 
 /**
- * GLSL source of one shader stage, written as a single template with placeholders.
+ * @brief GLSL source of one shader stage, written as a single template with placeholders.
  *
  * A placeholder is `${name}` (name: letters, digits, underscores); GLSL itself never uses `$`.
  * Every placeholder must be given a value with set() before glsl() returns the code, so a
@@ -23,33 +23,51 @@ namespace vat::gl {
  */
 class ShaderSource {
 public:
-    /** @param glsl The complete shader template, #version line included. */
+    /**
+     * @brief Parses the template and records its placeholders.
+     * @param glsl The complete shader template, #version line included.
+     * @throws std::invalid_argument if the template contains a malformed placeholder.
+     */
     explicit ShaderSource(std::string glsl);
 
     /**
-     * Gives the placeholder `${name}` its value; setting it again replaces the value.
+     * @brief Gives the placeholder `${name}` its value; setting it again replaces the value.
+     * @param name Placeholder name, without `${` and `}`.
+     * @param value Text to substitute.
+     * @return *this, for chaining.
      * @throws std::invalid_argument if the template has no such placeholder.
      */
     ShaderSource& set(std::string_view name, std::string value);
-    /** Same, with the decimal text of value (e.g. for a #define or an array size). */
+    /**
+     * @brief Same, with the decimal text of value (e.g. for a #define or an array size).
+     * @param name Placeholder name, without `${` and `}`.
+     * @param value Integer to substitute as decimal text.
+     * @return *this, for chaining.
+     * @throws std::invalid_argument if the template has no such placeholder.
+     */
     ShaderSource& set(std::string_view name, long long value);
 
-    /** Names of all placeholders in the template, in order of first occurrence. */
+    /** @brief Names of all placeholders in the template, in order of first occurrence. */
     [[nodiscard]] const std::vector<std::string>& placeholders() const { return m_placeholders; }
 
-    /** Whether the placeholder has a value. */
+    /** @brief Whether the placeholder has a value. */
     [[nodiscard]] bool is_set(std::string_view name) const;
 
-    /** Placeholders that have no value yet, in order of first occurrence. */
+    /** @brief Placeholders that have no value yet, in order of first occurrence. */
     [[nodiscard]] std::vector<std::string> unset_placeholders() const;
 
     /**
-     * The template with every placeholder replaced by its value.
+     * @brief The template with every placeholder replaced by its value.
+     * @return The GLSL source, ready to compile.
      * @throws std::logic_error naming every placeholder that has no value.
      */
     [[nodiscard]] std::string glsl() const;
 
-    /** text with "<line>: " in front of every line, as compiler messages count them. */
+    /**
+     * @brief Prefixes every line of text with "<line>: ", as compiler messages count them.
+     * @param text Source text.
+     * @return The numbered text.
+     */
     [[nodiscard]] static std::string numbered(const std::string& text);
 
 private:

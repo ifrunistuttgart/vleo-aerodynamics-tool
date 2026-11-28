@@ -8,7 +8,7 @@
 namespace vat::geometry {
 namespace {
 
-Distribution Summarize(std::vector<float> values) {
+Distribution summarize(std::vector<float> values) {
     if (values.empty()) {
         return Distribution{NAN, NAN, NAN, NAN, NAN};
     }
@@ -19,7 +19,7 @@ Distribution Summarize(std::vector<float> values) {
     return Distribution{values.front(), at(0.05), at(0.5), at(0.95), values.back()};
 }
 
-double Distance(const float* a, const float* b) {
+double distance(const float* a, const float* b) {
     const double dx = static_cast<double>(a[0]) - b[0];
     const double dy = static_cast<double>(a[1]) - b[1];
     const double dz = static_cast<double>(a[2]) - b[2];
@@ -50,13 +50,15 @@ MeshQuality compute_mesh_quality(IGeometryShadingData& geometry) {
         const float* p0 = &vertices[9 * t];
         const float* p1 = p0 + 3;
         const float* p2 = p0 + 6;
-        const double a = Distance(p1, p2);
-        const double b = Distance(p2, p0);
-        const double c = Distance(p0, p1);
+        const double a = distance(p1, p2);
+        const double b = distance(p2, p0);
+        const double c = distance(p0, p1);
         const double longest = std::max({a, b, c});
 
-        const double e1[3] = {static_cast<double>(p1[0]) - p0[0], static_cast<double>(p1[1]) - p0[1], static_cast<double>(p1[2]) - p0[2]};
-        const double e2[3] = {static_cast<double>(p2[0]) - p0[0], static_cast<double>(p2[1]) - p0[1], static_cast<double>(p2[2]) - p0[2]};
+        const double e1[3] = {static_cast<double>(p1[0]) - p0[0], static_cast<double>(p1[1]) - p0[1],
+                              static_cast<double>(p1[2]) - p0[2]};
+        const double e2[3] = {static_cast<double>(p2[0]) - p0[0], static_cast<double>(p2[1]) - p0[1],
+                              static_cast<double>(p2[2]) - p0[2]};
         const double cx = e1[1] * e2[2] - e1[2] * e2[1];
         const double cy = e1[2] * e2[0] - e1[0] * e2[2];
         const double cz = e1[0] * e2[1] - e1[1] * e2[0];
@@ -77,9 +79,9 @@ MeshQuality compute_mesh_quality(IGeometryShadingData& geometry) {
     quality.total_area__m2 = static_cast<float>(total_area);
     quality.mean_area__m2 = static_cast<float>(total_area / n);
     quality.bounding_sphere_radius__m = geometry.get_bounding_sphere_radius();
-    quality.area__m2 = Summarize(std::move(areas));
-    quality.aspect_ratio = Summarize(std::move(aspect_ratios));
-    quality.min_altitude__m = Summarize(std::move(min_altitudes));
+    quality.area__m2 = summarize(std::move(areas));
+    quality.aspect_ratio = summarize(std::move(aspect_ratios));
+    quality.min_altitude__m = summarize(std::move(min_altitudes));
     return quality;
 }
 

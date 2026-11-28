@@ -323,7 +323,7 @@ module gets a nested namespace named after its folder and CMake target:
 | `vat::loads` | `HybridForceTorqueCalculator`, `PixelForceTorqueCalculator`, `PixelLoadIntegrator` |
 | `vat::projected_area` | `PixelProjectedArea` and the `ProjectedArea` GSI model it runs |
 | `vat::remeshing` | `remesh`, `predict_remesh`, `RemeshOptions`, `RemeshReport`; CGAL stays inside the module |
-| `vat::visualization` | `ShowShading`, `ShowMeshes`, `ShowHinges` |
+| `vat::visualization` | `show_shading`, `show_meshes`, `show_hinges` |
 | `vat::gl` | the OpenGL wrappers — `Shader`, `ComputeShader`, `VertexArray`, `VertexBuffer`, `FrameBuffer`, … — plus `make_flow_camera`, the orthographic camera along the flow every GPU path uses, and `ScopedCurrentContext`, which makes a context current and restores the previous one |
 
 One deliberate exception to "namespace == folder":

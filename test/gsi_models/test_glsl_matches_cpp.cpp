@@ -96,7 +96,8 @@ std::vector<Sample> make_samples(std::mt19937& rng) {
     return samples;
 }
 
-std::vector<glm::vec4> run_glsl(const IGSIModel& model, const AeroConditions& aero, const std::vector<Sample>& samples) {
+std::vector<glm::vec4> run_glsl(const IGSIModel& model, const AeroConditions& aero,
+                                const std::vector<Sample>& samples) {
     gl::ComputeShader shader(std::string(HARNESS_HEADER) + model.glsl_force_per_projected_area() + HARNESS_MAIN);
 
     const gl::ShaderStorageBuffer input(std::as_bytes(std::span<const Sample>(samples)), gl::BufferUsage::StaticDraw);
@@ -104,23 +105,25 @@ std::vector<glm::vec4> run_glsl(const IGSIModel& model, const AeroConditions& ae
     input.bind_base(0);
     output.bind_base(1);
 
-    shader.Bind();
-    shader.SetUniform1f("u_min_cos_delta", MIN_COS_DELTA);
+    shader.bind();
+    shader.set_uniform_1f("u_min_cos_delta", MIN_COS_DELTA);
     for (const GlslUniform& uniform : model.glsl_uniforms(aero)) {
-        std::visit([&](auto value) {
-            if constexpr (std::is_same_v<decltype(value), int>) {
-                shader.SetUniform1i(uniform.name, value);
-            } else {
-                shader.SetUniform1f(uniform.name, value);
-            }
-        }, uniform.value);
+        std::visit(
+            [&](auto value) {
+                if constexpr (std::is_same_v<decltype(value), int>) {
+                    shader.set_uniform_1i(uniform.name, value);
+                } else {
+                    shader.set_uniform_1f(uniform.name, value);
+                }
+            },
+            uniform.value);
     }
     shader.dispatch(static_cast<unsigned int>((samples.size() + 63) / 64));
     gl::memory_barrier(gl::Barrier::BufferUpdate);
 
     std::vector<glm::vec4> results(samples.size());
     output.read_back(std::span<glm::vec4>(results));
-    shader.Unbind();
+    shader.unbind();
     return results;
 }
 
@@ -134,12 +137,8 @@ struct ModelCase {
 
 class GlslMatchesCpp : public ::testing::TestWithParam<ModelCase> {
 protected:
-    static void SetUpTestSuite() {
-        s_context = std::make_unique<gl::GlfwOpenGLContext>(64, 64, "GLSL harness", false);
-    }
-    static void TearDownTestSuite() {
-        s_context.reset();
-    }
+    static void SetUpTestSuite() { s_context = std::make_unique<gl::GlfwOpenGLContext>(64, 64, "GLSL harness", false); }
+    static void TearDownTestSuite() { s_context.reset(); }
     static std::unique_ptr<gl::GlfwOpenGLContext> s_context;
 };
 
@@ -177,17 +176,18 @@ TEST_P(GlslMatchesCpp, OnRandomWindwardInputs) {
             // Relative to rho*v^2 per projected area, the natural scale of every model,
             // so results close to zero are judged on the same footing as large ones.
             const double scale = GetParam().dimensionless
-                ? 1.0
-                : aero.density__kg_per_m3 * glm::dot(glm::dvec3(v), glm::dvec3(v)) / cos_d;
+                                     ? 1.0
+                                     : aero.density__kg_per_m3 * glm::dot(glm::dvec3(v), glm::dvec3(v)) / cos_d;
             const double error = glm::length(glm::dvec3(gpu[i]) - expected) / scale;
             max_error = std::max(max_error, error);
             // The C++ side divides a float cos_d (cancellation in dot(n, v) at grazing incidence)
             // by a double one, which costs ~1e-5 relative; looser bound for the unit-scale model.
-            ASSERT_LT(error, GetParam().dimensionless ? 1e-4 : 1e-5) << GetParam().name << " sample " << i
-                << " n=(" << n.x << ", " << n.y << ", " << n.z << ") v=(" << v.x << ", " << v.y << ", " << v.z
-                << ") Tw=" << wall_temp << " cos_d=" << cos_d;
+            ASSERT_LT(error, GetParam().dimensionless ? 1e-4 : 1e-5)
+                << GetParam().name << " sample " << i << " n=(" << n.x << ", " << n.y << ", " << n.z << ") v=(" << v.x
+                << ", " << v.y << ", " << v.z << ") Tw=" << wall_temp << " cos_d=" << cos_d;
         }
-        std::printf("[          ] %s: max relative error %.3e over %d samples\n", GetParam().name.c_str(), max_error, NUM_SAMPLES);
+        std::printf("[          ] %s: max relative error %.3e over %d samples\n", GetParam().name.c_str(), max_error,
+                    NUM_SAMPLES);
     }
 }
 
@@ -204,19 +204,21 @@ void main()
     if (i < uint(values.length())) values[i] = vat_erfc(values[i]);
 }
 )GLSL";
-    gl::ComputeShader shader(std::string("#version 430\nlayout(local_size_x = 64) in;\n") + common_glsl::helpers + source);
+    gl::ComputeShader shader(std::string("#version 430\nlayout(local_size_x = 64) in;\n") + common_glsl::helpers +
+                             source);
 
     std::vector<float> x;
-    for (float v = -9.0f; v <= 9.0f; v += 1.0f / 512.0f) x.push_back(v);
+    for (float v = -9.0f; v <= 9.0f; v += 1.0f / 512.0f)
+        x.push_back(v);
     std::vector<float> result = x;
 
     const gl::ShaderStorageBuffer buffer(std::as_bytes(std::span<const float>(result)), gl::BufferUsage::DynamicRead);
     buffer.bind_base(0);
-    shader.Bind();
+    shader.bind();
     shader.dispatch(static_cast<unsigned int>((result.size() + 63) / 64));
     gl::memory_barrier(gl::Barrier::BufferUpdate);
     buffer.read_back(std::span<float>(result));
-    shader.Unbind();
+    shader.unbind();
 
     double max_absolute = 0.0, max_relative_negative = 0.0;
     for (size_t i = 0; i < x.size(); ++i) {
@@ -229,17 +231,19 @@ void main()
         }
         ASSERT_LT(absolute, 4e-7) << "x=" << x[i];
     }
-    std::printf("[          ] vat_erfc: max absolute error %.3e, max relative error for x <= 0 %.3e\n", max_absolute, max_relative_negative);
+    std::printf("[          ] vat_erfc: max absolute error %.3e, max relative error for x <= 0 %.3e\n", max_absolute,
+                max_relative_negative);
 }
 
-INSTANTIATE_TEST_SUITE_P(AllModels, GlslMatchesCpp, ::testing::Values(
-    ModelCase{"Newton", [] { return std::make_unique<Newton>(); }},
-    ModelCase{"ProjectedArea", [] { return std::make_unique<ProjectedArea>(); }, true},
-    ModelCase{"Cook", [] { return std::make_unique<Cook>(0.9f); }},
-    ModelCase{"Maxwell", [] { return std::make_unique<Maxwell>(0.9f); }},
-    ModelCase{"SchaafChambre", [] { return std::make_unique<SchaafChambre>(0.9f, 0.9f); }},
-    ModelCase{"Storch", [] { return std::make_unique<Storch>(500.0f, 0.9f, 0.9f); }},
-    ModelCase{"Sentman1", [] { return std::make_unique<Sentman>(1, 0.9f); }},
-    ModelCase{"Sentman2", [] { return std::make_unique<Sentman>(2, 0.9f); }},
-    ModelCase{"Sentman3", [] { return std::make_unique<Sentman>(3, 0.9f); }}
-), [](const ::testing::TestParamInfo<ModelCase>& info) { return info.param.name; });
+INSTANTIATE_TEST_SUITE_P(
+    AllModels, GlslMatchesCpp,
+    ::testing::Values(ModelCase{"Newton", [] { return std::make_unique<Newton>(); }},
+                      ModelCase{"ProjectedArea", [] { return std::make_unique<ProjectedArea>(); }, true},
+                      ModelCase{"Cook", [] { return std::make_unique<Cook>(0.9f); }},
+                      ModelCase{"Maxwell", [] { return std::make_unique<Maxwell>(0.9f); }},
+                      ModelCase{"SchaafChambre", [] { return std::make_unique<SchaafChambre>(0.9f, 0.9f); }},
+                      ModelCase{"Storch", [] { return std::make_unique<Storch>(500.0f, 0.9f, 0.9f); }},
+                      ModelCase{"Sentman1", [] { return std::make_unique<Sentman>(1, 0.9f); }},
+                      ModelCase{"Sentman2", [] { return std::make_unique<Sentman>(2, 0.9f); }},
+                      ModelCase{"Sentman3", [] { return std::make_unique<Sentman>(3, 0.9f); }}),
+    [](const ::testing::TestParamInfo<ModelCase>& info) { return info.param.name; });

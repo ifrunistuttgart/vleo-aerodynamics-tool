@@ -11,11 +11,17 @@
 namespace vat::geometry {
 
 /**
-* A geometry class with a static mesh structure. It implements both the IGeometryShadingData and IGeometryManipulator interfaces. 
-* Altough it implements the IGeometryManipulator interface, the turn_mesh and turn_mesh_around_axis functions do not actually change the geometry's configuration, since the mesh is static.
-* This class is useful for testing and benchmarking purposes, as it provides a simple implementation of the geometry interfaces without the complexity of handling dynamic transformations.
-*/
-class StaticMeshGeometry: public IGeometryShadingData, public IGeometryManipulator {
+ * @brief A geometry whose meshes stay in their loaded pose.
+ *
+ * It implements both IGeometryShadingData and IGeometryManipulator. Assimp-loaded or in-memory
+ * meshes (MeshData) are de-indexed into 9 floats per triangle, with one normal, centroid and
+ * area per triangle and 1-based triangle IDs. Every model matrix is the identity, so the
+ * transformed and untransformed getters return the same data. All three IGeometryManipulator
+ * functions return -1 and leave the geometry unchanged; use RotatableMeshGeometry to turn
+ * meshes. It is also the base class of RotatableMeshGeometry and the input type of remeshing
+ * and write_obj(), which use get_mesh_data().
+ */
+class StaticMeshGeometry : public IGeometryShadingData, public IGeometryManipulator {
 protected:
     std::vector<MeshData> m_mesh_data;
     std::vector<float> m_vertices;
@@ -23,17 +29,22 @@ protected:
     std::vector<float> m_normals;
     std::vector<float> m_areas;
     std::vector<float> m_centroids;
-	std::vector<glm::mat4> m_model_matrices;
+    std::vector<glm::mat4> m_model_matrices;
     std::vector<unsigned int> m_num_triangles_per_mesh;
     std::vector<std::string> m_mesh_names;
     unsigned int m_total_triangles;
     float m_bounding_sphere_radius;
 
 public:
-	StaticMeshGeometry(std::string file);
+    /**
+     * @brief Loads a geometry from a model file (see load_mesh_data()).
+     * @param file Path to any format assimp reads.
+     * @throws std::runtime_error if the file cannot be read or contains no triangles.
+     */
+    StaticMeshGeometry(std::string file);
 
     /**
-     * Builds a geometry from meshes already in memory, e.g. the output of remeshing.
+     * @brief Builds a geometry from meshes already in memory, e.g. the output of remeshing.
      *
      * @param meshes One entry per mesh, in the order that defines each mesh_id. A mesh
      *               with an empty name is named "Mesh_<index>".
@@ -58,14 +69,18 @@ public:
     float get_bounding_sphere_radius() override;
 
     /**
-     * The meshes this geometry was built from, as indexed triangle lists in their own
+     * @brief The meshes this geometry was built from, as indexed triangle lists in their own
      * untransformed frame and with the final (possibly defaulted) names.
      */
     std::span<const MeshData> get_mesh_data() const;
 
-	//IGeometryManipulator interface
+    // IGeometryManipulator interface
+    /** @brief Not implemented for a static geometry. @return Always -1. */
     int turn_mesh(int mesh_id, float angle__rad) override;
-    int turn_mesh_around_axis(const int mesh_id, float angle__rad, const std::array<float, 3>& origin, const std::array<float, 3>& axis) override;
+    /** @brief Not implemented for a static geometry; see RotatableMeshGeometry. @return Always -1. */
+    int turn_mesh_around_axis(const int mesh_id, float angle__rad, const std::array<float, 3>& origin,
+                              const std::array<float, 3>& axis) override;
+    /** @brief Not implemented for a static geometry. @return Always -1. */
     int turn_meshes() override;
 };
 

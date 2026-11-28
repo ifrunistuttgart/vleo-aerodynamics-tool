@@ -177,6 +177,58 @@ touching the rest of the pipeline. Parameters can also be set by name at runtime
 
 Actively developed research code. Be aware, bugs might still exist.
 
+## Contributing
+
+C++, CMake and MATLAB code is formatted automatically, and C++ and MATLAB are linted. All
+tools are pinned in `pixi.lock` and run through pixi:
+
+| Language | Formatter | Linter |
+|---|---|---|
+| C/C++ | clang-format | clang-tidy |
+| CMake | gersemi | — |
+| MATLAB | MISS_HIT (`mh_style`) | MATLAB `codeIssues` |
+
+```powershell
+pixi run -e format setup-hooks                # one-time: format staged files on every commit
+pixi run -e format format                     # format the whole repository
+pixi run -e matlab lint-matlab                # lint matlab/+vat (needs MATLAB on PATH)
+pixi run build; pixi run -e tidy lint-cpp     # lint the C++ sources with clang-tidy
+```
+
+See [LINTING.md](LINTING.md) for the configuration, how to run a single tool, and the known
+limitations.
+
+**Documentation comments.** Document C++ code in Javadoc style: `/** ... */` blocks with
+`@brief`, `@param`, `@return` and `@throws` tags.
+
+**Naming conventions (C++).**
+
+| Kind | Convention | Example |
+|---|---|---|
+| Classes, structs, enums, type aliases | `PascalCase` | `PixelForceTorqueCalculator`, `MeshData` |
+| Interfaces | `I` + `PascalCase` | `IGSIModel`, `IShadingPipeline` |
+| Enum values | `PascalCase` | `FlowRegime::Hyperthermal`, `BufferUsage::StaticDraw` |
+| Functions and methods | `snake_case` | `calc_aero_torque_force()`, `get_num_pixel()` |
+| Variables and parameters | `snake_case` | `num_msaa_samples`, `triangle_ids` |
+| Private data members | `m_` + `snake_case` | `m_gsi_model`, `m_num_pixel` |
+| Public struct fields | `snake_case`, no prefix | `RemeshOptions::target_edge_length__m` |
+| Constants (`constexpr`, `static const`) | `UPPER_SNAKE_CASE` | `MAX_AUTO_NUM_PIXEL`, `NORMAL_OFFSET` |
+| Macros | `UPPER_SNAKE_CASE` | `VAT_SQRT_PI` |
+| Namespaces | lowercase, named after the module folder | `vat::loads`, `vat::gsi_models` |
+| Files | `snake_case`; interface headers `I` + `snake_case` | `shading_pipeline.h`, `Igsi_model.h` |
+
+Physical quantities carry their unit after a double underscore, with `_per_` for division:
+`density__kg_per_m3`, `aero_torque__Nm`, `area__m2`. Unit vectors end in `_hat` (`axis_hat`).
+Vectors are in the body frame unless their name says otherwise. If a name needs a frame suffix, put
+it before the unit (`v_rel_B__m_per_s`). Established physics symbols keep their capitalisation
+(`T_atmospheric__K`, `V_w`, `alpha_e`).
+
+There is one exception. GLSL source strings embedded in C++ (`vertex_shader`, `force_per_projected_area`)
+are `snake_case`, because they stand in for shader files. Identifiers inside the GLSL code follow
+GLSL conventions, and the C++ rules don't apply to them. Names that come from external libraries
+(assimp, VTK, GLFW, MATLAB) keep their own style. gtest suite and test names are `PascalCase`, as
+gtest expects (`TEST(RepairTest, CleanMeshIsLeftAlone)`).
+
 ## Citation
 
 If VAT contributes to published work, please cite:

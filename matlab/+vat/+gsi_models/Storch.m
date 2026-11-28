@@ -10,11 +10,12 @@ classdef Storch < handle
     %   Storch                - Constructor for the Storch model.
     %   calc_aero_force_torque - Calculates loads for a single triangle.
     %
-    properties %(Access = private, Hidden = true)
+    properties % (Access = private, Hidden = true)
         handle_ = int32(-1);
     end
 
     methods
+
         function this = Storch(V_w, sigma_n, sigma_t)
             % STORCH Constructor for the Storch model.
             %
@@ -26,9 +27,9 @@ classdef Storch < handle
             %       sigma_t - Tangential momentum accommodation coefficient.
             %
             arguments
-                V_w (1,1) single
-                sigma_n (1,1) single
-                sigma_t (1,1) single
+                V_w (1, 1) single
+                sigma_n (1, 1) single
+                sigma_t (1, 1) single
             end
             assert(this.handle_ == int32(-1), "This object is already constructed.");
             this.handle_ = int32(MexGateway("gsi_models.Storch.new", V_w, sigma_n, sigma_t));
@@ -39,16 +40,14 @@ classdef Storch < handle
             %
             %   Releases the underlying C++ model object.
             %
-            arguments
-                this (1,1) vat.gsi_models.Storch
-            end
             if this.handle_ ~= int32(-1)
                 MexGateway("gsi_models.Storch.delete", int32(this.handle_));
                 this.handle_ = int32(-1);
             end
         end
 
-        function [force__N, torque__Nm] = calc_aero_force_torque(this, area__m2, normal, centroid_m, v_rel__m_per_s, surf_temp__K, aero_cond)
+        function [force__N, torque__Nm] = calc_aero_force_torque(this, area__m2, normal, ...
+                                                                 centroid_m, v_rel__m_per_s, surf_temp__K, aero_cond)
             % CALC_AERO_FORCE_TORQUE Calculates aerodynamic loads for a triangle.
             %
             %   [force__N, torque__Nm] = calc_aero_force_torque(this, area,
@@ -68,15 +67,17 @@ classdef Storch < handle
             %       torque__Nm     - Resulting aerodynamic torque vector [Nm].
             %
             arguments
-                this (1,1) vat.gsi_models.Storch
-                area__m2 (1,1) double
-                normal (1,3) double
-                centroid_m (1,3) double
-                v_rel__m_per_s (1,3) double
-                surf_temp__K (1,1) double
-                aero_cond (1,1) vat.AeroConditions
+                this (1, 1) vat.gsi_models.Storch
+                area__m2 (1, 1) double
+                normal (1, 3) double
+                centroid_m (1, 3) double
+                v_rel__m_per_s (1, 3) double
+                surf_temp__K (1, 1) double
+                aero_cond (1, 1) vat.AeroConditions
             end
-            [force__N, torque__Nm] = MexGateway("gsi_models.Storch.calc_aero_force_torque", int32(this.handle_), area__m2, normal, centroid_m, v_rel__m_per_s, surf_temp__K, int32(aero_cond.handle_));
+            [force__N, torque__Nm] = MexGateway("gsi_models.Storch.calc_aero_force_torque", ...
+                                                int32(this.handle_), area__m2, normal, centroid_m, ...
+                                                v_rel__m_per_s, surf_temp__K, int32(aero_cond.handle_));
         end
 
         function V_w = get_V_w(this)
@@ -86,7 +87,7 @@ classdef Storch < handle
             %   the underlying Storch model.
             %
             arguments
-                this (1,1) vat.gsi_models.Storch
+                this (1, 1) vat.gsi_models.Storch
             end
             V_w = MexGateway("gsi_models.Storch.get_gsi_parameter", int32(this.handle_), "V_w");
         end
@@ -98,7 +99,7 @@ classdef Storch < handle
             %   from the underlying Storch model.
             %
             arguments
-                this (1,1) vat.gsi_models.Storch
+                this (1, 1) vat.gsi_models.Storch
             end
             sigma_n = MexGateway("gsi_models.Storch.get_gsi_parameter", int32(this.handle_), "sigma_n");
         end
@@ -110,7 +111,7 @@ classdef Storch < handle
             %   from the underlying Storch model.
             %
             arguments
-                this (1,1) vat.gsi_models.Storch
+                this (1, 1) vat.gsi_models.Storch
             end
             sigma_t = MexGateway("gsi_models.Storch.get_gsi_parameter", int32(this.handle_), "sigma_t");
         end
@@ -122,8 +123,8 @@ classdef Storch < handle
             %   Storch model.
             %
             arguments
-                this (1,1) vat.gsi_models.Storch
-                V_w (1,1) single
+                this (1, 1) vat.gsi_models.Storch
+                V_w (1, 1) single
             end
             MexGateway("gsi_models.Storch.set_gsi_parameter", int32(this.handle_), "V_w", V_w);
         end
@@ -135,8 +136,8 @@ classdef Storch < handle
             %   underlying Storch model.
             %
             arguments
-                this (1,1) vat.gsi_models.Storch
-                sigma_n (1,1) single
+                this (1, 1) vat.gsi_models.Storch
+                sigma_n (1, 1) single
             end
             MexGateway("gsi_models.Storch.set_gsi_parameter", int32(this.handle_), "sigma_n", sigma_n);
         end
@@ -148,10 +149,11 @@ classdef Storch < handle
             %   underlying Storch model.
             %
             arguments
-                this (1,1) vat.gsi_models.Storch
-                sigma_t (1,1) single
+                this (1, 1) vat.gsi_models.Storch
+                sigma_t (1, 1) single
             end
             MexGateway("gsi_models.Storch.set_gsi_parameter", int32(this.handle_), "sigma_t", sigma_t);
         end
+
     end
 end

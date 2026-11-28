@@ -4,69 +4,94 @@
 #include <memory>
 #include <mexAdapter.hpp>
 
+/** @brief MatlabLogger levels; a message is printed if its level is >= the logger's level. */
 #define LEVEL_ERROR 3
 #define LEVEL_WARN 2
 #define LEVEL_INFO 1
 #define LEVEL_DEBUG 0
 
+/**
+ * @brief Prints log messages to the MATLAB console through fprintf.
+ *
+ * Errors go to stderr (shown in red), everything else to stdout.
+ */
 class MatlabLogger {
 public:
+    /**
+     * @brief Creates the logger.
+     * @param matlab_ptr MATLAB engine to print through; shared.
+     * @param log_level Lowest level that is printed.
+     */
     MatlabLogger(std::shared_ptr<matlab::engine::MATLABEngine> matlab_ptr, int log_level = LEVEL_DEBUG)
-        : log_level_(log_level){
+        : log_level_(log_level) {
         matlab_ptr_ = std::move(matlab_ptr);
     }
+    /**
+     * @brief Prints msg with its source location if level >= the current log level.
+     * @param level One of the LEVEL_* values; an unknown level prints a warning instead.
+     * @param msg Message text.
+     * @param file Source file name to show.
+     * @param line Source line to show.
+     */
     void log(int level, const std::string& msg, std::string file, int line) {
         if (level >= log_level_) {
             switch (level) {
-                case LEVEL_INFO: info(msg, file, line); break;
-                case LEVEL_WARN: warning(msg,file, line); break;
-                case LEVEL_ERROR: error(msg, file, line); break;
-                case LEVEL_DEBUG: debug(msg, file, line); break;
-                default: warning("Unknown log level: " + std::to_string(level), "matlab_logger.h", __LINE__); break;
+            case LEVEL_INFO:
+                info(msg, file, line);
+                break;
+            case LEVEL_WARN:
+                warning(msg, file, line);
+                break;
+            case LEVEL_ERROR:
+                error(msg, file, line);
+                break;
+            case LEVEL_DEBUG:
+                debug(msg, file, line);
+                break;
+            default:
+                warning("Unknown log level: " + std::to_string(level), "matlab_logger.h", __LINE__);
+                break;
             }
         }
     }
-    void set_log_level(int level) {
-        log_level_ = level;
-    }
+    /** @brief Sets the lowest level that is printed. */
+    void set_log_level(int level) { log_level_ = level; }
 
 private:
     void info(const std::string& msg, const std::string& file, int line) {
         std::string text = "[Info] [" + file + ":" + std::to_string(line) + "] " + msg + "\n";
-        matlab_ptr_->feval(u"fprintf", 0, std::vector<matlab::data::Array>({
-            factory_.createScalar("%s"),
-            factory_.createScalar(text)
-        }));
+        matlab_ptr_->feval(
+            u"fprintf", 0,
+            std::vector<matlab::data::Array>({factory_.createScalar("%s"), factory_.createScalar(text)}));
     }
 
     void warning(const std::string& msg, const std::string& file, int line) {
         std::string text = "[Warn] [" + file + ":" + std::to_string(line) + "] " + msg + "\n";
-        matlab_ptr_->feval(u"fprintf", 0, std::vector<matlab::data::Array>({
-            factory_.createScalar("%s"),
-            factory_.createScalar(text)
-        }));
+        matlab_ptr_->feval(
+            u"fprintf", 0,
+            std::vector<matlab::data::Array>({factory_.createScalar("%s"), factory_.createScalar(text)}));
     }
 
     void error(const std::string& msg, const std::string& file, int line) {
         // Outputs to stderr (file ID 2), rendering in bright RED
         std::string text = "[Error] [" + file + ":" + std::to_string(line) + "] " + msg + "\n";
 
-        matlab_ptr_->feval(u"fprintf", 0, std::vector<matlab::data::Array>({
-            // File ID 2 (stderr). Must be a double: fprintf rejects an int32 file ID with
-            // "Invalid file identifier", which then replaces the message being logged.
-            factory_.createScalar(2.0),
-            factory_.createScalar("%s"),   // Format specifier
-            factory_.createScalar(text)    // Argument string
-        }));
+        matlab_ptr_->feval(u"fprintf", 0,
+                           std::vector<matlab::data::Array>({
+                               // File ID 2 (stderr). Must be a double: fprintf rejects an int32 file ID with
+                               // "Invalid file identifier", which then replaces the message being logged.
+                               factory_.createScalar(2.0),
+                               factory_.createScalar("%s"), // Format specifier
+                               factory_.createScalar(text)  // Argument string
+                           }));
     }
 
     void debug(const std::string& msg, const std::string& file, int line) {
         std::string text = "[Debug] [" + file + ":" + std::to_string(line) + "] " + msg + "\n";
 
-        matlab_ptr_->feval(u"fprintf", 0, std::vector<matlab::data::Array>({
-            factory_.createScalar("%s"),
-            factory_.createScalar(text)
-        }));
+        matlab_ptr_->feval(
+            u"fprintf", 0,
+            std::vector<matlab::data::Array>({factory_.createScalar("%s"), factory_.createScalar(text)}));
     }
 
     std::shared_ptr<matlab::engine::MATLABEngine> matlab_ptr_;

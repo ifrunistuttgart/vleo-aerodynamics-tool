@@ -2,14 +2,27 @@ find_package(glm REQUIRED CONFIG)
 find_package(spdlog REQUIRED CONFIG)
 find_package(assimp REQUIRED CONFIG)
 
-add_library(geometry mesh_data.h mesh_data.cpp mesh_quality.h mesh_quality.cpp obj_writer.h obj_writer.cpp static_mesh_geometry.h static_mesh_geometry.cpp rotatable_mesh_geometry.h rotatable_mesh_geometry.cpp
-        geometry.h)
+add_library(
+    geometry
+    mesh_data.h
+    mesh_data.cpp
+    mesh_quality.h
+    mesh_quality.cpp
+    obj_writer.h
+    obj_writer.cpp
+    static_mesh_geometry.h
+    static_mesh_geometry.cpp
+    rotatable_mesh_geometry.h
+    rotatable_mesh_geometry.cpp
+    geometry.h
+)
 
 target_compile_features(geometry PRIVATE cxx_std_20)
-target_include_directories(geometry
-	PUBLIC
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-		$<INSTALL_INTERFACE:include>
+target_include_directories(
+    geometry
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
 )
 
 target_link_libraries(geometry PUBLIC glm::glm core)

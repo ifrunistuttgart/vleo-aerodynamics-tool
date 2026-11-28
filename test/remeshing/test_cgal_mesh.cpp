@@ -13,16 +13,10 @@ namespace {
 // A closed tetrahedron with outward winding. Coordinates are exactly representable in
 // float, so a float -> double -> float round trip must reproduce them bit for bit.
 const std::vector<float> TETRA_POSITIONS = {
-    0.0f, -0.5f, 0.0f,
-    0.0f,  0.5f, 0.0f,
-    0.0f,  0.0f, 0.5f,
-   -0.5f,  0.0f, 0.0f,
+    0.0f, -0.5f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f,
 };
 const std::vector<std::uint32_t> TETRA_INDICES = {
-    0, 3, 1,
-    1, 3, 2,
-    2, 3, 0,
-    0, 1, 2,
+    0, 3, 1, 1, 3, 2, 2, 3, 0, 0, 1, 2,
 };
 
 } // namespace

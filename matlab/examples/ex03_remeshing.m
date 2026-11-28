@@ -35,7 +35,7 @@ fprintf('Narrowest width (p05) : %.3f mm\n\n', 1e3 * quality_raw.min_altitude__m
 %% 2. Predict remeshing size and memory
 % predict_remesh is fast and lightweight. It estimates the triangle count, target edge
 % length, and memory footprint without modifying geometry.
-prediction = raw_geometry.predict_remesh(TriangleCount=20000);
+prediction = raw_geometry.predict_remesh(TriangleCount = 20000);
 fprintf('--- Remeshing Prediction ---\n');
 fprintf('Target triangles      : %d (predicted: %d)\n', 20000, prediction.predicted_triangles);
 fprintf('Target edge length    : %.2f mm\n', 1e3 * prediction.target_edge_length__m);
@@ -44,14 +44,14 @@ fprintf('Estimated memory      : %.1f MB\n\n', prediction.predicted_memory__MB);
 %% 3. Remesh geometry
 % remesh replaces triangles with uniform, near-equilateral elements while preserving
 % sharp feature edges, surface area, and sub-mesh identities (mesh IDs / names).
-[remeshed, report] = raw_geometry.remesh(TriangleCount=20000);
+[remeshed, report] = raw_geometry.remesh(TriangleCount = 20000);
 fprintf('--- Remeshing Report ---\n');
 fprintf('Triangles after       : %d\n', report.after.num_triangles);
 fprintf('Aspect ratio median   : %.2f, max: %.2f\n', ...
-    report.after.aspect_ratio.median, report.after.aspect_ratio.max);
+        report.after.aspect_ratio.median, report.after.aspect_ratio.max);
 fprintf('Surface area change   : %+.3f %%\n', report.area_change__percent);
 fprintf('Suggested num_pixel   : CoP = %d, Binary = %d\n\n', ...
-    report.suggested_num_pixel.cop, report.suggested_num_pixel.binary);
+        report.suggested_num_pixel.cop, report.suggested_num_pixel.binary);
 
 %% 4. Multi-body structure & hinge preservation
 % Sub-mesh IDs (0 for body, 1-4 for wings) are preserved exactly. Any hinges

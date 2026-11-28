@@ -29,8 +29,8 @@ SmallTriangles make_small_triangles(unsigned int count) {
     constexpr float size = 0.02f;
     for (unsigned int i = 0; i < count; ++i) {
         const float y = -0.8f + 1.6f * static_cast<float>(i) / static_cast<float>(count - 1);
-        const float z = 0.013f * static_cast<float>(i % 3);   // off the pixel grid
-        const float corners[3][3] = { {0.0f, y, z}, {0.0f, y + size, z}, {0.0f, y, z + size} };
+        const float z = 0.013f * static_cast<float>(i % 3); // off the pixel grid
+        const float corners[3][3] = {{0.0f, y, z}, {0.0f, y + size, z}, {0.0f, y, z + size}};
         for (const auto& c : corners) {
             t.vertices.insert(t.vertices.end(), c, c + 3);
             t.ids.push_back(i + 1);
@@ -78,10 +78,10 @@ TEST_P(ShadingViewportTest, RendersAtNumPixelNotWindowSize) {
     auto shader = create_shading_algorithm(GetParam().type, 800, GetParam().num_msaa_samples);
     ASSERT_EQ(shader->set_vertices(triangles.vertices, triangles.ids), 0);
 
-    const std::vector<unsigned int> num_triangles_per_mesh{ triangles.count };
-    const std::vector<glm::mat4> model_matrices{ glm::mat4(1.0f) };
-    const std::vector<float> visible = shader->shade_geometry(
-        glm::vec3(1.0f, 0.0f, 0.0f), 1.0f, num_triangles_per_mesh, model_matrices);
+    const std::vector<unsigned int> num_triangles_per_mesh{triangles.count};
+    const std::vector<glm::mat4> model_matrices{glm::mat4(1.0f)};
+    const std::vector<float> visible =
+        shader->shade_geometry(glm::vec3(1.0f, 0.0f, 0.0f), 1.0f, num_triangles_per_mesh, model_matrices);
 
     ASSERT_EQ(visible.size(), triangles.count);
     for (unsigned int i = 0; i < triangles.count; ++i) {
@@ -90,10 +90,10 @@ TEST_P(ShadingViewportTest, RendersAtNumPixelNotWindowSize) {
 }
 
 INSTANTIATE_TEST_SUITE_P(Algorithms, ShadingViewportTest,
-    ::testing::Values(ViewportCase{ ShadingAlgorithmType::Binary, 1, "Binary" },
-                      ViewportCase{ ShadingAlgorithmType::CoP, 1, "CoP" },
-                      ViewportCase{ ShadingAlgorithmType::Binary, 8, "BinaryMsaa8" }),
-    [](const auto& info) { return std::string(info.param.name); });
+                         ::testing::Values(ViewportCase{ShadingAlgorithmType::Binary, 1, "Binary"},
+                                           ViewportCase{ShadingAlgorithmType::CoP, 1, "CoP"},
+                                           ViewportCase{ShadingAlgorithmType::Binary, 8, "BinaryMsaa8"}),
+                         [](const auto& info) { return std::string(info.param.name); });
 
 // num_msaa_samples is validated before any GL object is created, so no context is needed.
 TEST(ShadingAlgorithmFactoryTest, RejectsInvalidSampleCounts) {

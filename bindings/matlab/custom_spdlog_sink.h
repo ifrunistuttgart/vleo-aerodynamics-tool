@@ -3,28 +3,42 @@
 #include "matlab_logger.h"
 #include <filesystem>
 
-template<typename Mutex>
-class MatlabSink : public spdlog::sinks::base_sink<Mutex> {
+/**
+ * @brief spdlog sink that forwards every message to a MatlabLogger.
+ *
+ * @tparam Mutex Mutex type of spdlog::sinks::base_sink (e.g. std::mutex).
+ */
+template <typename Mutex> class MatlabSink : public spdlog::sinks::base_sink<Mutex> {
 public:
-    MatlabSink(MatlabLogger& matlab_logger)
-        : matlab_logger_(matlab_logger) {}
+    /**
+     * @brief Creates the sink.
+     * @param matlab_logger Logger to forward to; referenced, must outlive the sink and every
+     *        spdlog logger that uses it.
+     */
+    MatlabSink(MatlabLogger& matlab_logger) : matlab_logger_(matlab_logger) {}
 
+    /**
+     * @brief Maps an spdlog level to a MatlabLogger level.
+     * @param level spdlog level; trace maps to LEVEL_DEBUG and critical to LEVEL_ERROR.
+     * @return The LEVEL_* value; LEVEL_INFO for anything unknown.
+     */
     static int map_spdlog_level(spdlog::level::level_enum level) {
         switch (level) {
-            case spdlog::level::trace:
-            case spdlog::level::debug:
-                return LEVEL_DEBUG;
-            case spdlog::level::info:
-                return LEVEL_INFO;
-            case spdlog::level::warn:
-                return LEVEL_WARN;
-            case spdlog::level::err:
-            case spdlog::level::critical:
-                return LEVEL_ERROR;
-            default:
-                return LEVEL_INFO;
+        case spdlog::level::trace:
+        case spdlog::level::debug:
+            return LEVEL_DEBUG;
+        case spdlog::level::info:
+            return LEVEL_INFO;
+        case spdlog::level::warn:
+            return LEVEL_WARN;
+        case spdlog::level::err:
+        case spdlog::level::critical:
+            return LEVEL_ERROR;
+        default:
+            return LEVEL_INFO;
         }
     }
+
 protected:
     void sink_it_(const spdlog::details::log_msg& msg) override {
         spdlog::memory_buf_t formatted;

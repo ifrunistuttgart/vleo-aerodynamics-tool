@@ -12,32 +12,35 @@ SchaafChambre::SchaafChambre(float sigma_n, float sigma_t) {
     set_sigma_t(sigma_t);
 }
 
-int SchaafChambre::calc_aero_force_and_torque(float area__m2, const glm::vec3 &normal, const glm::vec3 &centroid__m,
-                                     const glm::vec3 &v_rel__m_per_s, float surf_temp__K, AeroConditions &aero, glm::vec3 &aero_force__N,
-                                     glm::vec3 &aero_torque__Nm) {
+int SchaafChambre::calc_aero_force_and_torque(float area__m2, const glm::vec3& normal, const glm::vec3& centroid__m,
+                                              const glm::vec3& v_rel__m_per_s, float surf_temp__K, AeroConditions& aero,
+                                              glm::vec3& aero_force__N, glm::vec3& aero_torque__Nm) {
     aero_force__N = force_per_area(normal, v_rel__m_per_s, surf_temp__K, aero) * area__m2;
     aero_torque__Nm = glm::cross(centroid__m, aero_force__N);
     return 0;
 }
 
-glm::vec3 SchaafChambre::force_per_area(const glm::vec3 &normal, const glm::vec3 &v_rel__m_per_s, float surf_temp__K,
-                                 const AeroConditions &aero) const {
+glm::vec3 SchaafChambre::force_per_area(const glm::vec3& normal, const glm::vec3& v_rel__m_per_s, float surf_temp__K,
+                                        const AeroConditions& aero) const {
     // Extract aerodynamic conditions
     const float density__kg_per_m3 = aero.density__kg_per_m3;
     const float temperature_i__K = aero.T_atmospheric__K;
     const float temperature_w__K = surf_temp__K;
     const float particle_mass__kg = aero.particle_mass__kg;
 
-    glm::vec3 v_rel_inv__m_per_s = -v_rel__m_per_s; // Invert velocity to match GSIMs convention (velocity of gas relative to surface)
+    glm::vec3 v_rel_inv__m_per_s =
+        -v_rel__m_per_s; // Invert velocity to match GSIMs convention (velocity of gas relative to surface)
 
     const float v_rel_magnitude__m_per_s = glm::length(v_rel_inv__m_per_s);
     if (v_rel_magnitude__m_per_s < 1e-10f) {
-        SPDLOG_WARN("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.", v_rel_magnitude__m_per_s);
+        SPDLOG_WARN("Relative velocity zero ({} m/s), aerodynamic force and torque will be negligible.",
+                    v_rel_magnitude__m_per_s);
         return glm::vec3(0.0f); // No relative velocity, no force
     }
 
     // Most probable thermal velocity of the gas
-    const float thermal_velocity__m_per_s = std::sqrt(2.0f * BOLTZMANN_CONSTANT__J_PER_K * temperature_i__K / particle_mass__kg);
+    const float thermal_velocity__m_per_s =
+        std::sqrt(2.0f * BOLTZMANN_CONSTANT__J_PER_K * temperature_i__K / particle_mass__kg);
 
     const float molecular_speed_ratio = v_rel_magnitude__m_per_s / thermal_velocity__m_per_s;
 
@@ -67,7 +70,8 @@ glm::vec3 SchaafChambre::force_per_area(const glm::vec3 &normal, const glm::vec3
 
     // --- Cp Calculation ---
     const float cp_term1 = (((2.0f - m_sigma_n) / sqrt_pi) * s_cos_d + (m_sigma_n / 2.0f) * sqrt_temp_ratio) * exp_term;
-    const float cp_term2 = ((2.0f - m_sigma_n) * (s2_cos2_d + 0.5f) + (m_sigma_n / 2.0f) * sqrt_pi * s_cos_d * sqrt_temp_ratio) * erf_term;
+    const float cp_term2 =
+        ((2.0f - m_sigma_n) * (s2_cos2_d + 0.5f) + (m_sigma_n / 2.0f) * sqrt_pi * s_cos_d * sqrt_temp_ratio) * erf_term;
     const float cp = (1.0f / s2) * (cp_term1 + cp_term2);
 
     // --- Ctau Calculation ---
@@ -87,7 +91,7 @@ std::string SchaafChambre::glsl_force_per_projected_area() const {
     return std::string(common_glsl::helpers) + schaaf_chambre_glsl::force_per_projected_area;
 }
 
-std::vector<GlslUniform> SchaafChambre::glsl_uniforms(const AeroConditions &aero) const {
+std::vector<GlslUniform> SchaafChambre::glsl_uniforms(const AeroConditions& aero) const {
     return {
         {"u_gsi_density", aero.density__kg_per_m3},
         {"u_gsi_T_inf", aero.T_atmospheric__K},
@@ -121,12 +125,10 @@ void SchaafChambre::set_sigma_n(float sigma_n) {
     if (sigma_n < 0.0f) {
         SPDLOG_WARN("sigma_n must be positive, setting to 0.0");
         m_sigma_n = 0.0f;
-    }
-    else if (sigma_n > 1.0f) {
+    } else if (sigma_n > 1.0f) {
         SPDLOG_WARN("sigma_n must be less than 1.0, setting to 1.0");
         m_sigma_n = 1.0f;
-    }
-    else {
+    } else {
         m_sigma_n = sigma_n;
     }
 }
@@ -135,12 +137,10 @@ void SchaafChambre::set_sigma_t(float sigma_t) {
     if (sigma_t < 0.0f) {
         SPDLOG_WARN("sigma_t must be positive, setting to 0.0");
         m_sigma_t = 0.0f;
-    }
-    else if (sigma_t > 1.0f) {
+    } else if (sigma_t > 1.0f) {
         SPDLOG_WARN("sigma_t must be less than 1.0, setting to 1.0");
         m_sigma_t = 1.0f;
-    }
-    else {
+    } else {
         m_sigma_t = sigma_t;
     }
 }

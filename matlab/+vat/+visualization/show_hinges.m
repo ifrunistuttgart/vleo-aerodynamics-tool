@@ -2,7 +2,7 @@ function show_hinges(geometry, hinges, options)
     % SHOW_HINGES Visualizes hinge points and rotation axes on the geometry.
     %   This function displays the geometry together with the given hinge
     %   definitions, so they can be checked before being used to actually rotate
-    %   anything. 
+    %   anything.
     %
     %
     %   The function blocks until the window is closed.
@@ -28,16 +28,16 @@ function show_hinges(geometry, hinges, options)
     %            vat.geometry.RotatableMeshGeometry/turn_mesh_around_axis
 
     arguments
-        geometry (1,1) vat.geometry.RotatableMeshGeometry
-        hinges (1,:) struct
-        options.ShowTriangleEdges (1,1) logical = true
+        geometry (1, 1) vat.geometry.RotatableMeshGeometry
+        hinges (1, :) struct
+        options.ShowTriangleEdges (1, 1) logical = true
     end
 
     required_fields = ["mesh_id", "origin", "axis"];
     missing = required_fields(~isfield(hinges, required_fields));
     if ~isempty(missing)
         error("vat:show_hinges:missingField", ...
-            "hinges is missing the field(s): %s", strjoin(missing, ", "));
+              "hinges is missing the field(s): %s", strjoin(missing, ", "));
     end
     if isempty(hinges)
         error("vat:show_hinges:noHinges", "hinges must contain at least one hinge.");
@@ -49,17 +49,17 @@ function show_hinges(geometry, hinges, options)
     axes_ = zeros(3, num_hinges);
     for k = 1:num_hinges
         validateattributes(hinges(k).mesh_id, {'numeric'}, ...
-            {'scalar', 'integer', 'nonnegative'}, mfilename, ...
-            sprintf("hinges(%d).mesh_id", k));
+                           {'scalar', 'integer', 'nonnegative'}, mfilename, ...
+                           sprintf("hinges(%d).mesh_id", k));
         validateattributes(hinges(k).origin, {'numeric'}, ...
-            {'vector', 'numel', 3, 'finite'}, mfilename, ...
-            sprintf("hinges(%d).origin", k));
+                           {'vector', 'numel', 3, 'finite'}, mfilename, ...
+                           sprintf("hinges(%d).origin", k));
         validateattributes(hinges(k).axis, {'numeric'}, ...
-            {'vector', 'numel', 3, 'finite'}, mfilename, ...
-            sprintf("hinges(%d).axis", k));
+                           {'vector', 'numel', 3, 'finite'}, mfilename, ...
+                           sprintf("hinges(%d).axis", k));
         if norm(hinges(k).axis) == 0
             error("vat:show_hinges:zeroAxis", ...
-                "hinges(%d).axis must not be the zero vector.", k);
+                  "hinges(%d).axis must not be the zero vector.", k);
         end
         mesh_ids(k) = hinges(k).mesh_id;
         origins(:, k) = hinges(k).origin(:);
@@ -67,6 +67,6 @@ function show_hinges(geometry, hinges, options)
     end
 
     MexGateway("visualization.show_hinges", int32(geometry.handle_), ...
-        int32(mesh_ids), double(origins), double(axes_), ...
-        logical(options.ShowTriangleEdges));
+               int32(mesh_ids), double(origins), double(axes_), ...
+               logical(options.ShowTriangleEdges));
 end

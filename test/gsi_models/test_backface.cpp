@@ -49,8 +49,8 @@ float force_magnitude(IGSIModel& model, const glm::vec3& normal) {
     AeroConditions cond = leo_conditions();
     glm::vec3 force__N(0.0f);
     glm::vec3 torque__Nm(0.0f);
-    model.calc_aero_force_and_torque(AREA__M2, normal, centroid__m, v_rel__m_per_s,
-                                     SURF_TEMP__K, cond, force__N, torque__Nm);
+    model.calc_aero_force_and_torque(AREA__M2, normal, centroid__m, v_rel__m_per_s, SURF_TEMP__K, cond, force__N,
+                                     torque__Nm);
     return glm::length(force__N);
 }
 
@@ -61,19 +61,39 @@ void expect_leeward_negligible(IGSIModel& model, const char* name) {
 
     ASSERT_GT(windward_load, 0.0f) << name << ": windward panel produced no load";
     EXPECT_LT(leeward_load, 1e-3f * windward_load)
-        << name << ": leeward panel produced " << leeward_load
-        << " N against a windward " << windward_load << " N";
+        << name << ": leeward panel produced " << leeward_load << " N against a windward " << windward_load << " N";
 }
 
 } // namespace
 
-TEST(BackFaceTest, Cook) { Cook m(0.9f); expect_leeward_negligible(m, "Cook"); }
-TEST(BackFaceTest, Maxwell) { Maxwell m(0.9f); expect_leeward_negligible(m, "Maxwell"); }
-TEST(BackFaceTest, Newton) { Newton m; expect_leeward_negligible(m, "Newton"); }
-TEST(BackFaceTest, ProjectedArea) { ProjectedArea m; expect_leeward_negligible(m, "ProjectedArea"); }
-TEST(BackFaceTest, SchaafChambre) { SchaafChambre m(0.9f, 0.9f); expect_leeward_negligible(m, "SchaafChambre"); }
-TEST(BackFaceTest, Storch) { Storch m(100.0f, 0.9f, 0.9f); expect_leeward_negligible(m, "Storch"); }
+TEST(BackFaceTest, Cook) {
+    Cook m(0.9f);
+    expect_leeward_negligible(m, "Cook");
+}
+TEST(BackFaceTest, Maxwell) {
+    Maxwell m(0.9f);
+    expect_leeward_negligible(m, "Maxwell");
+}
+TEST(BackFaceTest, Newton) {
+    Newton m;
+    expect_leeward_negligible(m, "Newton");
+}
+TEST(BackFaceTest, ProjectedArea) {
+    ProjectedArea m;
+    expect_leeward_negligible(m, "ProjectedArea");
+}
+TEST(BackFaceTest, SchaafChambre) {
+    SchaafChambre m(0.9f, 0.9f);
+    expect_leeward_negligible(m, "SchaafChambre");
+}
+TEST(BackFaceTest, Storch) {
+    Storch m(100.0f, 0.9f, 0.9f);
+    expect_leeward_negligible(m, "Storch");
+}
 
 // Sentman carries no explicit guard: its erfc(-s*cos_delta) factor decays to zero on
 // its own. Included as a control -- it should pass the same bar without one.
-TEST(BackFaceTest, Sentman) { Sentman m(1, 0.9f); expect_leeward_negligible(m, "Sentman"); }
+TEST(BackFaceTest, Sentman) {
+    Sentman m(1, 0.9f);
+    expect_leeward_negligible(m, "Sentman");
+}

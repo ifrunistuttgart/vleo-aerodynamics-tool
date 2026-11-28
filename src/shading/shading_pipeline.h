@@ -12,23 +12,40 @@
 
 namespace vat::shading {
 
+/**
+ * @brief GPU shading pipeline: owns a hidden OpenGL context and delegates the visibility
+ * computation to an IShadingAlgorithm (Binary or CoP).
+ *
+ * The untransformed vertices and triangle IDs are uploaded once, in the constructor. Every
+ * shade() call then reads the current model matrices and bounding sphere radius, so turning
+ * meshes is supported but changing the vertex data afterwards is not. shade() makes the
+ * pipeline's context current and restores the previously current one afterwards; the
+ * constructor leaves the pipeline's context current.
+ *
+ * The geometry is held by reference: the caller owns it and must keep it alive for as long as
+ * the pipeline is used.
+ */
 class ShadingPipeline : public IShadingPipeline {
 private:
     std::unique_ptr<gl::GlfwOpenGLContext> m_context;
     std::unique_ptr<IShadingAlgorithm> m_algorithm;
     IGeometryShadingData& m_geometry;
     unsigned int m_num_pixel;
-    // Radius at construction, when num_pixel was fixed; see shade().
+    /** @brief Radius at construction, when num_pixel was fixed; see shade(). */
     float m_initial_radius__m;
     bool m_warned_radius_growth = false;
 
-    // Marks the constructor that takes an already resolved, non-optional num_pixel.
+    /** @brief Marks the constructor that takes an already resolved, non-optional num_pixel. */
     struct ResolvedTag {};
-    ShadingPipeline(IGeometryShadingData& geometry, ShadingAlgorithmType algorithm_type,
-        unsigned int num_pixel, unsigned int num_msaa_samples, ResolvedTag);
+    ShadingPipeline(IGeometryShadingData& geometry, ShadingAlgorithmType algorithm_type, unsigned int num_pixel,
+                    unsigned int num_msaa_samples, ResolvedTag);
 
 public:
     /**
+     * @brief Creates the context and the shading algorithm and uploads the geometry.
+     *
+     * @param geometry Geometry to shade; referenced, must outlive the pipeline.
+     * @param algorithm_type Shading algorithm to use.
      * @param num_pixel Edge length of the square render target. The frustum spans the
      *                  bounding sphere, so one pixel is 2R / num_pixel wide. When omitted it is
      *                  chosen from the mesh by suggest_num_pixel() (taking num_msaa_samples into
@@ -41,15 +58,12 @@ public:
      *         num_msaa_samples is 0 or > 1 for an algorithm other than Binary.
      * @throws std::runtime_error if the shading algorithm cannot set up its GPU resources
      *         (for example the geometry has too many triangles, or the render target does
-     *         not fit in GPU memory).
+     *         not fit in GPU memory), or if the OpenGL context cannot be created.
      */
-    ShadingPipeline(
-        IGeometryShadingData& geometry,
-        ShadingAlgorithmType algorithm_type,
-        std::optional<unsigned int> num_pixel = std::nullopt,
-        unsigned int num_msaa_samples = 1
-    );
+    ShadingPipeline(IGeometryShadingData& geometry, ShadingAlgorithmType algorithm_type,
+                    std::optional<unsigned int> num_pixel = std::nullopt, unsigned int num_msaa_samples = 1);
 
+    /** @brief Edge length of the render target in use, including one chosen by suggest_num_pixel(). */
     unsigned int get_num_pixel() const { return m_num_pixel; }
 
     ~ShadingPipeline() override;

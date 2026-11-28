@@ -15,8 +15,10 @@
 namespace vat::shading {
 
 /**
- * Centre-of-pressure visibility: a triangle is visible (1.0) if its centroid survives the
- * depth test, otherwise 0.0. The render structure is the one of BinaryShader.
+ * @brief Centre-of-pressure visibility: a triangle is visible (1.0) if its centroid survives the
+ * depth test, otherwise 0.0.
+ *
+ * The render structure is the one of BinaryShader.
  *
  * Two passes over a depth-only framebuffer:
  *   1. depth pre-pass of the triangles (GL_LESS, depth writes on),
@@ -40,21 +42,24 @@ private:
     std::unique_ptr<gl::VertexArray> m_triangle_vao;
     std::unique_ptr<gl::VertexArray> m_cop_vao;
     std::unique_ptr<VisibilityReducer> m_visibility;
-    const unsigned int MAX_TRIANGLES = (2u << 28) - 1; //keeps the per-triangle visibility buffer to a sane size
-    unsigned int m_numTriangles = 0;
+    const unsigned int MAX_TRIANGLES = (2u << 28) - 1; // keeps the per-triangle visibility buffer to a sane size
+    unsigned int m_num_triangles = 0;
     const unsigned int NUM_PIXEL = 800;
+
 public:
-    /// Distance (model units) the centroid is moved along its normal.
+    /** @brief Distance (model units) the centroid is moved along its normal. */
     static constexpr float NORMAL_OFFSET = 0.005f;
 
+    /**
+     * @brief Stores the settings; GPU resources are created in set_vertices().
+     * @param num_pixel Edge length of the square render target.
+     */
     explicit CoPShader(unsigned int num_pixel);
     ~CoPShader() override;
-    int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangleIDs) override;
-    std::vector<float> shade_geometry(glm::vec3 v_rel_hat,
-                                       float bounding_sphere_radius,
-                                       std::span<const unsigned int> num_triangles_per_mesh,
-                                       std::span<const glm::mat4> model_matrices
-                                       ) override;
+    int set_vertices(std::span<const float> vertices, std::span<const std::uint32_t> triangle_ids) override;
+    std::vector<float> shade_geometry(glm::vec3 v_rel_hat, float bounding_sphere_radius,
+                                      std::span<const unsigned int> num_triangles_per_mesh,
+                                      std::span<const glm::mat4> model_matrices) override;
 };
 
 } // namespace vat::shading

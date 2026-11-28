@@ -11,15 +11,15 @@
 
 namespace vat::visualization {
 
-void EdgeOverlay::Register(vtkSmartPointer<vtkActor> actor, const glm::vec3& surface_color) {
+void EdgeOverlay::register_actor(vtkSmartPointer<vtkActor> actor, const glm::vec3& surface_color) {
     actor->GetProperty()->SetEdgeVisibility(1);
-    actor->GetProperty()->SetEdgeColor(kEdgeColor.r, kEdgeColor.g, kEdgeColor.b);
-    actor->GetProperty()->SetLineWidth(kEdgeLineWidth);
+    actor->GetProperty()->SetEdgeColor(EDGE_COLOR.r, EDGE_COLOR.g, EDGE_COLOR.b);
+    actor->GetProperty()->SetLineWidth(EDGE_LINE_WIDTH);
 
     m_meshes.push_back(Mesh{std::move(actor), surface_color});
 }
 
-float EdgeOverlay::TrianglePixelExtent(vtkRenderer* renderer, float extent__m) {
+float EdgeOverlay::triangle_pixel_extent(vtkRenderer* renderer, float extent__m) {
     if (renderer == nullptr) {
         return 0.0f;
     }
@@ -44,27 +44,24 @@ float EdgeOverlay::TrianglePixelExtent(vtkRenderer* renderer, float extent__m) {
     return static_cast<float>(extent__m * viewport_size[1] / world_height__m);
 }
 
-float EdgeOverlay::FadeAlpha(float extent__px) {
-    const float t = std::clamp(
-        (extent__px - kEdgeFadeMinPx) / (kEdgeFadeFullPx - kEdgeFadeMinPx), 0.0f, 1.0f);
+float EdgeOverlay::fade_alpha(float extent__px) {
+    const float t = std::clamp((extent__px - EDGE_FADE_MIN__PX) / (EDGE_FADE_FULL__PX - EDGE_FADE_MIN__PX), 0.0f, 1.0f);
     return t * t * (3.0f - 2.0f * t); // smoothstep
 }
 
-void EdgeOverlay::ApplyForCamera(vtkRenderer* renderer) {
+void EdgeOverlay::apply_for_camera(vtkRenderer* renderer) {
     if (m_meshes.empty()) {
         return;
     }
 
-    const float alpha = m_enabled
-        ? FadeAlpha(TrianglePixelExtent(renderer, m_mean_triangle_extent__m))
-        : 0.0f;
+    const float alpha = m_enabled ? fade_alpha(triangle_pixel_extent(renderer, m_mean_triangle_extent__m)) : 0.0f;
 
     for (Mesh& mesh : m_meshes) {
-        if (alpha <= kEdgeInvisibleAlpha) {
+        if (alpha <= EDGE_INVISIBLE_ALPHA) {
             mesh.actor->GetProperty()->SetEdgeVisibility(0);
             continue;
         }
-        const glm::vec3 faded = mesh.surface_color + alpha * (kEdgeColor - mesh.surface_color);
+        const glm::vec3 faded = mesh.surface_color + alpha * (EDGE_COLOR - mesh.surface_color);
         mesh.actor->GetProperty()->SetEdgeVisibility(1);
         mesh.actor->GetProperty()->SetEdgeColor(faded.r, faded.g, faded.b);
     }

@@ -10,7 +10,7 @@
 namespace vat::loads {
 
 /**
- * Integrates force and torque per pixel on the GPU, so the result depends on the
+ * @brief Integrates force and torque per pixel on the GPU, so the result depends on the
  * render resolution only and not on how the geometry is meshed.
  *
  * Pass 1 renders the front-most surface in every pixel of an orthographic view along
@@ -31,12 +31,24 @@ namespace vat::loads {
  *
  * Owns its own hidden OpenGL context, so it needs no shading pipeline. The GSI model
  * must provide a GPU implementation (IGSIModel::glsl_force_per_projected_area()).
+ *
+ * The geometry and GSI model are held by reference: the caller owns them and must keep them
+ * alive for as long as the calculator is used.
  */
 class PixelForceTorqueCalculator : public IAeroLoadCalculator {
 public:
     /**
-     * @param geometry Reference to the geometry shading data.
-     * @param gsi_model Reference to the GSI model; must have a GPU implementation.
+     * @brief Creates the hidden OpenGL context, the G-buffer and the shaders, and uploads the
+     * geometry.
+     *
+     * The untransformed vertices and normals are uploaded once, here. Each evaluation then only
+     * reads the model matrices, the bounding sphere radius and (for the leeward CPU loop) the
+     * transformed normals, centroids and areas, so turning meshes is supported but changing the
+     * vertex data afterwards is not.
+     *
+     * @param geometry Geometry to evaluate; referenced, must outlive the calculator.
+     * @param gsi_model GSI model; referenced, must outlive the calculator, and must have a GPU
+     *        implementation.
      * @param num_pixel Edge length of the square render target.
      * @param num_msaa_samples Samples per pixel (anti-aliasing). 1 = none: a pixel counts fully
      *        if its centre is covered. > 1 = MSAA with that many samples: a partly covered pixel
@@ -54,28 +66,31 @@ public:
      *        FlowRegime. Change it later with set_flow_regime().
      * @throws std::invalid_argument if the model has no GPU implementation, num_pixel is 0 or
      *         num_msaa_samples is 0.
-     * @throws std::runtime_error if the G-buffer cannot be allocated even with one sample.
+     * @throws std::runtime_error if the G-buffer cannot be allocated even with one sample, or if
+     *         the OpenGL context (GLFW/GLEW) or the pressure image cannot be created.
      */
-    PixelForceTorqueCalculator(IGeometryShadingData& geometry, IGSIModel& gsi_model, unsigned int num_pixel, unsigned int num_msaa_samples = 1,
-        bool keep_pressure_image = false, float min_cos_delta = 1e-3f, FlowRegime flow_regime = FlowRegime::Hypothermal);
+    PixelForceTorqueCalculator(IGeometryShadingData& geometry, IGSIModel& gsi_model, unsigned int num_pixel,
+                               unsigned int num_msaa_samples = 1, bool keep_pressure_image = false,
+                               float min_cos_delta = 1e-3f, FlowRegime flow_regime = FlowRegime::Hypothermal);
     ~PixelForceTorqueCalculator() override;
 
     PixelForceTorqueCalculator(const PixelForceTorqueCalculator&) = delete;
     PixelForceTorqueCalculator& operator=(const PixelForceTorqueCalculator&) = delete;
 
-    int calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions& aero, glm::vec3& torque__Nm, glm::vec3& force__N) override;
+    int calc_aero_torque_force(const glm::vec3& v_rel__m_per_s, float surface_temp__K, AeroConditions& aero,
+                               glm::vec3& torque__Nm, glm::vec3& force__N) override;
 
     void set_flow_regime(FlowRegime regime) override { m_flow_regime.store(regime); }
     [[nodiscard]] FlowRegime get_flow_regime() const override { return m_flow_regime.load(); }
 
     /**
-     * Samples per pixel actually used, after clamping to the driver limit and to the memory
+     * @brief Samples per pixel actually used, after clamping to the driver limit and to the memory
      * the G-buffer could be allocated in.
      */
     [[nodiscard]] unsigned int num_msaa_samples() const { return m_num_msaa_samples; }
 
     /**
-     * Pressure (normal component of the force per wetted area) [N/m^2] of the last
+     * @brief Pressure (normal component of the force per wetted area) [N/m^2] of the last
      * evaluation, num_pixel x num_pixel, row-major with row 0 at the bottom of the
      * flow view. Zero outside windward surfaces. A partly covered pixel shows the
      * pressure of its surface, not scaled by the coverage; with MSAA, a pixel where several
@@ -84,10 +99,13 @@ public:
      */
     [[nodiscard]] const std::vector<float>& pressure_image() const { return m_pressure_image; }
 
-    /** Wetted area of the windward surfaces the flow reaches, from the last evaluation [m^2]. */
+    /** @brief Wetted area of the windward surfaces the flow reaches, from the last evaluation [m^2]. */
     [[nodiscard]] double last_wetted_area() const { return m_wetted_area__m2; }
 
-    /** Area normal to the flow covered by windward surfaces (coverage weighted), from the last evaluation [m^2]. */
+    /**
+     * @brief Area normal to the flow covered by windward surfaces (coverage weighted), from the
+     * last evaluation [m^2].
+     */
     [[nodiscard]] double last_projected_area() const { return m_projected_area__m2; }
 
 private:
@@ -98,7 +116,7 @@ private:
     const unsigned int m_num_pixel;
     const bool m_keep_pressure_image;
     const float m_min_cos_delta;
-    unsigned int m_num_msaa_samples = 1; // after clamping; set in the constructor
+    unsigned int m_num_msaa_samples = 1;   // after clamping; set in the constructor
     std::atomic<FlowRegime> m_flow_regime; // run-time switchable; atomic so a concurrent set is not a data race
     std::unique_ptr<GpuState> m_gpu;
 
