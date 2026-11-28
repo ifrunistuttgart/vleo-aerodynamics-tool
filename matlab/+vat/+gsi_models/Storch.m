@@ -40,9 +40,6 @@ classdef Storch < handle
             %
             %   Releases the underlying C++ model object.
             %
-            arguments
-                this (1, 1) vat.gsi_models.Storch
-            end
             if this.handle_ ~= int32(-1)
                 MexGateway("gsi_models.Storch.delete", int32(this.handle_));
                 this.handle_ = int32(-1);

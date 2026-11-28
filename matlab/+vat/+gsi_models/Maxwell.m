@@ -31,9 +31,6 @@ classdef Maxwell < handle
             %
             %   Releases the underlying C++ model object.
             %
-            arguments
-                this (1, 1) vat.gsi_models.Maxwell
-            end
             if this.handle_ ~= int32(-1)
                 MexGateway("gsi_models.Maxwell.delete", int32(this.handle_));
                 this.handle_ = int32(-1);

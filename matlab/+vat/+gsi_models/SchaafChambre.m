@@ -32,9 +32,6 @@ classdef SchaafChambre < handle
             %
             %   Releases the underlying C++ model object.
             %
-            arguments
-                this (1, 1) vat.gsi_models.SchaafChambre
-            end
             if this.handle_ ~= int32(-1)
                 MexGateway("gsi_models.SchaafChambre.delete", int32(this.handle_));
                 this.handle_ = int32(-1);
