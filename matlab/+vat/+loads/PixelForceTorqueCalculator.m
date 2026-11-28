@@ -146,9 +146,6 @@ classdef PixelForceTorqueCalculator < handle
             %
             %   Releases the underlying C++ resources.
             %
-            arguments
-                this (1, 1) vat.loads.PixelForceTorqueCalculator
-            end
             if this.handle_ ~= int32(-1)
                 MexGateway("loads.PixelForceTorqueCalculator.delete", int32(this.handle_));
                 this.handle_ = int32(-1);

@@ -80,9 +80,6 @@ classdef AeroConditions < handle
             %
             %   Releases the underlying C++ AeroConditions object.
             %
-            arguments
-                this (1, 1) vat.AeroConditions
-            end
             if this.handle_ ~= int32(-1)
                 MexGateway("AeroConditions.delete", int32(this.handle_));
                 this.handle_ = int32(-1);

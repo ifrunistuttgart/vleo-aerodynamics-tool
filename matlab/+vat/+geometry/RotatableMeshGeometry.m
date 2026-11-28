@@ -53,9 +53,6 @@ classdef RotatableMeshGeometry < handle
             %
             %   Releases the underlying C++ geometry object.
             %
-            arguments
-                this (1, 1) vat.geometry.RotatableMeshGeometry
-            end
             if this.handle_ ~= int32(-1)
                 MexGateway("geometry.RotatableMeshGeometry.delete", int32(this.handle_));
                 this.handle_ = int32(-1);
