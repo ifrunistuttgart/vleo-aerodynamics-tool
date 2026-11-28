@@ -7,12 +7,12 @@
 clear; close all;
 vat.setLogLevel("warn");
 
-base_triangle_count = 1000; % target triangle count of the coarsest level
-num_levels = 9;             % number of resolutions, each ~2x the previous
+base_triangle_count = 100; % target triangle count of the coarsest level
+num_levels = 10;             % number of resolutions, each ~2x the previous
 
 folder = fileparts(mfilename('fullpath'));
-[~, base_name] = fileparts('./remeshed/shuttlecock_base_rotated_panels.obj');
-source_file = fullfile(folder, ['./remeshed/' base_name '.obj']);
+base_name = 'shuttlecock_base_rotated_panels';
+source_file = fullfile(folder, [base_name '.obj']); % the unremeshed source lives next to this script
 output_folder = fullfile(folder, 'remeshed');
 if ~isfolder(output_folder)
     mkdir(output_folder);
